@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morten Stene – Kommunikasjon og digitale medium</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: #fafafa;
+      color: #111;
+      font-size: 15px;
+    }
+    a { color: #111; text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { opacity: 0.6; }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 2.5rem 0 2rem;
+    }
+    .header-inner {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.8rem;
+      flex-wrap: wrap;
+    }
+    header img {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #eee;
+    }
+    header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.2rem; }
+    header .subtitle { font-size: 1rem; color: #555; margin-bottom: 0.6rem; }
+    .header-links { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center; font-size: 0.85rem; }
+    .header-links span { color: #bbb; }
+
+    main {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    section { margin-bottom: 2.5rem; }
+
+    .section-header {
+      background: #111;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      margin-bottom: 1.2rem;
+    }
+
+    .entry {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 0 1.2rem;
+      margin-bottom: 1rem;
+    }
+    .entry-date { font-size: 0.78rem; color: #777; padding-top: 2px; }
+    .entry-title { font-weight: 700; font-size: 0.88rem; }
+    .entry-company { font-size: 0.82rem; font-style: italic; color: #444; margin-top: 2px; }
+    .entry-desc { font-size: 0.82rem; color: #333; margin-top: 4px; line-height: 1.55; }
+
+    .cards { display: flex; flex-direction: column; gap: 1rem; }
+    .card {
+      display: block;
+      padding: 1rem 1.2rem;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      text-decoration: none;
+      color: #111;
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: #999; opacity: 1; }
+    .card-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+    .card-desc { font-size: 0.82rem; color: #555; line-height: 1.5; }
+    .card-link { font-size: 0.78rem; color: #888; margin-top: 6px; }
+
+    .skills-text { font-size: 0.85rem; color: #333; line-height: 2; }
+
+    footer {
+      border-top: 1px solid #e0e0e0;
+      padding-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.8rem;
+      color: #888;
+    }
+    footer .footer-links { display: flex; gap: 1rem; }
+
+    @media (max-width: 540px) {
+      .entry { grid-template-columns: 1fr; }
+      .entry-date { margin-bottom: 2px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <img src="https://media.licdn.com/dms/image/v2/D4D03AQGabDLXI_Mctg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1727349725331?e=1778716800&v=beta&t=mSFBEwCvkXjyJxisSnuos1flFkKvybCHHU2TtOwGNCs" alt="Morten Stene" />
+    <div>
+      <h1>Morten Stene</h1>
+      <div class="subtitle">Kommunikasjon og digitale medium</div>
+      <div class="header-links">
+        <a href="mailto:mstene95@gmail.com">mstene95@gmail.com</a>
+        <span>·</span>
+        <span>+47 924 95 858</span>
+        <span>·</span>
+        <a href="https://www.linkedin.com/in/morten-stene/" target="_blank" rel="noopener">LinkedIn</a>
+        <span>·</span>
+        <a href="https://github.com/Mortey12" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section>
+    <div class="section-header">Om meg</div>
+    <p style="font-size:0.88rem; line-height:1.7; color:#333;">
+      Eg er ein strukturert og engasjert person med brei erfaring frå kommunikasjon, innhaldsproduksjon og digitale verktøy.
+      Eg trivst med å gjere komplekst innhald tilgjengeleg for folk, og har god erfaring med CMS-system, CRM og sosiale medium.
+      Eg har alltid vore aktiv i kulturlivet og organisasjonslivet i Bergen, og ønskjer å bruke erfaringa mi til å bidra til eit levande kulturliv i regionen.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-header">Utvalde arbeid</div>
+    <div class="cards">
+      <a class="card" href="https://www.thetimes.com/world/russia-ukraine-war/article/threat-from-norwegian-port-that-welcomes-russian-ships-8g79b7c8m" target="_blank" rel="noopener">
+        <div class="card-title">🗞️ The Times, London — Kirkenes-reportasjen</div>
+        <div class="card-desc">"Threat from Norwegian port that welcomes Russian ships" — eg var feltassistent for korrespondent Max i Kirkenes, 2022.</div>
+        <div class="card-link">thetimes.com →</div>
+      </a>
+      <a class="card" href="https://open.spotify.com/episode/4U0d21flQ3VTmPqQppnm2g?si=e1f41fa27d16443b" target="_blank" rel="noopener">
+        <div class="card-title">🎙️ Nordljud — Nyheiter på studentradio i Norden</div>
+        <div class="card-desc">Nyhetsopplesar og journalist for den nordiske studentradiokanalen Nordljud. Intervjua statsminister Støre og ungdomar frå Fosen-protestane.</div>
+        <div class="card-link">Lytt på Spotify →</div>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-header">Arbeidserfaring</div>
+    <div class="entry"><div class="entry-date">2024 – i dag</div><div><div class="entry-title">Digital redaktør</div><div class="entry-company">Regionalt fagmiljø for ADHD, autisme og Tourettes syndrom, Haukeland</div><div class="entry-desc">Ansvar for nettsider i Optimizely og Squarespace, nyhendebrev og innhald til sosiale medium. Gjer komplekst fagstoff frå legar og psykologar forståeleg for breie målgrupper.</div></div></div>
+    <div class="entry"><div class="entry-date">2023 – 2024</div><div><div class="entry-title">Kommunikasjonstrainee</div><div class="entry-company">Bergen Næringsråd</div><div class="entry-desc">Innføring av HubSpot, nyhendebrev, sosiale medium og automatiserte arbeidsflytar.</div></div></div>
+    <div class="entry"><div class="entry-date">2023 – 2024</div><div><div class="entry-title">Dagleg leiar</div><div class="entry-company">Studvest</div><div class="entry-desc">Ansvar for drift, økonomi og tilsetting. Leia overgang til nye system for publisering og annonsering.</div></div></div>
+    <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Styreleiar</div><div class="entry-company">Studvest</div><div class="entry-desc">Tilsetting av fire redaktørar og oppfølging av presseetikk.</div></div></div>
+    <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Frilansoppdrag</div><div class="entry-company"><a href="https://www.thetimes.com/world/russia-ukraine-war/article/threat-from-norwegian-port-that-welcomes-russian-ships-8g79b7c8m" target="_blank" rel="noopener">The Times, London</a></div><div class="entry-desc">Journalistisk oppdrag i Kirkenes for ein av Storbritannias leiande aviser.</div></div></div>
+    <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">iLaks</div><div class="entry-desc">Dekning av næringslivssaker og konferansar innan oppdrettsbransjen.</div></div></div>
+    <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">Grannar</div><div class="entry-desc">Helgestilling med ansvar for artiklar og foto.</div></div></div>
+    <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Nyhetsopplesar og journalist</div><div class="entry-company"><a href="https://open.spotify.com/episode/4U0d21flQ3VTmPqQppnm2g" target="_blank" rel="noopener">Nordljud, Studentradioen i Norden</a></div><div class="entry-desc">Intervjua statsminister Støre og ungdomar frå Fosen-protestane.</div></div></div>
+    <div class="entry"><div class="entry-date">2019 – 2020</div><div><div class="entry-title">Tillitsvald (fulltid)</div><div class="entry-company">Studentparlamentet ved UiB</div><div class="entry-desc">Læringsmiljø, digitalisering og universell utforming.</div></div></div>
+  </section>
+
+  <section>
+    <div class="section-header">Frivillig og organisasjonserfaring</div>
+    <div class="entry"><div class="entry-date">2018 – 2024</div><div><div class="entry-title">Ulike verv</div><div class="entry-company">Studentersamfunnet i Bergen</div><div class="entry-desc">Nestleiar i jubileumsveka, møteleiar og arrangør av Helhus (Pride og Harry Potter). Medlem av debatt-, jubileums- og valkomiteen og Rådet.</div></div></div>
+    <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Nestleiar og fungerande leiar</div><div class="entry-company">Læringsmiljøpolitisk komité, Norsk Studentorganisasjon</div><div class="entry-desc">Universell utforming og digitalisering på nasjonalt nivå.</div></div></div>
+    <div class="entry"><div class="entry-date">2018 – 2022</div><div><div class="entry-title">Ulike råd og utval</div><div class="entry-company">UNIT, HK-dir og UiB</div><div class="entry-desc">Fagråd for utdanning, UiB Læringslab, chatbot-utvikling og onboarding av nye studentar.</div></div></div>
+  </section>
+
+  <section>
+    <div class="section-header">Utdanning</div>
+    <div class="entry"><div class="entry-date">2023 – 2025</div><div><div class="entry-title">Master i medier og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Masteroppgåve om mediepåverknad på helsepersonell ved Kvinneklinikken, Haukeland. Praksis ved Helse Bergen.</div></div></div>
+    <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Bachelor i media og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div></div></div>
+    <div class="entry"><div class="entry-date">2017 – 2022</div><div><div class="entry-title">Bachelor i samanliknande politikk</div><div class="entry-company">Universitetet i Bergen</div></div></div>
+    <div class="entry"><div class="entry-date">2014 – 2017</div><div><div class="entry-title">Økonomi og administrasjon</div><div class="entry-company">BI Bergen</div><div class="entry-desc">Marknadsføring, leiing, prosjektleiing, finansreknskap og forretningsjus.</div></div></div>
+  </section>
+
+  <section>
+    <div class="section-header">Ferdigheiter og verktøy</div>
+    <div class="skills-text">
+      HubSpot (CRM) · Optimizely (CMS) · Squarespace · SharePoint · Nyhendebrev · Sosiale medium · Universell utforming (WCAG) · Innhaldsproduksjon · Arrangementsplanlegging · Prosjektleiing · Norsk nynorsk og bokmål · Engelsk
+    </div>
+  </section>
+
+  <footer>
+    <div>Morten Stene · Bergen · 2026</div>
+    <div class="footer-links">
+      <a href="https://www.linkedin.com/in/morten-stene/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="https://github.com/Mortey12" target="_blank" rel="noopener">GitHub</a>
+      <a href="mailto:mstene95@gmail.com">E-post</a>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>
