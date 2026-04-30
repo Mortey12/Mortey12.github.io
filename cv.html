@@ -312,22 +312,36 @@ function generateUrl() {
   if (!slug) { alert('Skriv inn bedriftsnamn fyrst!'); return; }
   if (selected.length === 0) { alert('Vel minst ein blokk!'); return; }
 
-  const base = window.location.href.replace('cv.html', '');
-  const params = selected.join(',');
-  const url = `${base}jobb.html?bedrift=${slug}&blokker=${params}`;
+  const blokker = selected.join(',');
+  const display = slug.charAt(0).toUpperCase() + slug.slice(1);
+
+  const fileContent = '<!DOCTYPE html>\n' +
+    '<html lang="no">\n<head>\n' +
+    '  <meta charset="UTF-8" />\n' +
+    '  <meta http-equiv="refresh" content="0; url=jobb.html?bedrift=' + slug + '&blokker=' + blokker + '" />\n' +
+    '  <title>Morten Stene \u2014 ' + display + '</title>\n' +
+    '  <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fafafa;color:#555;}</style>\n' +
+    '</head>\n<body>\n' +
+    '  <p>Lastar&hellip; <a href="jobb.html?bedrift=' + slug + '&blokker=' + blokker + '">Klikk her viss sida ikkje lastar.</a></p>\n' +
+    '</body>\n</html>';
 
   const out = document.getElementById('urlOutput');
-  document.getElementById('urlText').innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
   out.style.display = 'block';
-  out._url = url;
+  out._slug = slug;
+  out._content = fileContent;
+
+  document.getElementById('urlText').innerHTML =
+    'Last opp <strong>' + slug + '.html</strong> til GitHub &rarr; klar p&aring; <strong>mstene.no/' + slug + '</strong>';
+  document.querySelector('.copy-btn').textContent = '\u2B07 Last ned ' + slug + '.html';
 }
 
 function copyUrl() {
-  const url = document.getElementById('urlOutput')._url;
-  navigator.clipboard.writeText(url).then(() => {
-    document.querySelector('.copy-btn').textContent = 'Kopiert! ✓';
-    setTimeout(() => { document.querySelector('.copy-btn').textContent = 'Kopier lenke'; }, 2000);
-  });
+  const out = document.getElementById('urlOutput');
+  const blob = new Blob([out._content], {type: 'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = out._slug + '.html';
+  a.click();
 }
 </script>
 </body>
