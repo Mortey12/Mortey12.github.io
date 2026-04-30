@@ -15,6 +15,29 @@
     a { color: #111; text-decoration: underline; text-underline-offset: 2px; }
     a:hover { opacity: 0.6; }
 
+    /* LANGUAGE SWITCHER */
+    .lang-bar {
+      background: #111;
+      padding: 0.5rem 0;
+      text-align: center;
+    }
+    .lang-bar button {
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .lang-bar button:hover { color: #fff; }
+    .lang-bar button.active { color: #fff; background: #333; }
+    .lang-bar span { color: #444; font-size: 0.7rem; padding: 0 2px; }
+
     header {
       background: #fff;
       border-bottom: 1px solid #e0e0e0;
@@ -102,6 +125,9 @@
     }
     footer .footer-links { display: flex; gap: 1rem; }
 
+    [data-lang] { display: none; }
+    [data-lang].active { display: block; }
+
     @media (max-width: 540px) {
       .entry { grid-template-columns: 1fr; }
       .entry-date { margin-bottom: 2px; }
@@ -110,12 +136,25 @@
 </head>
 <body>
 
+<!-- LANGUAGE SWITCHER -->
+<div class="lang-bar">
+  <button class="active" onclick="setLang('nn')">Nynorsk</button>
+  <span>|</span>
+  <button onclick="setLang('nb')">Bokmål</button>
+  <span>|</span>
+  <button onclick="setLang('en')">English</button>
+</div>
+
 <header>
   <div class="header-inner">
     <img src="https://media.licdn.com/dms/image/v2/D4D03AQGabDLXI_Mctg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1727349725331?e=1778716800&v=beta&t=mSFBEwCvkXjyJxisSnuos1flFkKvybCHHU2TtOwGNCs" alt="Morten Stene" />
     <div>
       <h1>Morten Stene</h1>
-      <div class="subtitle">Kommunikasjon og digitale medium</div>
+      <div class="subtitle">
+        <span data-lang="nn" class="active">Kommunikasjon og digitale medium</span>
+        <span data-lang="nb">Kommunikasjon og digitale medier</span>
+        <span data-lang="en">Communications and Digital Media</span>
+      </div>
       <div class="header-links">
         <a href="mailto:mstene95@gmail.com">mstene95@gmail.com</a>
         <span>·</span>
@@ -131,80 +170,259 @@
 
 <main>
 
-  <section>
-    <div class="section-header">Om meg</div>
-    <p style="font-size:0.88rem; line-height:1.7; color:#333;">
-      Eg er ein strukturert og engasjert person med erfaring frå kommunikasjon, innhaldsproduksjon og digitale verktøy.
-      Eg trivst med å gjere komplekst innhald tilgjengeleg for folk, og har god erfaring med CMS-system, CRM og sosiale medium.
-      Eg har alltid vore aktiv i frivilligheita og organisasjonslivet i Bergen, og har opparbeida meg solid erfaring gjennom arrangementsleiing, leiar verv og meir.
-    </p>
-  </section>
+  <!-- ======================== NYNORSK ======================== -->
+  <div data-lang="nn" class="active">
 
-  <section>
-    <div class="section-header">Utvalde arbeid</div>
-    <div class="cards">
-      <a class="card" href="https://www.thetimes.com/world/russia-ukraine-war/article/threat-from-norwegian-port-that-welcomes-russian-ships-8g79b7c8m" target="_blank" rel="noopener">
-        <div class="card-title">🗞️ The Times, London — Kirkenes-reportasjen</div>
-        <div class="card-desc">"Threat from Norwegian port that welcomes Russian ships" — eg var feltassistent for korrespondent Max i Kirkenes, 2022.</div>
-        <div class="card-link">thetimes.com →</div>
-      </a>
-      <a class="card" href="https://open.spotify.com/episode/4U0d21flQ3VTmPqQppnm2g?si=e1f41fa27d16443b" target="_blank" rel="noopener">
-        <div class="card-title">🎙️ Nordljud — Nyheiter på studentradio i Norden</div>
-        <div class="card-desc">Nyhetsopplesar og journalist for den nordiske studentradiokanalen Nordljud. Intervjua statsminister Støre og ungdomar frå Fosen-protestane.</div>
-        <div class="card-link">Lytt på Spotify →</div>
-      </a>
-      <a class="card" href="https://www.adhdautismetourettes.no/" target="_blank" rel="noopener">
-         <div class="card-title">🖥️ ADHD, autisme og Tourettes — nasjonal ressursside</div>
+    <section>
+      <div class="section-header">Om meg</div>
+      <p style="font-size:0.88rem; line-height:1.7; color:#333;">
+        Eg er ein kommunikasjonsrådgivar med erfaring frå redaksjonelt arbeid, CRM og digitale verktøy. Eg trivst med å utvikle system og prosessar, ikkje berre bruke dei, men gjere dei betre. Eg har leidd digitale omstillingsprosjekt, innført CRM-system og produsert innhald for breie målgrupper i både mediebransjen og helsesektoren.
+      </p>
+    </section>
+
+    <section>
+      <div class="section-header">Utvalde arbeid</div>
+      <div class="cards">
+        <a class="card" href="https://www.thetimes.com/world/russia-ukraine-war/article/threat-from-norwegian-port-that-welcomes-russian-ships-8g79b7c8m" target="_blank" rel="noopener">
+          <div class="card-title">🗞️ The Times, London — Kirkenes-reportasjen</div>
+          <div class="card-desc">Feltassistent for korrespondent i Kirkenes, 2022. Tok kontakt med kjelder, oversette og bidrog til at reportasjen kom i hamn.</div>
+          <div class="card-link">thetimes.com →</div>
+        </a>
+        <a class="card" href="https://open.spotify.com/episode/4U0d21flQ3VTmPqQppnm2g?si=e1f41fa27d16443b" target="_blank" rel="noopener">
+          <div class="card-title">🎙️ Nordljud — Nyheiter på studentradio i Norden</div>
+          <div class="card-desc">Nyhetsopplesar og journalist for den nordiske studentradiokanalen Nordljud. Arrangerte intervju med statsminister Støre og intervjua sjølv samane frå Fosen-protestane.</div>
+          <div class="card-link">Lytt på Spotify →</div>
+        </a>
+        <a class="card" href="https://www.adhdautismetourettes.no" target="_blank" rel="noopener">
+          <div class="card-title">🖥️ ADHD, autisme og Tourettes — nasjonal ressursside</div>
           <div class="card-desc">Webredaktør for ei nasjonal ressursside utvikla av dei regionale fagmiljøa og ADHD Norge. Arbeider med innhald, struktur, klarspråk og universell utforming.</div>
-  <div class="card-link">Gå til nettsida →</div>
-</a>
-    </div>
-  </section>
+          <div class="card-link">Gå til nettsida →</div>
+        </a>
+        <a class="card" href="https://www.m24.no/even-haehre-hammersvik-studentaviser-studentmedier/studvest-har-fatt-ny-nettside/671993" target="_blank" rel="noopener">
+          <div class="card-title">📰 Studvest — ny digital plattform</div>
+          <div class="card-desc">Leidde frå strategisk planlegging til gjennomføring av overgang frå WordPress til Labrador, med ny løysing for lagring og annonsering. Sikra òg digitalisering og arkivering av alle fysiske utgåver til Nasjonalbiblioteket.</div>
+          <div class="card-link">Les om prosjektet på M24 →</div>
+        </a>
+      </div>
+    </section>
 
-  <section>
-    <div class="section-header">Arbeidserfaring</div>
-    <div class="entry"><div class="entry-date">2024 – i dag</div><div><div class="entry-title">Digital redaktør</div><div class="entry-company">Regionalt fagmiljø for ADHD, autisme og Tourettes syndrom, Haukeland</div><div class="entry-desc">Ansvar for nettsider i Optimizely og Squarespace, nyhendebrev og innhald til sosiale medium. Gjer komplekst fagstoff frå legar og psykologar forståeleg for breie målgrupper.</div></div></div>
-    <div class="entry"><div class="entry-date">2023 – 2024</div><div><div class="entry-title">Kommunikasjonstrainee</div><div class="entry-company">Bergen Næringsråd</div><div class="entry-desc">Innføring av HubSpot, nyhendebrev, sosiale medium og automatiserte arbeidsflytar.</div></div></div>
-    <div class="entry"><div class="entry-date">2023 – 2024</div><div><div class="entry-title">Dagleg leiar</div><div class="entry-company">Studvest</div><div class="entry-desc">Ansvar for drift, økonomi og tilsetting. Leia overgang til nye system for publisering og annonsering.</div></div></div>
-    <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Styreleiar</div><div class="entry-company">Studvest</div><div class="entry-desc">Tilsetting av fire redaktørar og oppfølging av presseetikk.</div></div></div>
-    <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Frilansoppdrag</div><div class="entry-company"><a href="https://www.thetimes.com/world/russia-ukraine-war/article/threat-from-norwegian-port-that-welcomes-russian-ships-8g79b7c8m" target="_blank" rel="noopener">The Times, London</a></div><div class="entry-desc">Journalistisk oppdrag i Kirkenes for ein av Storbritannias leiande aviser.</div></div></div>
-    <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">iLaks</div><div class="entry-desc">Dekning av næringslivssaker og konferansar innan oppdrettsbransjen.</div></div></div>
-    <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Journalist</div><div class="entry-company"><a href="https://www.grannar.no/nyhende/mange-til-stades-pa-den-store-kinodagen/121881" target="_blank" rel="noopener">Grannar</div><div class="entry-desc">Helgestilling med ansvar for artiklar og foto.</div></div></div>
-    <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Nyhetsopplesar og journalist</div><div class="entry-company"><a href="https://open.spotify.com/episode/4U0d21flQ3VTmPqQppnm2g" target="_blank" rel="noopener">Nordljud, Studentradioen i Norden</a></div><div class="entry-desc">Intervjua statsminister Støre og ungdomar frå Fosen-protestane.</div></div></div>
-    <div class="entry"><div class="entry-date">2019 – 2020</div><div><div class="entry-title">Tillitsvald (fulltid)</div><div class="entry-company">Studentparlamentet ved UiB</div><div class="entry-desc">Læringsmiljø, digitalisering og universell utforming.</div></div></div>
-  </section>
+    <section>
+      <div class="section-header">Arbeidserfaring</div>
+      <div class="entry"><div class="entry-date">2024 – i dag</div><div><div class="entry-title">Kommunikasjonsmedarbeidar</div><div class="entry-company">Regionalt fagmiljø for ADHD, autisme og Tourettes syndrom, Haukeland</div><div class="entry-desc">Redaktør for nettsidene til RFM Helse Vest med ansvar for innhald og struktur i Optimizely, SharePoint og Squarespace. Gjer komplekst fagstoff frå legar og psykologar forståeleg for breie målgrupper.</div></div></div>
+      <div class="entry"><div class="entry-date">2023 – 2024</div><div><div class="entry-title">Kommunikasjonstrainee</div><div class="entry-company">Bergen Næringsråd</div><div class="entry-desc">Superbrukar og pådrivar for innføring av HubSpot. Lærte opp kollegaer, automatiserte velkomst- og lead-prosessar, og hadde hovudansvar for nyhendebrev og sosiale medium.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2024</div><div><div class="entry-title">Dagleg leiar og styreleiar</div><div class="entry-company">Studvest</div><div class="entry-desc">Leidde studentavisa med ansvar for drift, økonomi og tilsetting. Som styreleiar la eg den strategiske planen for systembytet; som dagleg leiar gjennomførte eg overgangen frå WordPress til Labrador og flytta lagring og annonsering over i Google sine system. Resultatet var betre utforming, tidssparing og meir data til annonsørar.</div></div></div>
+      <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Feltassistent</div><div class="entry-company">The Times, London</div><div class="entry-desc">Bidrog til reportasje frå Kirkenes ved å ta kontakt med intervjuobjekt, oversette og støtte korrespondenten i felt.</div></div></div>
+      <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">iLaks</div><div class="entry-desc">Dekning av næringslivssaker og konferansar innan oppdrettsbransjen.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">Grannar</div><div class="entry-desc">Helgestilling med ansvar for artiklar og foto.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Nyhetsopplesar og journalist</div><div class="entry-company">Nordljud, Studentradioen i Norden</div><div class="entry-desc">Ansvar for nasjonale nyheiter, reportasjar og podkastinnhald. Arrangerte intervju med statsminister Støre og intervjua sjølv samane frå Fosen-protestane.</div></div></div>
+      <div class="entry"><div class="entry-date">2019 – 2020</div><div><div class="entry-title">Tillitsvald (fulltid)</div><div class="entry-company">Studentparlamentet ved UiB</div><div class="entry-desc">Arbeidde med læringsmiljø, digital utvikling og universell utforming. Deltok i arbeidsgruppe for UU-handlingsplan ved UiB.</div></div></div>
+    </section>
 
-  <section>
-    <div class="section-header">Frivillig og organisasjonserfaring</div>
-    <div class="entry"><div class="entry-date">2018 – 2024</div><div><div class="entry-title">Ulike verv</div><div class="entry-company">Studentersamfunnet i Bergen</div><div class="entry-desc">Nestleiar i jubileumsveka, møteleiar og arrangør av Helhus (Pride og Harry Potter). Medlem av debatt-, jubileums- og valkomiteen og Rådet.</div></div></div>
-    <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Nestleiar og fungerande leiar</div><div class="entry-company">Læringsmiljøpolitisk komité, Norsk Studentorganisasjon</div><div class="entry-desc">Universell utforming og digitalisering på nasjonalt nivå.</div></div></div>
-    <div class="entry"><div class="entry-date">2018 – 2022</div><div><div class="entry-title">Ulike råd og utval</div><div class="entry-company">UNIT, HK-dir og UiB</div><div class="entry-desc">Fagråd for utdanning, UiB Læringslab, chatbot-utvikling og onboarding av nye studentar.</div></div></div>
-  </section>
+    <section>
+      <div class="section-header">Frivillig og organisasjonserfaring</div>
+      <div class="entry"><div class="entry-date">2018 – 2024</div><div><div class="entry-title">Ulike verv</div><div class="entry-company">Studentersamfunnet i Bergen</div><div class="entry-desc">Nestleiar i jubileumsveka, møteleiar og arrangør av Helhus (Pride og Harry Potter). Medlem av debatt-, jubileums- og valkomiteen og Rådet.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2023</div><div><div class="entry-title">Medlem i styringsgruppa</div><div class="entry-company">Christiekonferansen, UiB</div><div class="entry-desc">Bidrog i planlegging og gjennomføring av ein av Noregs fremste akademiske konferansar.</div></div></div>
+      <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Nestleiar og fungerande leiar</div><div class="entry-company">Læringsmiljøpolitisk komité, Norsk Studentorganisasjon</div><div class="entry-desc">Universell utforming og digitalisering på nasjonalt nivå.</div></div></div>
+      <div class="entry"><div class="entry-date">2018 – 2022</div><div><div class="entry-title">Styringsgrupper og fagutval</div><div class="entry-company">UiB, UNIT og HK-dir</div><div class="entry-desc">UiB Læringslab, chatbot-utvikling, onboarding av nye studentar, UU-handlingsplan og fagråd for høgare utdanning.</div></div></div>
+    </section>
 
-  <section>
-    <div class="section-header">Utdanning</div>
-    <div class="entry"><div class="entry-date">2023 – 2025</div><div><div class="entry-title">Master i medier og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Masteroppgåve om mediepåverknad på helsepersonell ved Kvinneklinikken, Haukeland. Praksis ved Helse Bergen.</div></div></div>
-    <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Bachelor i media og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div></div></div>
-    <div class="entry"><div class="entry-date">2017 – 2022</div><div><div class="entry-title">Bachelor i samanliknande politikk</div><div class="entry-company">Universitetet i Bergen</div></div></div>
-    <div class="entry"><div class="entry-date">2014 – 2017</div><div><div class="entry-title">Økonomi og administrasjon</div><div class="entry-company">BI Bergen</div><div class="entry-desc">Marknadsføring, leiing, prosjektleiing, finansreknskap og forretningsjus.</div></div></div>
-  </section>
+    <section>
+      <div class="section-header">Utdanning</div>
+      <div class="entry"><div class="entry-date">2023 – 2025</div><div><div class="entry-title">Master i medier og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Masteroppgåve: Når mediene påverker helsevesenet — intervju med helsepersonell ved Kvinneklinikken om mediepåverknad og kommunikasjon. Praksis ved Helse Bergen.</div></div></div>
+      <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Bachelor i media og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Bacheloroppgåve: Er kommunikasjonen mellom spelbransjen og kvinner prega av utdaterte kjønnsstereotypiar?</div></div></div>
+      <div class="entry"><div class="entry-date">2017 – 2022</div><div><div class="entry-title">Bachelor i samanliknande politikk</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Bacheloroppgåve: Kva gjer at Arbeidarpartiet vart råka meir av #MeToo enn andre parti?</div></div></div>
+      <div class="entry"><div class="entry-date">2014 – 2017</div><div><div class="entry-title">Økonomi, administrasjon og kommunikasjon</div><div class="entry-company">BI Bergen</div><div class="entry-desc">Marknadsføring, leiing, prosjektleiing og forretningsjus.</div></div></div>
+    </section>
 
-  <section>
-    <div class="section-header">Ferdigheiter og verktøy</div>
-    <div class="skills-text">
-      HubSpot (CRM) · Optimizely (CMS) · Squarespace · SharePoint · Nyhendebrev · Sosiale medium · Universell utforming (WCAG) · Innhaldsproduksjon · Arrangementsplanlegging · Prosjektleiing · Norsk nynorsk og bokmål · Engelsk
-    </div>
-  </section>
+    <section>
+      <div class="section-header">Ferdigheiter</div>
+      <p class="skills-text">HubSpot (CRM) · Optimizely · Squarespace · SharePoint · Nyhendebrev · Sosiale medium · Universell utforming (WCAG) · Klarspråk · Innhaldsproduksjon · Arrangementsplanlegging · Prosjektleiing · Nynorsk og bokmål · Engelsk</p>
+    </section>
 
-  <footer>
-    <div>Morten Stene · Bergen · 2026</div>
-    <div class="footer-links">
-      <a href="https://www.linkedin.com/in/morten-stene/" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="https://github.com/Mortey12" target="_blank" rel="noopener">GitHub</a>
-      <a href="mailto:mstene95@gmail.com">E-post</a>
-    </div>
-  </footer>
+    <footer>
+      <span>Morten Stene · Bergen · 2025</span>
+      <div class="footer-links">
+        <a href="https://www.linkedin.com/in/morten-stene/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/Mortey12" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:mstene95@gmail.com">E-post</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ======================== BOKMÅL ======================== -->
+  <div data-lang="nb">
+
+    <section>
+      <div class="section-header">Om meg</div>
+      <p style="font-size:0.88rem; line-height:1.7; color:#333;">
+        Jeg er en kommunikasjonsrådgiver med erfaring fra redaksjonelt arbeid, CRM og digitale verktøy. Jeg trives med å utvikle systemer og prosesser, ikke bare bruke dem, men gjøre dem bedre. Jeg har ledet digitale omstillingsprosjekter, innført CRM-systemer og produsert innhold for brede målgrupper i både mediebransjen og helsesektoren.
+      </p>
+    </section>
+
+    <section>
+      <div class="section-header">Utvalgte arbeider</div>
+      <div class="cards">
+        <a class="card" href="https://www.thetimes.com/world/russia-ukraine-war/article/threat-from-norwegian-port-that-welcomes-russian-ships-8g79b7c8m" target="_blank" rel="noopener">
+          <div class="card-title">🗞️ The Times, London — Kirkenes-reportasjen</div>
+          <div class="card-desc">Feltassistent for korrespondent i Kirkenes, 2022. Tok kontakt med kilder, oversatte og bidro til at reportasjen kom i havn.</div>
+          <div class="card-link">thetimes.com →</div>
+        </a>
+        <a class="card" href="https://open.spotify.com/episode/4U0d21flQ3VTmPqQppnm2g?si=e1f41fa27d16443b" target="_blank" rel="noopener">
+          <div class="card-title">🎙️ Nordljud — Nyheter på studentradio i Norden</div>
+          <div class="card-desc">Nyhetsoppleser og journalist for den nordiske studentradiokanalen Nordljud. Arrangerte intervju med statsminister Støre og intervjuet selv samer fra Fosen-protestene.</div>
+          <div class="card-link">Lytt på Spotify →</div>
+        </a>
+        <a class="card" href="https://www.adhdautismetourettes.no" target="_blank" rel="noopener">
+          <div class="card-title">🖥️ ADHD, autisme og Tourettes — nasjonal ressursside</div>
+          <div class="card-desc">Webredaktør for en nasjonal ressursside utviklet av de regionale fagmiljøene og ADHD Norge. Arbeider med innhold, struktur, klarspråk og universell utforming.</div>
+          <div class="card-link">Gå til nettsiden →</div>
+        </a>
+        <a class="card" href="https://www.m24.no/even-haehre-hammersvik-studentaviser-studentmedier/studvest-har-fatt-ny-nettside/671993" target="_blank" rel="noopener">
+          <div class="card-title">📰 Studvest — ny digital plattform</div>
+          <div class="card-desc">Ledet fra strategisk planlegging til gjennomføring av overgang fra WordPress til Labrador, med ny løsning for lagring og annonsering. Sikret også digitalisering og arkivering av alle fysiske utgaver til Nasjonalbiblioteket.</div>
+          <div class="card-link">Les om prosjektet på M24 →</div>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">Arbeidserfaring</div>
+      <div class="entry"><div class="entry-date">2024 – i dag</div><div><div class="entry-title">Kommunikasjonsmedarbeider</div><div class="entry-company">Regionalt fagmiljø for ADHD, autisme og Tourettes syndrom, Haukeland</div><div class="entry-desc">Redaktør for nettsidene til RFM Helse Vest med ansvar for innhold og struktur i Optimizely, SharePoint og Squarespace. Gjør komplekst fagstoff fra leger og psykologer forståelig for brede målgrupper.</div></div></div>
+      <div class="entry"><div class="entry-date">2023 – 2024</div><div><div class="entry-title">Kommunikasjonstrainee</div><div class="entry-company">Bergen Næringsråd</div><div class="entry-desc">Superbruker og pådriver for innføring av HubSpot. Lærte opp kolleger, automatiserte velkomst- og lead-prosesser, og hadde hovedansvar for nyhetsbrev og sosiale medier.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2024</div><div><div class="entry-title">Daglig leder og styreleder</div><div class="entry-company">Studvest</div><div class="entry-desc">Ledet studentavisen med ansvar for drift, økonomi og ansettelser. Som styreleder la jeg den strategiske planen for systembytet; som daglig leder gjennomførte jeg overgangen fra WordPress til Labrador og flyttet lagring og annonsering over i Googles systemer. Resultatet var bedre utforming, tidsbesparelse og mer data til annonsører.</div></div></div>
+      <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Feltassistent</div><div class="entry-company">The Times, London</div><div class="entry-desc">Bidro til reportasje fra Kirkenes ved å ta kontakt med intervjuobjekter, oversette og støtte korrespondenten i felt.</div></div></div>
+      <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">iLaks</div><div class="entry-desc">Dekning av næringsliv og konferanser innen oppdrettsbransjen.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">Grannar</div><div class="entry-desc">Helgestilling med ansvar for artikler og foto.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Nyhetsoppleser og journalist</div><div class="entry-company">Nordljud, Studentradioen i Norden</div><div class="entry-desc">Ansvar for nasjonale nyheter, reportasjer og podkastinnhold. Arrangerte intervju med statsminister Støre og intervjuet selv samer fra Fosen-protestene.</div></div></div>
+      <div class="entry"><div class="entry-date">2019 – 2020</div><div><div class="entry-title">Tillitsvalgt (fulltid)</div><div class="entry-company">Studentparlamentet ved UiB</div><div class="entry-desc">Arbeidet med læringsmiljø, digital utvikling og universell utforming. Deltok i arbeidsgruppe for UU-handlingsplan ved UiB.</div></div></div>
+    </section>
+
+    <section>
+      <div class="section-header">Frivillig og organisasjonserfaring</div>
+      <div class="entry"><div class="entry-date">2018 – 2024</div><div><div class="entry-title">Ulike verv</div><div class="entry-company">Studentersamfunnet i Bergen</div><div class="entry-desc">Nestleder i jubileumsuken, møteleder og arrangør av Helhus (Pride og Harry Potter). Medlem av debatt-, jubileums- og valgkomiteen og Rådet.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2023</div><div><div class="entry-title">Medlem i styringsgruppa</div><div class="entry-company">Christiekonferansen, UiB</div><div class="entry-desc">Bidro i planlegging og gjennomføring av en av Norges fremste akademiske konferanser.</div></div></div>
+      <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Nestleder og fungerende leder</div><div class="entry-company">Læringsmiljøpolitisk komité, Norsk Studentorganisasjon</div><div class="entry-desc">Universell utforming og digitalisering på nasjonalt nivå.</div></div></div>
+      <div class="entry"><div class="entry-date">2018 – 2022</div><div><div class="entry-title">Styringsgrupper og fagutvalg</div><div class="entry-company">UiB, UNIT og HK-dir</div><div class="entry-desc">UiB Læringslab, chatbot-utvikling, onboarding av nye studenter, UU-handlingsplan og fagråd for høyere utdanning.</div></div></div>
+    </section>
+
+    <section>
+      <div class="section-header">Utdanning</div>
+      <div class="entry"><div class="entry-date">2023 – 2025</div><div><div class="entry-title">Master i medier og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Masteroppgave: Når mediene påvirker helsevesenet — intervju med helsepersonell ved Kvinneklinikken om mediepåvirkning og kommunikasjon. Praksis ved Helse Bergen.</div></div></div>
+      <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Bachelor i media og kommunikasjon</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Bacheloroppgave: Er kommunikasjonen mellom spillbransjen og kvinner preget av utdaterte kjønnsstereotypier?</div></div></div>
+      <div class="entry"><div class="entry-date">2017 – 2022</div><div><div class="entry-title">Bachelor i sammenlignende politikk</div><div class="entry-company">Universitetet i Bergen</div><div class="entry-desc">Bacheloroppgave: Hva gjør at Arbeiderpartiet ble rammet mer av #MeToo enn andre partier?</div></div></div>
+      <div class="entry"><div class="entry-date">2014 – 2017</div><div><div class="entry-title">Økonomi, administrasjon og kommunikasjon</div><div class="entry-company">BI Bergen</div><div class="entry-desc">Markedsføring, ledelse, prosjektledelse og forretningsjus.</div></div></div>
+    </section>
+
+    <section>
+      <div class="section-header">Ferdigheter</div>
+      <p class="skills-text">HubSpot (CRM) · Optimizely · Squarespace · SharePoint · Nyhetsbrev · Sosiale medier · Universell utforming (WCAG) · Klarspråk · Innholdsproduksjon · Arrangementsplanlegging · Prosjektledelse · Nynorsk og bokmål · Engelsk</p>
+    </section>
+
+    <footer>
+      <span>Morten Stene · Bergen · 2025</span>
+      <div class="footer-links">
+        <a href="https://www.linkedin.com/in/morten-stene/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/Mortey12" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:mstene95@gmail.com">E-post</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ======================== ENGLISH ======================== -->
+  <div data-lang="en">
+
+    <section>
+      <div class="section-header">About</div>
+      <p style="font-size:0.88rem; line-height:1.7; color:#333;">
+        I am a communications professional with experience in editorial work, CRM implementation and digital content production. I enjoy developing systems and processes, not just working within them, but improving them. I have led digital transformation projects, implemented CRM solutions and produced content for broad audiences across both the media industry and the healthcare sector.
+      </p>
+    </section>
+
+    <section>
+      <div class="section-header">Selected Work</div>
+      <div class="cards">
+        <a class="card" href="https://www.thetimes.com/world/russia-ukraine-war/article/threat-from-norwegian-port-that-welcomes-russian-ships-8g79b7c8m" target="_blank" rel="noopener">
+          <div class="card-title">🗞️ The Times, London — The Kirkenes Report</div>
+          <div class="card-desc">Field assistant for a correspondent in Kirkenes, 2022. Sourced contacts, translated and supported the reporter throughout the assignment.</div>
+          <div class="card-link">thetimes.com →</div>
+        </a>
+        <a class="card" href="https://open.spotify.com/episode/4U0d21flQ3VTmPqQppnm2g?si=e1f41fa27d16443b" target="_blank" rel="noopener">
+          <div class="card-title">🎙️ Nordljud — Nordic Student Radio</div>
+          <div class="card-desc">News presenter and journalist for the Nordic student radio channel Nordljud. Arranged an interview with Prime Minister Jonas Gahr Støre and personally interviewed Sami protesters from the Fosen demonstrations.</div>
+          <div class="card-link">Listen on Spotify →</div>
+        </a>
+        <a class="card" href="https://www.adhdautismetourettes.no" target="_blank" rel="noopener">
+          <div class="card-title">🖥️ ADHD, Autism and Tourette's — National Resource Site</div>
+          <div class="card-desc">Web editor for a national resource site developed by regional specialist teams and ADHD Norway. Responsible for content, structure, plain language and accessibility.</div>
+          <div class="card-link">Visit the site →</div>
+        </a>
+        <a class="card" href="https://www.m24.no/even-haehre-hammersvik-studentaviser-studentmedier/studvest-har-fatt-ny-nettside/671993" target="_blank" rel="noopener">
+          <div class="card-title">📰 Studvest — Digital Platform Migration</div>
+          <div class="card-desc">Led the migration from WordPress to Labrador, including new solutions for storage and advertising. Also ensured the digitisation and archiving of all print editions to the National Library of Norway.</div>
+          <div class="card-link">Read about the project at M24 →</div>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">Work Experience</div>
+      <div class="entry"><div class="entry-date">2024 – present</div><div><div class="entry-title">Communications Officer</div><div class="entry-company">Regional Centre for ADHD, Autism and Tourette's, Haukeland University Hospital</div><div class="entry-desc">Web editor responsible for content and structure across Optimizely, SharePoint and Squarespace. Translates complex clinical material from physicians and psychologists into accessible content for broad audiences.</div></div></div>
+      <div class="entry"><div class="entry-date">2023 – 2024</div><div><div class="entry-title">Communications Trainee</div><div class="entry-company">Bergen Chamber of Commerce and Industry</div><div class="entry-desc">Superuser and key driver in the implementation of HubSpot. Trained colleagues, automated welcome and lead workflows, and held primary responsibility for newsletters and social media.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2024</div><div><div class="entry-title">CEO and Chair of the Board</div><div class="entry-company">Studvest</div><div class="entry-desc">Led the student newspaper with responsibility for operations, finances and staffing. As Chair, developed the strategic plan for a full platform migration; as CEO, executed the transition from WordPress to Labrador and moved storage and advertising to Google's systems. Outcomes included improved design, time savings and richer data for advertisers.</div></div></div>
+      <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Field Assistant</div><div class="entry-company">The Times, London</div><div class="entry-desc">Supported a foreign correspondent in Kirkenes by sourcing interview subjects, translating and providing local knowledge.</div></div></div>
+      <div class="entry"><div class="entry-date">2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">iLaks</div><div class="entry-desc">Covered business news and conferences within the Norwegian aquaculture industry.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">Journalist</div><div class="entry-company">Grannar</div><div class="entry-desc">Weekend position with responsibility for articles and photography.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2022</div><div><div class="entry-title">News Presenter and Journalist</div><div class="entry-company">Nordljud, Nordic Student Radio</div><div class="entry-desc">Responsible for national news, features and podcast content. Arranged an interview with the Prime Minister and personally interviewed Sami protesters from the Fosen demonstrations.</div></div></div>
+      <div class="entry"><div class="entry-date">2019 – 2020</div><div><div class="entry-title">Elected Student Representative (full-time)</div><div class="entry-company">Student Parliament, University of Bergen</div><div class="entry-desc">Worked on learning environment, digitalisation and universal design. Member of the working group for the UiB accessibility action plan.</div></div></div>
+    </section>
+
+    <section>
+      <div class="section-header">Voluntary and Organisational Experience</div>
+      <div class="entry"><div class="entry-date">2018 – 2024</div><div><div class="entry-title">Various Positions</div><div class="entry-company">Studentersamfunnet i Bergen</div><div class="entry-desc">Deputy leader of the anniversary week, chair of debates and organiser of large-scale events (Pride and Harry Potter themed). Member of the debate, anniversary and election committees and the Board.</div></div></div>
+      <div class="entry"><div class="entry-date">2021 – 2023</div><div><div class="entry-title">Steering Committee Member</div><div class="entry-company">The Christie Conference, University of Bergen</div><div class="entry-desc">Contributed to the planning and execution of one of Norway's leading academic conferences.</div></div></div>
+      <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Deputy Leader and Acting Leader</div><div class="entry-company">Learning Environment Policy Committee, Norwegian Student Organisation</div><div class="entry-desc">Universal design and digitalisation at national policy level.</div></div></div>
+      <div class="entry"><div class="entry-date">2018 – 2022</div><div><div class="entry-title">Steering Groups and Expert Committees</div><div class="entry-company">UiB, UNIT and HK-dir</div><div class="entry-desc">UiB Learning Lab, chatbot development, student onboarding, accessibility action planning and expert committee for higher education.</div></div></div>
+    </section>
+
+    <section>
+      <div class="section-header">Education</div>
+      <div class="entry"><div class="entry-date">2023 – 2025</div><div><div class="entry-title">Master's in Media and Communication</div><div class="entry-company">University of Bergen</div><div class="entry-desc">Thesis: When the Media Influences Healthcare — interviews with clinical staff at Haukeland Women's Clinic on media influence and communication. Internship at Helse Bergen.</div></div></div>
+      <div class="entry"><div class="entry-date">2020 – 2023</div><div><div class="entry-title">Bachelor's in Media and Communication</div><div class="entry-company">University of Bergen</div><div class="entry-desc">Thesis: Is the communication between the gaming industry and women shaped by outdated gender stereotypes?</div></div></div>
+      <div class="entry"><div class="entry-date">2017 – 2022</div><div><div class="entry-title">Bachelor's in Comparative Politics</div><div class="entry-company">University of Bergen</div><div class="entry-desc">Thesis: Why was the Labour Party more affected by #MeToo than other Norwegian parties?</div></div></div>
+      <div class="entry"><div class="entry-date">2014 – 2017</div><div><div class="entry-title">Economics, Administration and Communication</div><div class="entry-company">BI Bergen</div><div class="entry-desc">Marketing, management, project management and business law.</div></div></div>
+    </section>
+
+    <section>
+      <div class="section-header">Skills</div>
+      <p class="skills-text">HubSpot (CRM) · Optimizely · Squarespace · SharePoint · Newsletters · Social Media · Universal Design (WCAG) · Plain Language · Content Production · Event Planning · Project Management · Norwegian (Nynorsk and Bokmål) · English</p>
+    </section>
+
+    <footer>
+      <span>Morten Stene · Bergen · 2025</span>
+      <div class="footer-links">
+        <a href="https://www.linkedin.com/in/morten-stene/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/Mortey12" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:mstene95@gmail.com">Email</a>
+      </div>
+    </footer>
+
+  </div>
 
 </main>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('[data-lang]').forEach(el => {
+      el.classList.toggle('active', el.dataset.lang === lang);
+    });
+    document.querySelectorAll('.lang-bar button').forEach((btn, i) => {
+      btn.classList.toggle('active', ['nn','nb','en'][i] === lang);
+    });
+    document.documentElement.lang = lang === 'en' ? 'en' : 'no';
+  }
+</script>
+
 </body>
 </html>
