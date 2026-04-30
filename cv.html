@@ -312,18 +312,138 @@ function generateUrl() {
   if (!slug) { alert('Skriv inn bedriftsnamn fyrst!'); return; }
   if (selected.length === 0) { alert('Vel minst ein blokk!'); return; }
 
-  const blokker = selected.join(',');
   const display = slug.charAt(0).toUpperCase() + slug.slice(1);
+  const selectedIds = JSON.stringify(selected);
 
-  const fileContent = '<!DOCTYPE html>\n' +
-    '<html lang="no">\n<head>\n' +
-    '  <meta charset="UTF-8" />\n' +
-    '  <meta http-equiv="refresh" content="0; url=jobb.html?bedrift=' + slug + '&blokker=' + blokker + '" />\n' +
-    '  <title>Morten Stene \u2014 ' + display + '</title>\n' +
-    '  <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fafafa;color:#555;}</style>\n' +
-    '</head>\n<body>\n' +
-    '  <p>Lastar&hellip; <a href="jobb.html?bedrift=' + slug + '&blokker=' + blokker + '">Klikk her viss sida ikkje lastar.</a></p>\n' +
-    '</body>\n</html>';
+  const fileContent = `<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morten Stene \u2014 ${display}</title>
+  <link rel="stylesheet" href="cv-style.css" />
+  <script src="data.js"><\/script>
+</head>
+<body>
+
+<div class="lang-bar">
+  <button class="active" onclick="setLang('nn')">Nynorsk</button>
+  <button onclick="setLang('nb')">Bokm&aring;l</button>
+  <button onclick="setLang('en')">English</button>
+</div>
+
+<div class="company-banner">Tilpassa for: ${display}</div>
+
+<header>
+  <div class="header-inner">
+    <img src="https://media.licdn.com/dms/image/v2/D4D03AQGabDLXI_Mctg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1727349725331?e=1778716800&v=beta&t=mSFBEwCvkXjyJxisSnuos1flFkKvybCHHU2TtOwGNCs" alt="Portrettbilete av Morten Stene" />
+    <div>
+      <h1>Morten Stene</h1>
+      <div class="subtitle" id="header-subtitle">Kommunikasjon og digitale medium</div>
+      <div class="header-links">
+        <a href="mailto:mstene95@gmail.com">mstene95@gmail.com</a>
+        <span>&middot;</span>
+        <span>+47 924 95 858</span>
+        <span>&middot;</span>
+        <a href="https://www.linkedin.com/in/morten-stene/" target="_blank" rel="noopener">LinkedIn</a>
+        <span>&middot;</span>
+        <a href="https://github.com/Mortey12" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="setTab('cv')" id="tbtn-cv">&#128196; CV</button>
+  <button class="tab-btn" onclick="setTab('soknad')" id="tbtn-soknad">&#9997;&#65039; S&oslash;knad</button>
+</div>
+
+<div id="tab-cv">
+  <main id="cv-main"></main>
+</div>
+
+<div id="tab-soknad">
+  <div class="soknad-wrap">
+    <label class="soknad-label" for="soknadText">S&oslash;knadstekst</label>
+    <textarea class="soknad-textarea" id="soknadText" placeholder="Skriv eller lim inn s&oslash;knadsteksten din her..."></textarea>
+    <div class="soknad-hint">Teksten vert lagra lokalt i nettlesaren din.</div>
+  </div>
+</div>
+
+<script>
+const BLOKKER = ${selectedIds};
+const BEDRIFT = '${slug}';
+let currentLang = 'nn';
+
+function t(obj) {
+  if (!obj) return '';
+  if (typeof obj === 'string') return obj;
+  return obj[currentLang] || obj['nn'] || obj['nb'] || '';
+}
+
+function setTab(tab) {
+  document.getElementById('tab-cv').style.display = tab === 'cv' ? 'block' : 'none';
+  document.getElementById('tab-soknad').style.display = tab === 'soknad' ? 'block' : 'none';
+  document.getElementById('tbtn-cv').classList.toggle('active', tab === 'cv');
+  document.getElementById('tbtn-soknad').classList.toggle('active', tab === 'soknad');
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-bar button').forEach((btn, i) => {
+    btn.classList.toggle('active', ['nn','nb','en'][i] === lang);
+  });
+  document.getElementById('header-subtitle').textContent = t(MORTEN.title);
+  renderCV();
+}
+
+function renderCV() {
+  const main = document.getElementById('cv-main');
+  const selectedBlocks = MORTEN.blocks.filter(b => BLOKKER.includes(b.id));
+  const cats = [
+    { id: 'work', label: { nn: 'Arbeidserfaring', nb: 'Arbeidserfaring', en: 'Work Experience' } },
+    { id: 'voluntary', label: { nn: 'Frivillig og organisasjonserfaring', nb: 'Frivillig og organisasjonserfaring', en: 'Voluntary and Organisational Experience' } },
+    { id: 'education', label: { nn: 'Utdanning', nb: 'Utdanning', en: 'Education' } },
+    { id: 'courses', label: { nn: 'Kurs og sertifiseringar', nb: 'Kurs og sertifiseringer', en: 'Courses and Certifications' } },
+    { id: 'skills', label: { nn: 'Ferdigheiter', nb: 'Ferdigheter', en: 'Skills' } }
+  ];
+  let html = '';
+  cats.forEach(cat => {
+    const blocks = selectedBlocks.filter(b => b.category === cat.id);
+    if (!blocks.length) return;
+    html += '<section><div class="section-header">' + t(cat.label) + '</div>';
+    blocks.forEach(b => {
+      if (cat.id === 'skills') {
+        html += '<div class="skills-text">' + t(b.content) + '</div>';
+      } else {
+        const companyHtml = b.companyUrl
+          ? '<a href="' + b.companyUrl + '" target="_blank" style="color:#444;">' + t(b.company) + '</a>'
+          : (t(b.company) || '');
+        const diplomaHtml = b.diplomaUrl
+          ? '<a href="' + b.diplomaUrl + '" target="_blank" rel="noopener" class="diploma-link">&#128196; Sjå diplom / bekreftelse</a>'
+          : '';
+        html += '<div class="entry"><div class="entry-date">' + t(b.date) + '</div><div>' +
+          '<div class="entry-title">' + t(b.title) + '</div>' +
+          '<div class="entry-company">' + companyHtml + '</div>' +
+          '<div class="entry-desc">' + t(b.desc) + '</div>' +
+          diplomaHtml + '</div></div>';
+      }
+    });
+    html += '</section>';
+  });
+  main.innerHTML = html;
+}
+
+// Lagre søknadstekst
+const storageKey = 'soknad_${slug}';
+const ta = document.getElementById('soknadText');
+ta.value = localStorage.getItem(storageKey) || '';
+ta.addEventListener('input', () => localStorage.setItem(storageKey, ta.value));
+
+renderCV();
+<\/script>
+</body>
+</html>`;
 
   const out = document.getElementById('urlOutput');
   out.style.display = 'block';
