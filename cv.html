@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CV-byggar &mdash; Morten Stene</title>
+  <script src="data.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: #f5f5f5; color: #111; font-size: 15px; }
+
+    .topbar {
+      background: #111;
+      color: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .topbar h1 { font-size: 1rem; font-weight: 700; letter-spacing: 0.05em; }
+    .topbar a { color: #aaa; font-size: 0.8rem; text-decoration: none; }
+    .topbar a:hover { color: #fff; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: #fff;
+      border-right: 1px solid #e0e0e0;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+    .sidebar h2 { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 1rem; margin-top: 1.5rem; }
+    .sidebar h2:first-child { margin-top: 0; }
+
+    .block-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 6px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #333;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .block-item:hover { background: #f5f5f5; }
+    .block-item input[type=checkbox] { accent-color: #111; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+    .block-item label { cursor: pointer; line-height: 1.3; }
+
+    .company-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      margin-bottom: 0.5rem;
+    }
+    .company-input:focus { outline: 2px solid #111; outline-offset: 1px; }
+
+    .generate-btn {
+      width: 100%;
+      padding: 10px;
+      background: #111;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 0.15s;
+    }
+    .generate-btn:hover { background: #333; }
+
+    .url-output {
+      margin-top: 0.8rem;
+      padding: 8px 10px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      color: #444;
+      word-break: break-all;
+      display: none;
+    }
+    .url-output a { color: #111; font-weight: 700; }
+    .copy-btn {
+      margin-top: 6px;
+      padding: 5px 10px;
+      background: #111;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: block;
+      width: 100%;
+    }
+
+    .select-all-btn {
+      font-size: 0.72rem;
+      color: #888;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 0;
+      text-decoration: underline;
+    }
+    .select-all-btn:hover { color: #111; }
+
+    /* PREVIEW */
+    .preview {
+      padding: 2rem;
+      max-width: 740px;
+    }
+
+    .preview-header {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .preview-header img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #eee; }
+    .preview-header h1 { font-size: 1.8rem; font-weight: 800; }
+    .preview-header .subtitle { font-size: 0.95rem; color: #555; margin-bottom: 0.4rem; }
+    .preview-header .links { font-size: 0.82rem; color: #555; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .preview-header .links a { color: #111; }
+
+    .section-wrap { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; }
+    .section-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      background: #111; color: #fff; padding: 3px 8px; display: inline-block; margin-bottom: 1rem;
+    }
+    .entry { display: grid; grid-template-columns: 110px 1fr; gap: 0 1rem; margin-bottom: 1rem; }
+    .entry:last-child { margin-bottom: 0; }
+    .entry-date { font-size: 0.75rem; color: #777; padding-top: 2px; }
+    .entry-title { font-weight: 700; font-size: 0.85rem; }
+    .entry-company { font-size: 0.8rem; font-style: italic; color: #444; margin-top: 1px; }
+    .entry-desc { font-size: 0.8rem; color: #333; margin-top: 3px; line-height: 1.5; }
+    .skills-row { font-size: 0.82rem; color: #333; line-height: 2; }
+
+    .empty-state { color: #aaa; font-size: 0.85rem; text-align: center; padding: 3rem 1rem; }
+
+    @media (max-width: 700px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid #e0e0e0; }
+      .entry { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>&#128221; CV-byggar &mdash; Morten Stene</h1>
+  <a href="index.html">&larr; Tilbake til startsida</a>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <h2>Bedrift / stilling</h2>
+    <input type="text" class="company-input" id="companySlug" placeholder="td. westcon, omega, frei" />
+
+    <button class="generate-btn" onclick="generateUrl()">Generer lenke &#8594;</button>
+    <div class="url-output" id="urlOutput">
+      <div id="urlText"></div>
+      <button class="copy-btn" onclick="copyUrl()">Kopier lenke</button>
+    </div>
+
+    <h2>Arbeidserfaring <button class="select-all-btn" onclick="toggleAll('work')">vel alle</button></h2>
+    <div id="work-blocks"></div>
+
+    <h2>Frivillig <button class="select-all-btn" onclick="toggleAll('voluntary')">vel alle</button></h2>
+    <div id="voluntary-blocks"></div>
+
+    <h2>Utdanning <button class="select-all-btn" onclick="toggleAll('education')">vel alle</button></h2>
+    <div id="education-blocks"></div>
+
+    <h2>Kurs og sertifisering <button class="select-all-btn" onclick="toggleAll('courses')">vel alle</button></h2>
+    <div id="courses-blocks"></div>
+
+    <h2>Ferdigheiter <button class="select-all-btn" onclick="toggleAll('skills')">vel alle</button></h2>
+    <div id="skills-blocks"></div>
+
+    <h2>Referansar</h2>
+    <div class="block-item">
+      <input type="checkbox" id="cb_references" value="references" onchange="renderPreview()" />
+      <label for="cb_references">Vis referansar</label>
+    </div>
+  </aside>
+
+  <main class="preview" id="preview">
+    <div class="preview-header">
+      <img src="https://media.licdn.com/dms/image/v2/D4D03AQGabDLXI_Mctg/profile-displayphoto-shrink_100_100/profile-displayphoto-shrink_100_100/0/1727349725331?e=1778716800&v=beta&t=mSFBEwCvkXjyJxisSnuos1flFkKvybCHHU2TtOwGNCs" alt="Morten Stene" />
+      <div>
+        <h1>Morten Stene</h1>
+        <div class="subtitle">Kommunikasjon og digitale medium</div>
+        <div class="links">
+          <a href="mailto:mstene95@gmail.com">mstene95@gmail.com</a>
+          <span>&middot;</span>
+          <span>+47 924 95 858</span>
+          <span>&middot;</span>
+          <a href="https://www.linkedin.com/in/morten-stene/" target="_blank">LinkedIn</a>
+          <span>&middot;</span>
+          <a href="https://github.com/Mortey12" target="_blank">GitHub</a>
+        </div>
+      </div>
+    </div>
+    <div id="preview-sections">
+      <div class="empty-state">Vel blokker i menyen til venstre for &aring; byggje CV-en &#128521;</div>
+    </div>
+  </main>
+</div>
+
+<script>
+const lang = 'nn';
+
+function t(obj) {
+  if (typeof obj === 'string') return obj;
+  return obj[lang] || obj['nn'] || obj['nb'] || '';
+}
+
+// Render checkboxes
+['work','voluntary','education','courses','skills'].forEach(cat => {
+  const container = document.getElementById(cat + '-blocks');
+  MORTEN.blocks.filter(b => b.category === cat).forEach(block => {
+    const div = document.createElement('div');
+    div.className = 'block-item';
+    div.innerHTML = `<input type="checkbox" id="cb_${block.id}" value="${block.id}" onchange="renderPreview()" />
+      <label for="cb_${block.id}">${t(block.label)}</label>`;
+    container.appendChild(div);
+  });
+});
+
+function toggleAll(cat) {
+  const checkboxes = document.querySelectorAll(`#${cat}-blocks input[type=checkbox]`);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+  checkboxes.forEach(cb => { cb.checked = !allChecked; });
+  renderPreview();
+}
+
+function getSelected() {
+  return Array.from(document.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+}
+
+function renderPreview() {
+  const selected = getSelected();
+  const container = document.getElementById('preview-sections');
+  if (selected.length === 0) {
+    container.innerHTML = '<div class="empty-state">Vel blokker i menyen til venstre for &aring; byggje CV-en &#128521;</div>';
+    return;
+  }
+
+  const cats = [
+    { id: 'work', label: 'Arbeidserfaring' },
+    { id: 'voluntary', label: 'Frivillig og organisasjonserfaring' },
+    { id: 'education', label: 'Utdanning' },
+    { id: 'skills', label: 'Ferdigheiter' }
+  ];
+
+  let html = '';
+  cats.forEach(cat => {
+    const blocks = MORTEN.blocks.filter(b => b.category === cat.id && selected.includes(b.id));
+    if (blocks.length === 0) return;
+
+    html += `<div class="section-wrap"><div class="section-label">${cat.label}</div>`;
+    if (cat.id === 'skills') {
+      blocks.forEach(b => {
+        const skills = Array.isArray(b.skills) ? b.skills : (b.skills ? (b.skills[lang] || b.skills['nn'] || []) : []);
+        html += `<div class="skills-row">${skills.join(' &middot; ')}</div>`;
+      });
+    } else {
+      blocks.forEach(b => {
+        const companyHtml = b.companyUrl
+          ? `<a href="${b.companyUrl}" target="_blank" style="color:#444;">${t(b.company)}</a>`
+          : t(b.company);
+        const diplomaHtml = b.diplomaUrl
+          ? `<a href="${b.diplomaUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:4px;font-size:0.72rem;color:#555;border:1px solid #ddd;border-radius:4px;padding:2px 7px;text-decoration:none;">&#128196; Sjå diplom / bekreftelse</a>`
+          : '';
+        html += `<div class="entry">
+          <div class="entry-date">${t(b.date)}</div>
+          <div>
+            <div class="entry-title">${t(b.title)}</div>
+            <div class="entry-company">${companyHtml}</div>
+            <div class="entry-desc">${t(b.desc)}</div>
+            ${diplomaHtml}
+          </div>
+        </div>`;
+      });
+    }
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function generateUrl() {
+  const selected = getSelected();
+  const slug = document.getElementById('companySlug').value.trim().toLowerCase().replace(/\s+/g, '-');
+  if (!slug) { alert('Skriv inn bedriftsnamn fyrst!'); return; }
+  if (selected.length === 0) { alert('Vel minst ein blokk!'); return; }
+
+  const base = window.location.href.replace('cv.html', '');
+  const params = selected.join(',');
+  const url = `${base}jobb.html?bedrift=${slug}&blokker=${params}`;
+
+  const out = document.getElementById('urlOutput');
+  document.getElementById('urlText').innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+  out.style.display = 'block';
+  out._url = url;
+}
+
+function copyUrl() {
+  const url = document.getElementById('urlOutput')._url;
+  navigator.clipboard.writeText(url).then(() => {
+    document.querySelector('.copy-btn').textContent = 'Kopiert! ✓';
+    setTimeout(() => { document.querySelector('.copy-btn').textContent = 'Kopier lenke'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
