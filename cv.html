@@ -173,10 +173,16 @@
     <h2>Bedrift / stilling</h2>
     <input type="text" class="company-input" id="companySlug" placeholder="td. westcon, omega, frei" />
 
-    <button class="generate-btn" onclick="generateUrl()">Generer lenke &#8594;</button>
+    <h2>Ingress</h2>
+    <textarea class="company-input" id="ingressText" rows="4" placeholder="Kort personleg tekst til denne bedrifta..." style="resize:vertical;line-height:1.5;font-family:inherit;font-size:0.83rem;"></textarea>
+
+    <h2>Søknadstekst</h2>
+    <textarea class="company-input" id="soknadText" rows="8" placeholder="Søknadsbrev til denne stillinga..." style="resize:vertical;line-height:1.5;font-family:inherit;font-size:0.83rem;"></textarea>
+
+    <button class="generate-btn" onclick="generateUrl()">Generer fil &#8594;</button>
     <div class="url-output" id="urlOutput">
       <div id="urlText"></div>
-      <button class="copy-btn" onclick="copyUrl()">Kopier lenke</button>
+      <button class="copy-btn" onclick="copyUrl()" style="display:none;"></button>
     </div>
 
     <h2>Arbeidserfaring <button class="select-all-btn" onclick="toggleAll('work')">vel alle</button></h2>
@@ -309,11 +315,15 @@ function renderPreview() {
 function generateUrl() {
   const selected = getSelected();
   const slug = document.getElementById('companySlug').value.trim().toLowerCase().replace(/\s+/g, '-');
+  const ingress = document.getElementById('ingressText').value.trim();
+  const soknad = document.getElementById('soknadText').value.trim();
   if (!slug) { alert('Skriv inn bedriftsnamn fyrst!'); return; }
   if (selected.length === 0) { alert('Vel minst ein blokk!'); return; }
 
   const display = slug.charAt(0).toUpperCase() + slug.slice(1);
   const selectedIds = JSON.stringify(selected);
+  const ingressEscaped = ingress.replace(/`/g, '\\`').replace(/\$/g, '\\$');
+  const soknadEscaped = soknad.replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\n/g, '\\n');
 
   const fileContent = `<!DOCTYPE html>
 <html lang="no">
@@ -326,13 +336,13 @@ function generateUrl() {
 </head>
 <body>
 
+<div class="company-banner">Tilpassa for: ${display}</div>
+
 <div class="lang-bar">
   <button class="active" onclick="setLang('nn')">Nynorsk</button>
   <button onclick="setLang('nb')">Bokm&aring;l</button>
   <button onclick="setLang('en')">English</button>
 </div>
-
-<div class="company-banner">Tilpassa for: ${display}</div>
 
 <header>
   <div class="header-inner">
@@ -353,26 +363,25 @@ function generateUrl() {
   </div>
 </header>
 
+${ingress ? `<div class="ingress-wrap"><p class="ingress-text">${ingressEscaped}<\/p><\/div>` : ''}
+
 <div class="tab-bar">
   <button class="tab-btn active" onclick="setTab('cv')" id="tbtn-cv">&#128196; CV</button>
-  <button class="tab-btn" onclick="setTab('soknad')" id="tbtn-soknad">&#9997;&#65039; S&oslash;knad</button>
+  ${soknad ? `<button class="tab-btn" onclick="setTab('soknad')" id="tbtn-soknad">&#9997;&#65039; S&oslash;knad<\/button>` : ''}
 </div>
 
 <div id="tab-cv">
   <main id="cv-main"></main>
 </div>
 
-<div id="tab-soknad">
+${soknad ? `<div id="tab-soknad" style="display:none;">
   <div class="soknad-wrap">
-    <label class="soknad-label" for="soknadText">S&oslash;knadstekst</label>
-    <textarea class="soknad-textarea" id="soknadText" placeholder="Skriv eller lim inn s&oslash;knadsteksten din her..."></textarea>
-    <div class="soknad-hint">Teksten vert lagra lokalt i nettlesaren din.</div>
-  </div>
-</div>
+    <div class="soknad-text">${soknadEscaped.replace(/\\n/g, '<br/>')}<\/div>
+  <\/div>
+<\/div>` : ''}
 
 <script>
 const BLOKKER = ${selectedIds};
-const BEDRIFT = '${slug}';
 let currentLang = 'nn';
 
 function t(obj) {
@@ -383,9 +392,11 @@ function t(obj) {
 
 function setTab(tab) {
   document.getElementById('tab-cv').style.display = tab === 'cv' ? 'block' : 'none';
-  document.getElementById('tab-soknad').style.display = tab === 'soknad' ? 'block' : 'none';
+  const soknadEl = document.getElementById('tab-soknad');
+  if (soknadEl) soknadEl.style.display = tab === 'soknad' ? 'block' : 'none';
   document.getElementById('tbtn-cv').classList.toggle('active', tab === 'cv');
-  document.getElementById('tbtn-soknad').classList.toggle('active', tab === 'soknad');
+  const soknadBtn = document.getElementById('tbtn-soknad');
+  if (soknadBtn) soknadBtn.classList.toggle('active', tab === 'soknad');
 }
 
 function setLang(lang) {
@@ -420,7 +431,7 @@ function renderCV() {
           ? '<a href="' + b.companyUrl + '" target="_blank" style="color:#444;">' + t(b.company) + '</a>'
           : (t(b.company) || '');
         const diplomaHtml = b.diplomaUrl
-          ? '<a href="' + b.diplomaUrl + '" target="_blank" rel="noopener" class="diploma-link">&#128196; Sjå diplom / bekreftelse</a>'
+          ? '<a href="' + b.diplomaUrl + '" target="_blank" rel="noopener" class="diploma-link">&#128196; Sjå diplom</a>'
           : '';
         html += '<div class="entry"><div class="entry-date">' + t(b.date) + '</div><div>' +
           '<div class="entry-title">' + t(b.title) + '</div>' +
@@ -434,12 +445,6 @@ function renderCV() {
   main.innerHTML = html;
 }
 
-// Lagre søknadstekst
-const storageKey = 'soknad_${slug}';
-const ta = document.getElementById('soknadText');
-ta.value = localStorage.getItem(storageKey) || '';
-ta.addEventListener('input', () => localStorage.setItem(storageKey, ta.value));
-
 renderCV();
 <\/script>
 </body>
@@ -452,7 +457,9 @@ renderCV();
 
   document.getElementById('urlText').innerHTML =
     'Last opp <strong>' + slug + '.html</strong> til GitHub &rarr; klar p&aring; <strong>mstene.no/' + slug + '</strong>';
-  document.querySelector('.copy-btn').textContent = '\u2B07 Last ned ' + slug + '.html';
+  const btn = document.querySelector('.copy-btn');
+  btn.style.display = 'inline-block';
+  btn.textContent = '\u2B07 Last ned ' + slug + '.html';
 }
 
 function copyUrl() {

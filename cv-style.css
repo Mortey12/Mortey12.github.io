@@ -175,3 +175,31 @@ footer {
   .entry-date { margin-bottom: 2px; }
   .tab-btn { padding: 0.8rem 1.2rem; font-size: 0.82rem; }
 }
+
+/* INGRESS */
+.ingress-wrap {
+  max-width: 740px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 0.5rem;
+}
+.ingress-text {
+  font-size: 0.97rem;
+  line-height: 1.75;
+  color: #333;
+  font-style: italic;
+  border-left: 3px solid #111;
+  padding-left: 1rem;
+}
+
+/* SØKNAD som ferdig tekst */
+.soknad-text {
+  font-size: 0.92rem;
+  font-family: 'Georgia', serif;
+  line-height: 1.85;
+  color: #222;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 2rem;
+  white-space: pre-wrap;
+}
