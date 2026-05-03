@@ -102,6 +102,16 @@ body { font-family: 'Poppins', sans-serif; background: #fff; font-size: 16px;
   padding: 8px 0;
   z-index: 200;
 }
+/* Usynleg bridge over dropdown som fyller gapet */
+.header-nav-folder-content::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
+}
 .header-nav-item:hover .header-nav-folder-content {
   display: block;
 }
