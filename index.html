@@ -214,6 +214,20 @@
       overflow-y: scroll;
       overflow-x: hidden;
     }
+    .modal-img-scroll iframe {
+      width: 1280px;
+      height: 2000px;
+      border: none;
+      display: block;
+      transform: scale(0.35);
+      transform-origin: top left;
+      pointer-events: none;
+    }
+    .modal-img-scroll-inner {
+      width: 100%;
+      height: 700px;
+      overflow: hidden;
+    }
     .modal-img-scroll::-webkit-scrollbar { width: 5px; }
     .modal-img-scroll::-webkit-scrollbar-track { background: #f0f0f0; }
     .modal-img-scroll::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px; }
@@ -546,13 +560,13 @@
       <div class="modal-img-wrap">
         <div class="modal-img-label">F&oslash;r</div>
         <div class="modal-img-scroll">
-          <iframe src="https://web.archive.org/web/20240910094944/https://www.adhdautismetourettes.no/" style="width:100%; height:100%; border:none; min-height:1200px;" loading="lazy" title="Gammal ADHD-nettside"></iframe>
+          <img src="https://mortey12.github.io/images/Old_ADHDAutismetourettes_front_page.png" alt="Gammal ADHD-nettside" style="width:100%; height:auto; display:block;" />
         </div>
       </div>
       <div class="modal-img-wrap">
         <div class="modal-img-label">Etter</div>
         <div class="modal-img-scroll">
-          <iframe src="https://mortey12.github.io/adhd_static_preview.html" style="width:100%; height:100%; border:none; min-height:1200px;" loading="lazy" title="Ny ADHD-nettside"></iframe>
+          <img src="https://mortey12.github.io/images/New_ADHDAutismetourettes_front_page.svg" alt="Ny ADHD-nettside" style="width:100%; height:auto; display:block;" />
         </div>
       </div>
     </div>
