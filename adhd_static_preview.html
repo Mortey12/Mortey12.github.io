@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Poppins', sans-serif; background: #fff; font-size: 16px;
+}
+
+/* ===== HEADER ===== */
+.site-header {
+  background: #D6EAF8;
+  padding: 20px 40px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+}
+.site-header h2 {
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+.site-header nav {
+  display: flex;
+  align-items: center;
+}
+#site-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #172936;
+  text-decoration: none;
+  letter-spacing: -0.3px;
+  line-height: 1;
+}
+.header-nav-list {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.header-nav-item {
+  position: relative;
+}
+.header-nav-item > a,
+.header-nav-item > .header-nav-folder-title {
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  line-height: inherit;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #172936;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+}
+.header-nav-item:first-child > a,
+.header-nav-item:first-child > .header-nav-folder-title {
+  color: #ff4e2f;
+  font-weight: 600;
+}
+.header-nav-folder-title::after {
+  content: " ▾";
+  font-size: 0.75em;
+  opacity: 0.6;
+}
+.header-nav-item > a::before,
+.header-nav-item > .header-nav-folder-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 3px;
+  background-color: currentColor;
+  transition: width 0.2s ease;
+}
+.header-nav-item > a:hover::before,
+.header-nav-item > .header-nav-folder-title:hover::before {
+  width: 100%;
+}
+.header-nav-folder-content {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: rgba(0,0,0,0.85);
+  border-radius: 6px;
+  min-width: 200px;
+  padding: 8px 0;
+  z-index: 200;
+}
+.header-nav-item:hover .header-nav-folder-content {
+  display: block;
+}
+.header-nav-folder-item a {
+  display: block;
+  padding: 8px 16px;
+  color: white;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  text-decoration: none;
+}
+.header-nav-folder-item a:hover {
+  background: rgba(255,255,255,0.1);
+}
+.header-nav-folder-item a::before {
+  content: none !important;
+}
+
+/* ===== HERO ===== */
+.site-hero {
+  padding: 32px 20px 40px;
+  text-align: center;
+  background: #D6EAF8;
+}
+.site-hero h1 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #172936;
+  line-height: 1.15;
+  margin-bottom: 20px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.site-hero p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 300;
+  color: #172936;
+  line-height: 2.0;
+  max-width: 620px;
+  margin: 0 auto;
+}
+.site-hero p a {
+  color: #144778;
+}
+
+/* ===== MAIN ===== */
+.preview-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.preview-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #007D77;
+  margin-bottom: 12px;
+}
+.section-desc {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  font-weight: 300;
+  color: #172936;
+  line-height: 1.8;
+  max-width: 720px;
+  margin: 0 auto 16px;
+  text-align: center;
+}
+.section-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #172936;
+  text-align: center;
+  margin: 0 0 14px;
+}
+
+:root {
+  --cc-coral: #FF4E2F;
+  --cc-navy: #144778;
+  --cc-dark: #172936;
+  --cc-cream: #FFEDC0;
+  --cc-mint: #C5E8D4;
+}
+
+/* CASE-KORT */
+.cc-grid { display: grid; grid-template-columns: repeat(var(--cc-cols, 3), minmax(0, 1fr)); gap: 14px; }
+.cc-grid .cc-card { border-radius: 16px; overflow: hidden; background: white; border: 0.5px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-decoration: none; color: inherit; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.cc-grid .cc-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
+.cc-grid .cc-card__top { padding: 18px 14px 10px; display: flex; flex-direction: column; align-items: center; }
+.cc-grid .cc-card__portrait { width: clamp(80px, 55%, 140px); aspect-ratio: 1/1; border-radius: 50%; overflow: hidden; margin-bottom: 10px; }
+.cc-grid .cc-card__portrait img { width: 100%; height: 100%; object-fit: cover; }
+.cc-grid .cc-card__name { font-size: 1rem; font-weight: 500; color: var(--cc-dark); margin: 0 0 8px; text-align: center; }
+.cc-grid .cc-card__audio { display: flex; align-items: center; gap: 7px; background: var(--cc-cream); border-radius: 20px; padding: 5px 10px; font-size: 10px; font-weight: 500; color: var(--cc-dark); width: 100%; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; }
+.cc-grid .cc-card__play-icon { width: 18px; height: 18px; border-radius: 50%; background: var(--cc-coral); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.cc-grid .cc-card__play-icon::after { content: ''; border-left: 6px solid white; border-top: 4px solid transparent; border-bottom: 4px solid transparent; margin-left: 2px; }
+.cc-grid .cc-card__divider { border: none; border-top: 0.5px solid rgba(0,0,0,0.08); }
+.cc-grid .cc-card__body { padding: 10px 14px; flex: 1;
+}
+.cc-grid .cc-card__body p { font-size: 0.78rem; font-weight: 300; color: var(--cc-dark); line-height: 1.8em; }
+.cc-grid .cc-card__footer { padding: 8px 14px 14px; }
+.cc-grid .cc-card__cta { display: block; background: var(--cc-navy); color: white; text-align: center; padding: 9px 10px; border-radius: 30px; font-size: 10px; font-weight: 600; line-height: 1.4; font-family: 'Poppins', sans-serif; }
+
+/* NAV-KORT */
+.nc-grid { display: grid; grid-template-columns: repeat(var(--nc-cols, 2), minmax(0, 1fr)); gap: 14px; }
+.nc-grid .nc-card { border-radius: 16px; overflow: hidden; background: white; border: 0.5px solid rgba(0,0,0,0.1); display: grid; grid-template-rows: auto auto auto; text-decoration: none; color: inherit; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.nc-grid .nc-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
+.nc-grid .nc-card__header { padding: 14px 14px 0; }
+.nc-grid .nc-card__title { font-size: 1rem; font-weight: 500; color: var(--cc-dark); margin: 0; text-align: center; line-height: 1.4em; }
+.nc-grid .nc-card__image-wrap { overflow: hidden; padding: 6px 0 0; width: 75%; margin: 0 auto; }
+.nc-grid .nc-card__image { width: 100%; aspect-ratio: 4/3; object-fit: contain; display: block; border-radius: 8px; }
+.nc-grid .nc-card__footer { padding: 10px 0 14px; width: 75%; margin: 0 auto; display: flex; align-items: stretch; }
+.nc-grid .nc-card__btn { flex: 1; display: flex; align-items: center; justify-content: center; background: var(--cc-navy); color: white; text-align: center; padding: 9px 12px; border-radius: 30px; font-family: 'Poppins', sans-serif; font-size: 0.78rem; font-weight: 300; text-decoration: none; line-height: 1.4; }
+
+/* PARTNER */
+.pc-grid { display: grid; grid-template-columns: repeat(var(--pc-cols, 4), minmax(0, 1fr)); gap: 10px; }
+.pc-grid .pc-card { border-radius: 14px; background: white; border: 2px solid #D8E9F8; display: flex; flex-direction: column; align-items: center; padding: 12px 8px 8px; text-decoration: none; color: inherit; transition: transform 0.2s ease; }
+.pc-grid .pc-card:hover { transform: translateY(-3px); }
+.pc-grid .pc-card__logo { width: 100%; display: flex; align-items: center; justify-content: center; flex: 1; }
+.pc-grid .pc-card__logo--landscape { aspect-ratio: 16/7; }
+.pc-grid .pc-card__logo--square { aspect-ratio: 1/1; width: 70%; }
+.pc-grid .pc-card__logo img { width: 100%; height: 100%; object-fit: contain; }
+.pc-grid .pc-card__btn { font-size: 0.7rem; font-weight: 400; color: var(--cc-navy); text-decoration: underline; margin-top: 6px; text-align: center; }
+
+/* FOOTER */
+.site-footer {
+  background: #172936;
+  color: white;
+  padding: 40px 40px 32px;
+  font-family: 'Poppins', sans-serif;
+}
+.site-footer__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+/* Kolonne 1: grøn tittellenkje, grå brødtekst, teal lenkjer */
+.site-footer__site-title {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #7BBDA0;
+  text-decoration: underline;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+.site-footer__copyright {
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: rgba(255,255,255,0.65);
+  margin: 0 0 10px;
+  display: block;
+  text-decoration: none;
+}
+.site-footer__link {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: rgba(255,255,255,0.85);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  line-height: 1.9;
+}
+/* Kolonne 2 og 3: kvit, fet overskrift */
+.site-footer__col-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 14px;
+  display: block;
+  text-decoration: none;
+}
+.site-footer__cookie {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.75);
+  text-decoration: none;
+  font-family: 'Poppins', sans-serif;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div style="background:#D6EAF8; padding-top: 24px;"><header class="site-header">
+  <h2><a id="site-title" href="https://www.adhdautismetourettes.no" target="_blank">adhdautismetourettes.no</a></h2>
+  <nav>
+    <ul class="header-nav-list">
+      <li class="header-nav-item">
+        <button class="header-nav-folder-title">Ressurser</button>
+        <div class="header-nav-folder-content">
+          <div class="header-nav-folder-item"><a href="https://www.adhdautismetourettes.no/utredning-av-adhd" target="_blank">Utredning av ADHD</a></div>
+          <div class="header-nav-folder-item"><a href="https://www.adhdautismetourettes.no/hva-er-nevroutviklingstilstander" target="_blank">Hva er Nevroutviklingstilstander?</a></div>
+          <div class="header-nav-folder-item"><a href="https://www.adhdautismetourettes.no/ressurser-page" target="_blank">Andre ressurser</a></div>
+        </div>
+      </li>
+      <li class="header-nav-item">
+        <button class="header-nav-folder-title">Brukerinformasjon</button>
+        <div class="header-nav-folder-content">
+          <div class="header-nav-folder-item"><a href="https://www.adhdautismetourettes.no/informasjon-til-barn-og-unge" target="_blank">Informasjon til barn og unge</a></div>
+          <div class="header-nav-folder-item"><a href="https://www.adhdautismetourettes.no/informasjon-til-foreldreforesatte" target="_blank">Informasjon til foreldre/foresatte</a></div>
+        </div>
+      </li>
+      <li class="header-nav-item"><a href="https://www.adhdautismetourettes.no/nasjonale-pasientforlop" target="_blank">Nasjonale pasientforløp</a></li>
+      <li class="header-nav-item"><a href="https://www.adhdautismetourettes.no/retningslinjer" target="_blank">Retningslinjer</a></li>
+      <li class="header-nav-item"><a href="https://www.adhdautismetourettes.no/om-ressurssiden" target="_blank">Om ressurssiden</a></li>
+    </ul>
+  </nav>
+</header></div>
+
+<!-- HERO -->
+<div class="site-hero">
+  <h1>Ressursside om ADHD, autisme og Tourettes syndrom</h1>
+  <p>Dette er en ressursside med fokus på ADHD, autisme og Tourettes syndrom utviklet av Regionale enheter for autisme, ADHD og Tourettes syndrom sammen med ADHD Norge. <a href="https://www.adhdautismetourettes.no/om-ressurssiden" target="_blank">Mer om bakgrunnen for siden finner du her</a>.</p>
+</div>
+
+<!-- MAIN -->
+<div class="preview-main">
+
+  <div>
+    
+    <div class="cc-grid" style="--cc-cols:3;" id="case-grid"></div>
+  </div>
+
+  <div>
+    
+    <div class="nc-grid" style="--nc-cols:2;" id="nav-grid"></div>
+  </div>
+
+  <div>
+    <p class="section-title">Regionale enheter</p>
+    <p class="section-desc">De regionale enhetene i Norge arbeider kontinuerlig med å øke kompetansen om de overnevnte diagnosene og da hovedsakelig opp mot spesialisthelsetjenesten. Dersom du som fagperson har spørsmål knyttet til utredning eller behandling av noen av diagnosene, kan du gjerne ta kontakt med din regionale enhet.</p>
+    <div class="pc-grid" style="--pc-cols:4;" id="regional-grid"></div>
+  </div>
+
+  <div>
+    <p class="section-title">Brukerorganisasjoner</p>
+    <div class="pc-grid" style="--pc-cols:3;" id="brukerorg-grid"></div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="site-footer__grid">
+    <div>
+      <a class="site-footer__site-title" href="https://www.adhdautismetourettes.no" target="_blank">ADHD og andre nevroutviklingsforstyrrelser</a>
+      <span class="site-footer__copyright">© 2023</span>
+      <a class="site-footer__link" href="#">Tilgjengelegheitserklæring for adhdautismetourettes.no</a>
+      <a class="site-footer__link" href="#">Informasjonskapslar på nettstedet</a>
+    </div>
+    <div>
+      <span class="site-footer__col-title">Ansvarlige for nettstedet:</span>
+      <a target="_blank" class="site-footer__link" href="https://ntnu.no">RFM Helse Midt</a>
+      <a target="_blank" class="site-footer__link" href="https://www.helse-bergen.no">RFM Helse Vest</a>
+      <a target="_blank" class="site-footer__link" href="https://oslo-universitetssykehus.no">RKT Helse Sør-Øst</a>
+      <a target="_blank" class="site-footer__link" href="https://helse-nord.no">R-FAAT Helse Nord</a>
+    </div>
+    <div>
+      <span class="site-footer__col-title">Snarveier:</span>
+      <a class="site-footer__link" href="https://www.adhdautismetourettes.no/nasjonale-pasientforlop" target="_blank">Nasjonalt pasientforløp</a>
+      <a class="site-footer__link" href="https://www.adhdautismetourettes.no/retningslinjer" target="_blank">Retningslinjer</a>
+      <a class="site-footer__link" href="https://www.adhdautismetourettes.no/ressurser-page" target="_blank">Ressurser</a>
+      <a class="site-footer__link" href="https://www.adhdautismetourettes.no/om-ressurssiden" target="_blank">Om ressurssiden</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const CASE_DATA = {
+  even: { name:"Even", age:"5 år", portraitBg:"#dffedc", portrait:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/4e905c55-9fc8-4031-a5ae-2f3512a73e69/Even.png?format=300w", audio:"https://audio.squarespace-cdn.com/content/v2/namespaces/website/libraries/63dbd1753b991d1f35cce6a8/assets/1681727162093-7GWAAX25JLD99EJUZOSS/Teaser%20Even.mp3", description:"Even blir henvist til BUP fordi barnehageansatte og foreldre mistenker ADHD. Han er aktiv og uoppmerksom, og strever i lek og samspill.", url:"https://www.adhdautismetourettes.no/even" },
+  mira: { name:"Mira", age:"12 år", portraitBg:"#fee5f9", portrait:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/5f8bd57d-7660-4372-864f-9b1f6cb7bb45/Mira.png?format=300w", audio:"https://audio.squarespace-cdn.com/content/v2/namespaces/website/libraries/63dbd1753b991d1f35cce6a8/assets/1681727014578-WHIJ9BL9I01W6X8Q2KBP/Teaser%20Mira.mp3", description:"Mira er en stille jente henvist fra fastlege til BUP med mistanke om ADHD. Hun har dysleksi og har hatt økende vansker faglig og sosialt.", url:"https://www.adhdautismetourettes.no/mira" },
+  stine: { name:"Stine", age:"15 år", portraitBg:"#fbe4d6", portrait:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/1a1c6dbd-b809-444e-8c05-e68c1a41ff25/Stine.png?format=300w", audio:"https://audio.squarespace-cdn.com/content/v2/namespaces/website/libraries/63dbd1753b991d1f35cce6a8/assets/1681807282784-NE2TZVO0HVJL0P4RWH4I/Teaser%20Stine.mp3", description:"Stine henvises til BUP med spørsmål om angst. Utredningen viser at hun har et høyt evnenivå, og at hun bruker mye krefter på å skjule vanskene sine.", url:"https://www.adhdautismetourettes.no/stine" }
+};
+
+const NAV_CARDS = [
+  { color:"#C5E8D4", title:"Utredning av ADHD", image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/2eb32be7-a5a9-4532-ae5d-ba1e59fcb3ec/Untitled+design.png?format=300w", btn:"Les mer om utredning av barn, unge og voksne og finn flere case her", url:"/utredning-av-adhd" },
+  { color:"#C5E8D4", title:"Hva er nevroutviklingstilstander?", image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/3332f4b4-e8b1-4839-a45d-94be457ca11a/Untitled+design+%282%29.png?format=300w", btn:"Se filmer om de ulike nevroutviklingstilstandene", url:"/hva-er-nevroutviklingstilstander" },
+  { color:"#FFEDC0", title:"Informasjon til barn", image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/679ebe0a-6478-4e29-9e8d-5b8e2382966c/ADHD+info+barn.png?format=300w", btn:"Informasjon til barn og unge om ADHD", url:"/informasjon-til-barn-og-unge" },
+  { color:"#FFEDC0", title:"Informasjon til foreldre", image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/ce6d5f11-dd9b-4714-b8a6-4dd32635238b/ADHD+info+foresatte.png?format=300w", btn:"Informasjon til foreldre om ADHD", url:"/informasjon-til-foreldreforesatte" }
+];
+
+const REGIONAL = [
+  { image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/4476dd29-6c31-4c6f-9302-d09ec64c9cb1/Untitled+design+%287%29.png", alt:"RFM Helse Vest", btn:"RFM Helse Vest", url:"https://www.helse-bergen.no", type:"landscape" },
+  { image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/d192be56-1984-47b2-9d5c-ad527e8cca77/Untitled+design+%286%29.png", alt:"RKT Helse Sør-Øst", btn:"RKT Helse Sør-Øst", url:"https://oslo-universitetssykehus.no", type:"landscape" },
+  { image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/8e6e1cb4-21f8-41d9-b4c8-5847ef4121fa/Untitled+design.png", alt:"RFM Helse Midt", btn:"RFM Helse Midt", url:"https://ntnu.no", type:"landscape" },
+  { image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/aee9cb5d-4952-4399-a304-7f195d18e6d5/Untitled+design+%289%29.png", alt:"R-FAAT Helse Nord", btn:"R-FAAT Helse Nord", url:"https://helse-nord.no", type:"landscape" }
+];
+
+const BRUKERORG = [
+  { image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/53f9cfa5-0746-4fe5-84ec-ddf360235f89/ADHD-logo.png", alt:"ADHD Norge", btn:"ADHD Norge", url:"https://www.adhdnorge.no/", type:"square" },
+  { image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/71542dfa-2e92-49ba-af5f-eb3ec40f28a7/Untitled+design+%283%29.png", alt:"Autismeforeningen i Norge", btn:"Autismeforeningen i Norge", url:"https://autismeforeningen.no", type:"square" },
+  { image:"https://images.squarespace-cdn.com/content/v1/63dbd1753b991d1f35cce6a8/7b824885-0065-4ac1-bcab-d2e9481dbb00/Untitled+design+%284%29.png", alt:"Norsk Tourette Forening", btn:"Norsk Tourette Forening", url:"https://www.touretteforeningen.no", type:"square" }
+];
+
+let currentAudio = null, currentBtn = null;
+function ccToggleAudio(btn) {
+  const src = btn.dataset.src;
+  if (currentAudio && currentBtn === btn) {
+    currentAudio.paused ? currentAudio.play() : currentAudio.pause();
+    return;
+  }
+  if (currentAudio) currentAudio.pause();
+  currentAudio = new Audio(src);
+  currentBtn = btn;
+  currentAudio.play();
+  currentAudio.addEventListener('ended', () => { currentAudio = null; currentBtn = null; });
+}
+
+const caseGrid = document.getElementById('case-grid');
+['even','mira','stine'].forEach(key => {
+  const c = CASE_DATA[key];
+  const audioBtn = c.audio
+    ? '<button class="cc-card__audio" onclick="event.preventDefault();event.stopPropagation();ccToggleAudio(this)" data-src="' + c.audio + '"><div class="cc-card__play-icon"></div>Lytt til sammendrag om ' + c.name + '</button>'
+    : '';
+  caseGrid.innerHTML += '<a class="cc-card" href="' + c.url + '" target="_blank">'
+    + '<div class="cc-card__top">'
+    + '<div class="cc-card__portrait" style="background:' + c.portraitBg + ';"><img src="' + c.portrait + '" alt="' + c.name + '"></div>'
+    + '<h3 class="cc-card__name">' + c.name + ' – ' + c.age + '</h3>'
+    + audioBtn
+    + '</div>'
+    + '<hr class="cc-card__divider">'
+    + '<div class="cc-card__body"><p>' + c.description + '</p></div>'
+    + '<div class="cc-card__footer"><span class="cc-card__cta">Les mer og se videodrøfting om ' + c.name + '</span></div>'
+    + '</a>';
+});
+
+const navGrid = document.getElementById('nav-grid');
+NAV_CARDS.forEach(card => {
+  navGrid.innerHTML += `
+    <a class="nc-card" style="background:${card.color};" href="${card.url}" target="_blank">
+      <div class="nc-card__header"><h2 class="nc-card__title">${card.title}</h2></div>
+      <div class="nc-card__image-wrap"><img class="nc-card__image" src="${card.image}" alt="${card.title}"></div>
+      <div class="nc-card__footer"><span class="nc-card__btn">${card.btn}</span></div>
+    </a>`;
+});
+
+const regGrid = document.getElementById('regional-grid');
+REGIONAL.forEach(card => {
+  regGrid.innerHTML += `
+    <a class="pc-card" href="${card.url}" target="_blank">
+      <div class="pc-card__logo pc-card__logo--landscape"><img src="${card.image}" alt="${card.alt}" loading="lazy"></div>
+      <span class="pc-card__btn">${card.btn}</span>
+    </a>`;
+});
+
+const brukerGrid = document.getElementById('brukerorg-grid');
+BRUKERORG.forEach(card => {
+  brukerGrid.innerHTML += `
+    <a class="pc-card" href="${card.url}" target="_blank">
+      <div class="pc-card__logo pc-card__logo--square"><img src="${card.image}" alt="${card.alt}" loading="lazy"></div>
+      <span class="pc-card__btn">${card.btn}</span>
+    </a>`;
+});
+</script>
+</body>
+</html>
