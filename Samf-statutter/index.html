@@ -277,9 +277,10 @@ function sanitize(raw) {
     const isNew = !!p.ny && /^ny-[a-z0-9]+$/.test(id);
     if (!base[id] && !isNew) continue;
     const c = {};
-    for (const f of ["tekst", "tittel", "grunngjeving", "type", "kap", "etter"]) {
+    for (const f of ["tekst", "tittel", "grunngjeving", "kap", "etter"]) {
       if (typeof p[f] === "string") c[f] = p[f];
     }
+    if (TYPES.includes(p.type)) c.type = p.type;
     if (isNew) {
       if (!isBaseChapter(c.kap) && !out.chapters[c.kap]) continue;
       c.ny = true;
@@ -417,11 +418,14 @@ function diffSide(ops, side) {
   }).join("");
 }
 
-const TYPES = ["Endring", "Tillegg", "Stryking", "Ny paragraf", "Oppheving", "Redaksjonell endring"];
+// Typane som blir brukte i skjemaet. «Ny» blir sett av seg sjølv på nye paragrafar
+// og kapittel, og kan difor ikkje veljast for ein paragraf som finst frå før.
+// Stryking dekkjer både delar av ein paragraf og heile paragrafen.
+const TYPES = ["Endring", "Tillegg", "Stryking"];
 function autoType(id) {
   const p = state.proposals[id] || {};
-  if (p.ny) return "Ny paragraf";
-  if (p.oppheva) return "Oppheving";
+  if (p.ny) return "Ny";
+  if (p.oppheva) return "Stryking";
   const o = base[id], n = proposed(id);
   const ops = [...diff(o.tekst, n.tekst), ...diff(o.tittel, n.tittel)].filter(x => x.s.trim());
   const ins = ops.some(x => x.t === "ins"), del = ops.some(x => x.t === "del");
@@ -540,7 +544,7 @@ function proposalCell(id) {
       <p class="ttl">${filled(n.tittel) ? `<ins>${esc(n.tittel)}</ins>` : `<span class="faint">Utan tittel</span>`}</p>
       <p class="txt">${filled(n.tekst) ? `<ins>${esc(n.tekst)}</ins>` : `<span class="faint">Inga tekst enno</span>`}</p>`;
   } else if (p.oppheva) {
-    body = `<span class="tag gone">Oppheving</span><p class="faint">Paragrafen blir foreslått oppheva.</p>`;
+    body = `<span class="tag gone">Stryking</span><p class="faint">Heile paragrafen blir stroken.</p>`;
   } else if (n.tekst !== o.tekst || n.tittel !== o.tittel) {
     body = `<span class="tag edit">Endra</span>
       <p class="ttl">${diffSide(diff(o.tittel, n.tittel), "ins")}</p>
@@ -574,7 +578,7 @@ function editorCell(id) {
     h += `<p class="note" style="margin:0 0 10px">Blir § ${esc(numberOf(id))}.${note ? ` Dette blir lagt til i begrunnelsen: <i>${esc(note)}</i>` : ""}</p>`;
   }
   h += `<label for="ed-title">Tittel</label><input id="ed-title" data-field="title" value="${esc(n.tittel)}">
-    <label for="ed-type">Type endring</label><select id="ed-type" data-field="type">${options}</select>
+    ${p.ny ? "" : `<label for="ed-type">Type endring</label><select id="ed-type" data-field="type">${options}</select>`}
     <label for="ed-text">Tekst</label><textarea id="ed-text" data-field="text">${esc(n.tekst)}</textarea>
     <label for="ed-why">Begrunnelse</label><textarea id="ed-why" class="why-in" data-field="why">${esc(p.grunngjeving)}</textarea>
     <div class="acts">
@@ -583,8 +587,8 @@ function editorCell(id) {
       <span class="grow"></span>`;
   h += p.ny
     ? `<button class="btn quiet danger" data-act="delete" data-id="${id}">Slett</button>`
-    : `<button class="btn quiet" data-act="reset" data-id="${id}">Tilbakestill</button>
-       <button class="btn quiet danger" data-act="repeal" data-id="${id}">Foreslå oppheving</button>`;
+    : `<button class="btn quiet" data-act="reset" data-id="${id}">Tilbakestill</button>`
+      + (p.oppheva ? "" : `<button class="btn quiet danger" data-act="strike-all" data-id="${id}">Stryk heile paragrafen</button>`);
   h += `</div>`;
   if (o) h += `<div class="preview"><p>Endringa</p><p class="txt" id="ed-preview"></p></div>`;
   return h + `</div></div>`;
@@ -667,10 +671,16 @@ function tidy(id) {
 function onEditorInput(field, value) {
   const id = editing;
   const p = state.proposals[id] || (state.proposals[id] = { kap: kapOf(id) });
+  const type = $("#ed-type");
+
   if (field === "title") p.tittel = value;
-  if (field === "type") p.type = value;
   if (field === "why") p.grunngjeving = value;
-  if (field === "text") { p.tekst = value; if (filled(value)) delete p.oppheva; }
+  if (field === "type") { if (value) p.type = value; else delete p.type; }
+  if (field === "text") {
+    p.tekst = value;
+    if (!p.ny) { if (filled(value)) delete p.oppheva; else p.oppheva = true; }   // tom tekst = heile paragrafen stroken
+  }
+  if (type) type.options[0].textContent = `Automatisk (${autoType(id)})`;
   const row = document.getElementById(id);
   row.classList.toggle("changed", isChanged(id));
   row.querySelector(".cell.orig").innerHTML = origContent(id);
@@ -744,7 +754,7 @@ function formFor(id) {
     return {
       chapter: `${title} (nytt kapittel)`,
       paragraph: "Hele kapitlet",
-      type: "Nytt kapittel",
+      type: "Ny",
       current: [run("Nytt kapittel, har ingen gjeldende tekst.", { i: true })],
       proposed: [run(title, { b: true })].concat(kids.length
         ? kids.map(k => run(`§ ${numberOf(k)} ${state.proposals[k].tittel || "(uten tittel)"}`)).concat(run("Paragrafene står som egne forslag.", { i: true }))
@@ -757,7 +767,7 @@ function formFor(id) {
   const c = chapterList().find(x => x.key === kapOf(id));
   const f = {
     chapter: c ? c.title + (c.isNew ? " (nytt kapittel)" : "") : "",
-    type: p.type || autoType(id),
+    type: !p.ny && TYPES.includes(p.type) ? p.type : autoType(id),
     why: why(p.grunngjeving).concat(note(shiftNote(id))),
   };
 
@@ -770,7 +780,7 @@ function formFor(id) {
   if (p.oppheva) {
     return { ...f, paragraph: nr,
       current: [run(o.tittel, { b: true })].concat(lines(o.tekst)),
-      proposed: [run("Paragrafen oppheves.")] };
+      proposed: [run("Paragrafen strykes i sin helhet.")] };
   }
   const n = proposed(id), titleChanged = n.tittel !== o.tittel;
   const points = titleChanged ? null : changedPoints(o.tekst, n.tekst);
@@ -780,7 +790,7 @@ function formFor(id) {
     paragraph: nr + (points ? " " + points.letters.map(l => l + ")").join(", ") : ""),
     current: (titleOps ? diffParas(titleOps, "del", true) : []).concat(diffParas(ops, "del")),
     proposed: (titleOps ? diffParas(titleOps, "ins", true) : [])
-      .concat(n.tekst.trim() ? diffParas(ops, "ins") : [run("(Teksten strykes.)", { i: true })]) };
+      .concat(diffParas(ops, "ins")) };
 }
 
 function fillParagraph(xml, marker, paras) {
@@ -829,7 +839,7 @@ function labelFor(id) {
   const p = state.proposals[id] || {};
   if (p.ny) return `§ ${numberOf(id)} (ny)`;
   if (!base[id].nr) return "kap XII innledning";
-  return formFor(id).paragraph + (p.oppheva ? " (oppheves)" : "");
+  return formFor(id).paragraph + (p.oppheva ? " (strykes)" : "");
 }
 
 // Namnet skal vise alt som er med, men filnamn har ei øvre grense
@@ -928,7 +938,7 @@ function overviewHtml() {
     } else if (p.oppheva) {
       head = `§ ${esc(o.nr)} ${esc(o.tittel)}`;
       left = `<del>${esc(o.tekst)}</del>`;
-      right = "<em>Paragrafen oppheves.</em>";
+      right = "<em>Paragrafen strykes i sin helhet.</em>";
     } else {
       const ops = diff(o.tekst, n.tekst), titleOps = diff(o.tittel, n.tittel);
       head = `${o.nr ? "§ " + esc(o.nr) + " " : ""}${esc(o.tittel)}`;
@@ -985,16 +995,16 @@ const actions = {
   download: ({ id }) => { if (editing) closeEditor(); if (isChanged(id)) downloadForms([id]); else toast("Paragrafen er ikkje endra."); },
   "download-chapter": ({ kap }) => downloadForms([kap]),
 
+  "strike-all": ({ id }) => {
+    state.proposals[id] = { ...state.proposals[id], kap: kapOf(id), oppheva: true, tekst: "" };
+    editing = null;
+    renderRow(id); updateSummary(); save(true);
+  },
   reset: ({ id }) => {
     const label = base[id].nr ? `§ ${base[id].nr}` : "innleiinga";
     if (!confirm(`Vil du tilbakestilla ${label}? Forslaget og begrunnelsen forsvinn.`)) return;
     delete state.proposals[id];
     if (editing === id) editing = null;
-    renderRow(id); updateSummary(); save(true);
-  },
-  repeal: ({ id }) => {
-    state.proposals[id] = { ...state.proposals[id], kap: kapOf(id), oppheva: true, tekst: "" };
-    editing = null;
     renderRow(id); updateSummary(); save(true);
   },
   delete: ({ id }) => {
