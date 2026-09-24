@@ -115,8 +115,21 @@ ins{background:var(--ins-bg);color:var(--ins);text-decoration:none;border-radius
 .ed-diff{margin-top:12px;padding:10px 12px;border-radius:5px;background:var(--orig)}
 .ed-diff .lbl{font-size:.78rem;color:var(--muted);margin-bottom:4px}
 
+.ins{display:grid;grid-template-columns:64px 1fr 1fr;gap:0 20px;height:0;position:relative;z-index:2}
+.ins button{grid-column:3;justify-self:center;transform:translateY(-50%);border:1px dashed var(--accent);background:var(--sheet);color:var(--accent);border-radius:99px;padding:2px 12px;font-size:.8rem;cursor:pointer;opacity:0;transition:opacity .12s}
+.ins:hover button,.ins button:focus-visible,.row:hover + .ins button{opacity:1}
+@media (hover:none){.ins button{opacity:.75}}
+.chap-new{margin:40px 0 6px 84px;scroll-margin-top:130px;padding:14px 16px;border:1px solid var(--accent);border-radius:8px;background:var(--sheet)}
+.chap.chap-new{font-family:var(--sans);font-weight:400;font-size:1rem}
+.chap-new textarea{font-family:var(--sans)}
+.chap-new .row1{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chap-new .chap-in{flex:1;min-width:220px;font-family:var(--serif);font-size:1.3rem;font-weight:700;border:1px solid var(--rule);border-radius:5px;background:var(--bg);padding:6px 10px;color:var(--ink)}
+.chap-new label{display:block;font-size:.8rem;color:var(--muted);margin:10px 0 4px}
+.chap-new textarea{width:100%;border:1px solid var(--rule);border-radius:5px;background:var(--bg);padding:8px 10px;font-size:.9rem;min-height:50px;resize:vertical;color:var(--ink)}
+.whylink{margin-top:10px;border:0;background:none;padding:0;color:var(--accent);font-size:.85rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .addnew{display:grid;grid-template-columns:64px 1fr 1fr;gap:0 20px;padding:10px 0 4px}
 .addnew button{grid-column:3;justify-self:start}
+.addnew .btns{grid-column:3;display:flex;flex-wrap:wrap;gap:4px}
 
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--ink);color:var(--sheet);padding:10px 16px;border-radius:6px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.show{opacity:1}
@@ -131,7 +144,10 @@ ins{background:var(--ins-bg);color:var(--ins);text-decoration:none;border-radius
   main{padding:12px 16px 60px}
   .colhead{display:none}
   .row,.addnew{grid-template-columns:1fr;gap:8px}
-  .addnew button{grid-column:1}
+  .addnew button,.addnew .btns{grid-column:1}
+  .ins{grid-template-columns:1fr}
+  .ins button{grid-column:1}
+  .chap-new{margin-left:0}
   .num{text-align:left;padding-top:0;font-size:1.15rem}
   .chap{padding-left:0}
   .nothing,.intro{padding-left:0;margin-left:0}
@@ -200,6 +216,7 @@ const byId = {}; paras.forEach(function(p){ byId[p.id]=p; });
 let props = {};            // id -> {tekst,tittel,grunngjeving,oppheva,ny,kap,nr,oppretta,oppdatert}
 let editing = null;        // id currently open
 let stiller = "";
+let nyeKap = {};           // id -> {tittel,grunngjeving,etter,oppretta}
 const TYPES=["","Endring","Tillegg","Stryking","Ny paragraf","Oppheving","Redaksjonell endring"];
 const LS_KEY = "statuttendringar-h26";
 
@@ -252,6 +269,29 @@ function newIdsFor(kap){
     .sort(function(a,b){return (props[a].oppretta||0)-(props[b].oppretta||0);});
 }
 
+function byCreated(src){ return function(a,b){ return (src[a].oppretta||0)-(src[b].oppretta||0); }; }
+const ROMAN=["","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX"];
+function allChapters(){
+  const out=[], seen={};
+  function pushNew(after){
+    Object.keys(nyeKap).filter(function(k){return nyeKap[k].etter===after && !seen[k];}).sort(byCreated(nyeKap)).forEach(function(k){
+      seen[k]=1; out.push({key:k,title:nyeKap[k].tittel||"Nytt kapittel",ny:true}); pushNew(k);
+    });
+  }
+  chapters.forEach(function(c){ out.push(c); pushNew(c.key); });
+  Object.keys(nyeKap).filter(function(k){return !seen[k];}).sort(byCreated(nyeKap)).forEach(function(k){ seen[k]=1; out.push({key:k,title:nyeKap[k].tittel||"Nytt kapittel",ny:true}); pushNew(k); });
+  return out;
+}
+function chapterOf(key){ return allChapters().filter(function(c){return c.key===key;})[0]||null; }
+function rowIds(kap){
+  const ids=[], news=newIdsFor(kap), placed={};
+  function after(id){ news.filter(function(k){return props[k].etter===id && !placed[k];}).forEach(function(k){ placed[k]=1; ids.push(k); after(k); }); }
+  paras.filter(function(p){return p.kap===kap;}).forEach(function(p){ ids.push(p.id); after(p.id); });
+  news.filter(function(k){return !placed[k];}).forEach(function(k){ placed[k]=1; ids.push(k); after(k); });
+  return ids;
+}
+function newId(prefix){ return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
 /* ---------- render ---------- */
 const docEl=document.getElementById("doc");
 function rowHTML(id){
@@ -277,7 +317,8 @@ function rowHTML(id){
     left='<p class="ttl">'+esc(oTi)+'</p><p class="txt">'+esc(oT)+'</p>';
     right='<div class="same"><p class="ttl">'+esc(oTi)+'</p><p class="txt">'+esc(oT)+'</p></div>';
   }
-  if(p&&p.grunngjeving&&p.grunngjeving.trim()) right+='<div class="why"><b>Grunngjeving:</b> '+esc(p.grunngjeving)+'</div>';
+  if(p&&p.grunngjeving&&p.grunngjeving.trim()) right+='<div class="why"><b>Begrunnelse:</b> '+esc(p.grunngjeving)+'</div>';
+  else if(changed) right+='<button class="whylink" data-act="why">+ Legg til begrunnelse</button>';
   right+='<div class="hint">'+(changed?"Klikk for å redigera forslaget":"Klikk for å skriva eit forslag")+'</div>';
   const num = isNew ? (p.nr?("§ "+esc(p.nr)):"Ny") : (o.nr?("§ "+o.nr):"");
   return '<div class="num">'+num+'</div><div class="cell orig">'+left+'</div><div class="cell prop" tabindex="0" role="button" aria-label="Rediger '+esc(num||"innleiande tekst")+'">'+right+'</div>';
@@ -294,7 +335,7 @@ function editorHTML(id){
   h+='<label for="e-ti">Tittel</label><input id="e-ti" value="'+esc(ti)+'">';
   h+='<label for="e-type">Type endring</label><select id="e-type">'+TYPES.map(function(x){ return '<option value="'+esc(x)+'"'+((p.type||"")===x?" selected":"")+'>'+(x?esc(x):"Automatisk ("+esc(autoType(id))+")")+'</option>'; }).join("")+'</select>';
   h+='<label for="e-tx">Tekst'+(p.oppheva?" (paragrafen er markert som oppheva, skriv for å angra)":"")+'</label><textarea id="e-tx" spellcheck="true">'+esc(t)+'</textarea>';
-  h+='<label for="e-why" style="margin-top:10px">Grunngjeving (valfritt, kjem med i endringslista)</label><textarea id="e-why" class="why-in">'+esc(p.grunngjeving||"")+'</textarea>';
+  h+='<label for="e-why" style="margin-top:10px">Begrunnelse (kjem med i skjemaet)</label><textarea id="e-why" class="why-in">'+esc(p.grunngjeving||"")+'</textarea>';
   h+='<div class="acts"><button class="btn primary" data-act="done">Ferdig</button><button class="btn" data-act="docx1">Last ned skjema (.docx)</button><span class="grow"></span>';
   if(p.ny) h+='<button class="btn quiet danger" data-act="delnew">Slett den nye paragrafen</button>';
   else {
@@ -309,24 +350,26 @@ function editorHTML(id){
 
 function build(){
   let html="", toc="";
-  chapters.forEach(function(c){
+  allChapters().forEach(function(c,ci){
     const cid="kap-"+c.key;
-    html+='<h2 class="chap" id="'+cid+'">'+esc(c.title)+'</h2>';
+    if(c.ny){
+      const k=nyeKap[c.key];
+      html+='<div class="chap chap-new" id="'+cid+'" data-kap="'+c.key+'"><span class="tag new">Nytt kapittel</span><div class="row1"><input class="chap-in" data-kap="'+c.key+'" aria-label="Tittel på det nye kapitlet" placeholder="Til dømes XIII. Frivillige" value="'+esc(k.tittel||"")+'"><button class="btn quiet danger" data-act="delkap" data-kap="'+c.key+'">Slett kapitlet</button></div>'
+        +'<label for="w-'+c.key+'">Begrunnelse for kapitlet (kjem med i skjemaet)</label><textarea class="chap-why" id="w-'+c.key+'" data-kap="'+c.key+'">'+esc(k.grunngjeving||"")+'</textarea></div>';
+    } else html+='<h2 class="chap" id="'+cid+'">'+esc(c.title)+'</h2>';
     toc+='<a href="#'+cid+'" data-kap="'+c.key+'"><span>'+esc(c.title)+'</span><span class="n"></span></a>';
-    paras.filter(function(p){return p.kap===c.key;}).forEach(function(p){
-      html+='<section class="row" id="'+p.id+'" data-id="'+p.id+'"></section>';
-      newIdsFor(c.key).filter(function(k){return props[k].etter===p.id;}).forEach(function(k){
-        html+='<section class="row" id="'+k+'" data-id="'+k+'"></section>';
-      });
+    const ids=rowIds(c.key);
+    ids.forEach(function(id,i){
+      html+='<section class="row" id="'+id+'" data-id="'+id+'"></section>';
+      if(i<ids.length-1) html+='<div class="ins"><button data-act="add" data-kap="'+c.key+'" data-etter="'+id+'">+ Ny paragraf her</button></div>';
     });
-    newIdsFor(c.key).filter(function(k){return !props[k].etter || !byId[props[k].etter];}).forEach(function(k){
-      html+='<section class="row" id="'+k+'" data-id="'+k+'"></section>';
-    });
-    html+='<div class="addnew" data-kap="'+c.key+'"><button class="btn quiet" data-act="add" data-kap="'+c.key+'">+ Legg til ny paragraf i kapittel '+c.key+'</button></div>';
+    const short=c.ny?"det nye kapitlet":"kapittel "+c.key;
+    html+='<div class="addnew" data-kap="'+c.key+'"><div class="btns"><button class="btn quiet" data-act="add" data-kap="'+c.key+'">+ Ny paragraf sist i '+esc(short)+'</button><button class="btn quiet" data-act="addkap" data-kap="'+c.key+'">+ Nytt kapittel etter '+esc(short)+'</button></div></div>';
   });
   docEl.innerHTML=html;
   document.getElementById("toc").innerHTML=toc;
   docEl.querySelectorAll(".row").forEach(function(r){ paintRow(r.dataset.id); });
+  docEl.querySelectorAll(".chap-why").forEach(autosize);
   updateMeta();
 }
 function paintRow(id){
@@ -344,14 +387,16 @@ function updateMeta(){
     if(isChanged(id)){ n++; const k=(byId[id]||props[id]).kap; perKap[k]=(perKap[k]||0)+1; }
     r.classList.toggle("hidden", only && !ch);
   });
-  docEl.querySelectorAll(".addnew").forEach(function(a){ a.style.display = only?"none":""; });
+  docEl.querySelectorAll(".addnew,.ins").forEach(function(a){ a.style.display = only?"none":""; });
   docEl.querySelectorAll(".chap").forEach(function(h){
-    const k=h.id.slice(4); h.style.display = only && !perKap[k] ? "none":"";
+    const k=h.id.slice(4); h.style.display = only && !perKap[k] && !nyeKap[k] ? "none":"";
   });
   document.querySelectorAll(".toc a").forEach(function(a){
     const v=perKap[a.dataset.kap]; a.querySelector(".n").textContent = v? String(v):"";
   });
-  document.getElementById("count").innerHTML = n ? '<b>'+n+'</b> endra av '+total+' paragrafar' : 'Ingen endringar enno';
+  const nk=Object.keys(nyeKap).length;
+  document.getElementById("count").innerHTML = (n ? '<b>'+n+'</b> av '+total+' endra' : 'Ingen endringar enno')+(nk?', <b>'+nk+'</b> '+(nk===1?'nytt kapittel':'nye kapittel'):'');
+  n+=Object.keys(nyeKap).length;
   document.getElementById("nothing").hidden = !(only && n===0);
 }
 
@@ -426,12 +471,12 @@ function flush(id){
 }
 function writeDoc(id,p){ saveLocal(); }
 function saveLocal(){
-  try{ localStorage.setItem(LS_KEY, JSON.stringify({stiller:stiller, forslag:props})); setSave("Lagra"); }
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({stiller:stiller, forslag:props, kapittel:nyeKap})); setSave("Lagra"); }
   catch(e){ setSave("Klarte ikkje å lagra"); toast("Nettlesaren tillet ikkje lagring. Lagra utkastet som fil for å ta vare på det."); }
 }
 function loadLocal(){
   try{ const v=localStorage.getItem(LS_KEY); if(!v) return {}; const o=JSON.parse(v);
-    if(o && o.forslag){ stiller=o.stiller||""; return o.forslag; } return o||{}; }catch(e){ return {}; }
+    if(o && o.forslag){ stiller=o.stiller||""; nyeKap=o.kapittel||{}; return o.forslag; } return o||{}; }catch(e){ return {}; }
 }
 
 let saveT=null;
@@ -446,15 +491,39 @@ docEl.addEventListener("click",function(e){
     if(a==="done"){ closeEditor(); return; }
     if(a==="docx1"){ const id1=editing; closeEditor(); if(!isChanged(id1)){ toast("Paragrafen har inga endring enno."); return; } exportDocx([id1]); return; }
     if(a==="add"){
-      const kap=act.dataset.kap;
-      const id="ny-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-      props[id]={ny:true,kap:kap,etter:null,nr:"",tittel:"",tekst:"",grunngjeving:"",oppretta:Date.now()};
+      const kap=act.dataset.kap, etter=act.dataset.etter||null;
+      const id=newId("ny-");
+      props[id]={ny:true,kap:kap,etter:etter,nr:"",tittel:"",tekst:"",grunngjeving:"",oppretta:Date.now()};
       if(editing) closeEditor();
-      build(); openEditor(id);
+      saveLocal(); build(); openEditor(id);
       document.getElementById(id).scrollIntoView({block:"center"});
       document.getElementById("e-ti").focus();
-      flush(id);
       return;
+    }
+    if(a==="addkap"){
+      if(editing) closeEditor();
+      const after=act.dataset.kap, list=allChapters();
+      const pos=list.findIndex(function(c){return c.key===after;})+2;
+      const id=newId("nk-");
+      nyeKap[id]={tittel:(ROMAN[pos]||String(pos))+". ",grunngjeving:"",etter:after,oppretta:Date.now()};
+      saveLocal(); build();
+      const inp=document.querySelector('.chap-in[data-kap="'+id+'"]');
+      document.getElementById("kap-"+id).scrollIntoView({block:"center"});
+      inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length);
+      toast("Kapitlet er lagt til. Gi det ein tittel og legg til paragrafar.");
+      return;
+    }
+    if(a==="delkap"){
+      const k=act.dataset.kap, kids=newIdsFor(k);
+      if(!confirm(kids.length?"Sletta kapitlet og dei "+kids.length+" paragrafane i det?":"Sletta det nye kapitlet?")) return;
+      if(editing) closeEditor();
+      kids.forEach(function(x){ delete props[x]; });
+      Object.keys(nyeKap).forEach(function(x){ if(nyeKap[x].etter===k) nyeKap[x].etter=nyeKap[k].etter; });
+      delete nyeKap[k]; saveLocal(); build(); return;
+    }
+    if(a==="why"){
+      const rid=act.closest(".row").dataset.id; openEditor(rid);
+      const w=document.getElementById("e-why"); w.scrollIntoView({block:"center"}); w.focus(); return;
     }
     const id=editing;
     if(a==="reset"){ delete props[id]; editing=null; flush(id); paintRow(id); updateMeta(); toast("Paragrafen er tilbakestilt."); return; }
@@ -471,16 +540,22 @@ docEl.addEventListener("keydown",function(e){
   if(e.key==="Escape" && editing){ closeEditor(); }
 });
 document.getElementById("onlyChanged").addEventListener("change",updateMeta);
+docEl.addEventListener("input",function(e){
+  const el=e.target, k=el.dataset&&el.dataset.kap; if(!k||!nyeKap[k]) return;
+  if(el.classList.contains("chap-in")){
+    nyeKap[k].tittel=el.value;
+    const a=document.querySelector('.toc a[data-kap="'+k+'"] span'); if(a) a.textContent=el.value||"Nytt kapittel";
+  } else if(el.classList.contains("chap-why")){ nyeKap[k].grunngjeving=el.value; autosize(el); }
+  else return;
+  setSave("Lagrar …"); clearTimeout(timer); timer=setTimeout(saveLocal,600);
+});
 
 /* ---------- export ---------- */
 function changedList(){
   const list=[];
-  chapters.forEach(function(c){
-    paras.filter(function(p){return p.kap===c.key;}).forEach(function(p){
-      if(isChanged(p.id)) list.push({id:p.id,kap:c});
-      newIdsFor(c.key).filter(function(k){return props[k].etter===p.id;}).forEach(function(k){ list.push({id:k,kap:c}); });
-    });
-    newIdsFor(c.key).filter(function(k){return !props[k].etter||!byId[props[k].etter];}).forEach(function(k){ list.push({id:k,kap:c}); });
+  allChapters().forEach(function(c){
+    if(c.ny) list.push({id:c.key,kap:c,chapter:true});
+    rowIds(c.key).forEach(function(id){ if(isChanged(id)) list.push({id:id,kap:c}); });
   });
   return list;
 }
@@ -491,7 +566,8 @@ function exportHTML(){
   let lastKap=null;
   L.forEach(function(x){
     const o=byId[x.id], p=props[x.id]||{};
-    if(x.kap.key!==lastKap){ b+='<h2>'+esc(x.kap.title)+'</h2>'; lastKap=x.kap.key; }
+    if(x.kap.key!==lastKap){ b+='<h2>'+esc(x.kap.title)+(x.kap.ny?' (nytt kapittel)':'')+'</h2>'; lastKap=x.kap.key; }
+    if(x.chapter){ const k=nyeKap[x.id]; b+='<p><em>Forslag om nytt kapittel.</em></p>'+(k.grunngjeving&&k.grunngjeving.trim()?'<p class="why"><strong>Begrunnelse:</strong> '+esc(k.grunngjeving)+'</p>':''); return; }
     let head, l, r;
     if(p.ny){ head=(p.nr?"§ "+esc(p.nr)+" ":"Ny paragraf: ")+esc(p.tittel||""); l="<em>Ny paragraf</em>"; r="<strong>"+esc(p.tittel||"")+"</strong>\n<ins>"+esc(p.tekst||"")+"</ins>"; }
     else if(p.oppheva){ head=label(o)+" "+esc(o.tittel); l="<del>"+esc(o.tekst)+"</del>"; r="<em>Paragrafen blir oppheva.</em>"; }
@@ -503,7 +579,7 @@ function exportHTML(){
       r="<strong>"+side(dt,"ins")+"</strong>\n"+side(d,"ins");
     }
     b+='<h3>'+head+'</h3><table><tr><th>Gjeldande tekst</th><th>Forslag til ny tekst</th></tr><tr><td>'+l+'</td><td>'+r+'</td></tr></table>';
-    if(p.grunngjeving&&p.grunngjeving.trim()) b+='<p class="why"><strong>Grunngjeving:</strong> '+esc(p.grunngjeving)+'</p>';
+    if(p.grunngjeving&&p.grunngjeving.trim()) b+='<p class="why"><strong>Begrunnelse:</strong> '+esc(p.grunngjeving)+'</p>';
   });
   return b+'</body></html>';
 }
@@ -512,14 +588,15 @@ function exportMD(){
   let lastKap=null;
   L.forEach(function(x){
     const o=byId[x.id], p=props[x.id]||{};
-    if(x.kap.key!==lastKap){ s+="\n## "+x.kap.title+"\n"; lastKap=x.kap.key; }
+    if(x.kap.key!==lastKap){ s+="\n## "+x.kap.title+(x.kap.ny?" (nytt kapittel)":"")+"\n"; lastKap=x.kap.key; }
+    if(x.chapter){ const k=nyeKap[x.id]; s+="\n*Forslag om nytt kapittel.*\n"+(k.grunngjeving&&k.grunngjeving.trim()?"\n**Begrunnelse:** "+k.grunngjeving+"\n":""); return; }
     if(p.ny){ s+="\n### Ny paragraf"+(p.nr?" § "+p.nr:"")+": "+(p.tittel||"")+"\n\n**Forslag:**\n\n"+(p.tekst||"")+"\n"; }
     else {
       s+="\n### "+label(o)+" "+o.tittel+"\n\n**Gjeldande:**\n\n"+o.tekst+"\n\n";
       if(p.oppheva) s+="**Forslag:** Paragrafen blir oppheva.\n";
       else s+="**Forslag:**\n\n"+(p.tittel!=null&&p.tittel!==o.tittel?"*Ny tittel: "+p.tittel+"*\n\n":"")+(p.tekst!=null?p.tekst:o.tekst)+"\n";
     }
-    if(p.grunngjeving&&p.grunngjeving.trim()) s+="\n**Grunngjeving:** "+p.grunngjeving+"\n";
+    if(p.grunngjeving&&p.grunngjeving.trim()) s+="\n**Begrunnelse:** "+p.grunngjeving+"\n";
   });
   return s;
 }
@@ -571,9 +648,17 @@ function litraScope(oldT,newT){
   return {letters:ch, oldT:ch.map(function(k){return A.m[k];}).join("\n"), newT:ch.map(function(k){return B.m[k];}).join("\n")};
 }
 function formFor(id){
+  if(nyeKap[id]){
+    const k=nyeKap[id], kids=rowIds(id).filter(isChanged);
+    return {kapittel:(k.tittel||"Nytt kapittel")+" (nytt kapittel)", paragraf:"Hele kapitlet", type:"Nytt kapittel", stiller:stiller.trim(),
+      lyder:[wrun("Nytt kapittel, har ingen gjeldende tekst.",{i:true})],
+      endres:[wrun(k.tittel||"Nytt kapittel",{b:true})].concat(kids.length?kids.map(function(x){ const p=props[x]; return wrun((p.nr?"§ "+p.nr+" ":"")+(p.tittel||"(uten tittel)")); }).concat([wrun("Paragrafene står som egne forslag.",{i:true})]):[wrun("(Ingen paragrafer ennå.)",{i:true})]),
+      begrunnelse:plainParas(k.grunngjeving)};
+  }
   const o=byId[id], p=props[id]||{};
   const kapKey=o?o.kap:p.kap;
-  const kap=(chapters.filter(function(c){return c.key===kapKey;})[0]||{}).title||"";
+  const ch=chapterOf(kapKey);
+  const kap=ch?(ch.title+(ch.ny?" (nytt kapittel)":"")):"";
   const f={kapittel:kap, type:p.type||autoType(id), stiller:stiller.trim(),
     begrunnelse:plainParas(p.grunngjeving)};
   if(p.ny){
@@ -639,7 +724,8 @@ async function exportDocx(ids){
   try{ blob=await buildDocx(ids); }
   catch(e){ toast("Klarte ikkje å laga Word-fila. Sjekk nettilkoplinga og prøv igjen."); return; }
   let name;
-  if(ids.length===1){ const o=byId[ids[0]], p=props[ids[0]]||{}; name="Statuttendringsforslag "+(p.ny?(p.nr?"§ "+p.nr:"ny paragraf"):(o.nr?"§ "+o.nr:"kap XII"))+".docx"; }
+  if(ids.length===1 && nyeKap[ids[0]]){ name="Statuttendringsforslag nytt kapittel.docx"; }
+  else if(ids.length===1){ const o=byId[ids[0]], p=props[ids[0]]||{}; name="Statuttendringsforslag "+(p.ny?(p.nr?"§ "+p.nr:"ny paragraf"):(o.nr?"§ "+o.nr:"kap XII"))+".docx"; }
   else name="Statuttendringsforslag ("+ids.length+" forslag).docx";
   await saveFile(safeName(name),blob,"application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 }
@@ -665,7 +751,7 @@ async function saveFile(name,data,mime){
 /* ---------- draft file ---------- */
 function draftJSON(){
   return JSON.stringify({format:"statuttendringar-utkast",versjon:1,grunnlag:"Statuttar H26, oppdatert 20. juli 2026",
-    stiller:stiller, lagra:new Date().toISOString(), forslag:props},null,2);
+    stiller:stiller, lagra:new Date().toISOString(), forslag:props, kapittel:nyeKap},null,2);
 }
 const fileIn=document.getElementById("fileIn");
 fileIn.addEventListener("change",function(){
@@ -675,8 +761,12 @@ fileIn.addEventListener("change",function(){
     let o=null;
     try{ o=JSON.parse(r.result); }catch(e){}
     if(!o || o.format!=="statuttendringar-utkast" || typeof o.forslag!=="object"){ toast("Fila er ikkje eit utkast frå dette dokumentet."); fileIn.value=""; return; }
-    if(Object.keys(props).length && !confirm("Utkastet erstattar forslaga du har no. Vil du halda fram?")){ fileIn.value=""; return; }
-    const clean={};
+    if((Object.keys(props).length||Object.keys(nyeKap).length) && !confirm("Utkastet erstattar forslaga du har no. Vil du halda fram?")){ fileIn.value=""; return; }
+    const clean={}, kapClean={};
+    if(o.kapittel && typeof o.kapittel==="object") Object.keys(o.kapittel).forEach(function(k){
+      const v=o.kapittel[k]; if(!/^nk-[a-z0-9]+$/.test(k) || !v || typeof v!=="object") return;
+      kapClean[k]={tittel:typeof v.tittel==="string"?v.tittel:"", grunngjeving:typeof v.grunngjeving==="string"?v.grunngjeving:"", etter:typeof v.etter==="string"?v.etter:null, oppretta:typeof v.oppretta==="number"?v.oppretta:0};
+    });
     Object.keys(o.forslag).forEach(function(k){
       const v=o.forslag[k];
       if(!v||typeof v!=="object") return;
@@ -685,13 +775,13 @@ fileIn.addEventListener("change",function(){
       ["tekst","tittel","grunngjeving","nr","type","kap","etter"].forEach(function(f){ if(typeof v[f]==="string") c[f]=v[f]; });
       if(v.ny) c.ny=true; if(v.oppheva) c.oppheva=true;
       if(typeof v.oppretta==="number") c.oppretta=v.oppretta;
-      if(c.ny && !chapters.some(function(ch){return ch.key===c.kap;})) return;
+      if(c.ny && !chapters.some(function(ch){return ch.key===c.kap;}) && !kapClean[c.kap]) return;
       clean[k]=c;
     });
-    props=clean; stiller=typeof o.stiller==="string"?o.stiller:stiller;
+    props=clean; nyeKap=kapClean; stiller=typeof o.stiller==="string"?o.stiller:stiller;
     document.getElementById("stiller").value=stiller;
     editing=null; saveLocal(); build();
-    toast("Utkastet er opna: "+Object.keys(clean).length+" forslag.");
+    toast("Utkastet er opna: "+Object.keys(clean).length+" forslag"+(Object.keys(kapClean).length?" og "+Object.keys(kapClean).length+" nye kapittel":"")+".");
     fileIn.value="";
   };
   r.readAsText(f);
