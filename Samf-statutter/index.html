@@ -119,6 +119,9 @@ ins{background:var(--ins-bg);color:var(--ins);text-decoration:none;border-radius
 .ed textarea.why-in{font-family:var(--sans);font-size:.9rem;line-height:1.5;min-height:60px}
 .ed .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center}
 .ed .acts .grow{flex:1}
+.num small.moved{display:block;font-family:var(--sans);font-weight:500;font-size:.72rem;color:var(--accent);margin-top:4px;white-space:nowrap}
+.why.auto{font-size:.85rem}
+.autonr{font-size:.82rem;color:var(--muted);margin:0 0 10px;padding:6px 10px;background:var(--accent-soft);border-radius:5px}
 .ed-diff{margin-top:12px;padding:10px 12px;border-radius:5px;background:var(--orig)}
 .ed-diff .lbl{font-size:.78rem;color:var(--muted);margin-bottom:4px}
 
@@ -301,6 +304,50 @@ function rowIds(kap){
   news.filter(function(k){return !placed[k];}).forEach(function(k){ placed[k]=1; ids.push(k); after(k); });
   return ids;
 }
+// Numbering by position: a new paragraph takes the number of its place,
+// and the paragraphs after it move one step. Original chapters keep their numbers.
+function chapterPos(kap){ return allChapters().findIndex(function(c){return c.key===kap;})+1; }
+function chapterNum(kap){
+  const orig=paras.filter(function(p){return p.kap===kap && p.nr;})[0];
+  return orig ? orig.nr.split(".")[0] : String(chapterPos(kap));
+}
+function numbering(kap){
+  const cn=chapterNum(kap), m={}; let i=0;
+  rowIds(kap).forEach(function(id){ if(byId[id] && !byId[id].nr) return; i++; m[id]=cn+"."+i; });
+  return m;
+}
+function autoNr(id){
+  if(byId[id] && !props[id]) return byId[id].nr;
+  const kap=byId[id]?byId[id].kap:props[id].kap;
+  return numbering(kap)[id]||"";
+}
+// Note added to the begrunnelse (in Bokmål, like the form) about numbers that move
+function shiftNote(id){
+  const p=props[id]; if(!p||!p.ny) return "";
+  const ids=rowIds(p.kap), i=ids.indexOf(id), m=numbering(p.kap);
+  const before=ids.slice(0,i).filter(function(x){return byId[x]&&byId[x].nr;}).pop();
+  const after=ids.slice(i+1).filter(function(x){return byId[x]&&byId[x].nr;});
+  if(!byId[before||after[0]] && !after.length) return "";
+  if(!after.length) return "";
+  let s="Forslaget innfører ny § "+m[id]+(before?", plassert etter nåværende § "+byId[before].nr:", først i kapitlet")+". ";
+  const f=after[0], l=after[after.length-1];
+  if(after.length===1) s+="Nåværende § "+byId[f].nr+" blir § "+m[f]+".";
+  else s+="Nåværende § "+byId[f].nr+" til § "+byId[l].nr+" får nye nummer (§ "+m[f]+" til § "+m[l]+").";
+  return s;
+}
+function chapterNote(k){
+  const list=allChapters(), i=list.findIndex(function(c){return c.key===k;});
+  const later=list.slice(i+1).filter(function(c){return !c.ny;});
+  const prevOrig=list.slice(0,i).filter(function(c){return !c.ny;}).pop();
+  let s="Forslaget innfører nytt kapittel "+(ROMAN[i+1]||String(i+1))+(prevOrig?", plassert etter nåværende kapittel "+prevOrig.key:"")+".";
+  if(later.length){
+    const f=later[0], l=later[later.length-1];
+    const nf=list.indexOf(f)+1, nl=list.indexOf(l)+1;
+    s+= later.length===1 ? " Nåværende kapittel "+f.key+" blir kapittel "+(ROMAN[nf]||nf)+", og paragrafnumrene endres tilsvarende."
+      : " Nåværende kapittel "+f.key+" til "+l.key+" får nye nummer ("+(ROMAN[nf]||nf)+" til "+(ROMAN[nl]||nl)+"), og paragrafnumrene endres tilsvarende.";
+  }
+  return s;
+}
 function newId(prefix){ return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
 /* ---------- render ---------- */
@@ -329,10 +376,12 @@ function rowHTML(id){
     right='<div class="same"><p class="ttl">'+esc(oTi)+'</p><p class="txt">'+esc(oT)+'</p></div>';
   }
   if(p&&p.grunngjeving&&p.grunngjeving.trim()) right+='<div class="why"><b>Begrunnelse:</b> '+esc(p.grunngjeving)+'</div>';
+  if(isNew && shiftNote(id)) right+='<div class="why auto">Kjem automatisk med i begrunnelsen: <i>'+esc(shiftNote(id))+'</i></div>';
   else if(changed) right+='<button class="whylink" data-act="why">+ Legg til begrunnelse</button>';
   if(changed) right+='<div class="rowacts"><button class="btn" data-act="dlrow">Last ned skjema</button><button class="btn quiet'+(isNew?' danger':'')+'" data-act="resetrow">'+(isNew?"Slett":"Tilbakestill")+'</button></div>';
   right+='<div class="hint">'+(changed?"Klikk for å redigera forslaget":"Klikk for å skriva eit forslag")+'</div>';
-  const num = isNew ? (p.nr?("§ "+esc(p.nr)):"Ny") : (o.nr?("§ "+o.nr):"");
+  let num = isNew ? "§ "+esc(autoNr(id)) : (o.nr?("§ "+o.nr):"");
+  if(!isNew && o.nr){ const nn=numbering(o.kap)[id]; if(nn && nn!==o.nr) num+='<small class="moved">blir § '+esc(nn)+'</small>'; }
   return '<div class="num">'+num+'</div><div class="cell orig">'+left+'</div><div class="cell prop" tabindex="0" role="button" aria-label="Rediger '+esc(num||"innleiande tekst")+'">'+right+'</div>';
 }
 function ins_(s){ return '<ins>'+esc(s)+'</ins>'; }
@@ -343,7 +392,7 @@ function editorHTML(id){
   const t = p.oppheva ? "" : (p.tekst!=null?p.tekst:oT);
   const ti = p.tittel!=null?p.tittel:oTi;
   let h='<div class="ed">';
-  if(p.ny){ h+='<label for="e-nr">Paragrafnummer (valfritt)</label><input id="e-nr" value="'+esc(p.nr||"")+'" placeholder="til dømes 4.7">'; }
+  if(p.ny){ const sn=shiftNote(id); h+='<p class="autonr">Blir § '+esc(autoNr(id))+' ut frå kvar paragrafen står.'+(sn?' Dette blir automatisk lagt til i begrunnelsen i skjemaet: <i>'+esc(sn)+'</i>':'')+'</p>'; }
   h+='<label for="e-ti">Tittel</label><input id="e-ti" value="'+esc(ti)+'">';
   h+='<label for="e-type">Type endring</label><select id="e-type">'+TYPES.map(function(x){ return '<option value="'+esc(x)+'"'+((p.type||"")===x?" selected":"")+'>'+(x?esc(x):"Automatisk ("+esc(autoType(id))+")")+'</option>'; }).join("")+'</select>';
   h+='<label for="e-tx">Tekst'+(p.oppheva?" (paragrafen er markert som oppheva, skriv for å angra)":"")+'</label><textarea id="e-tx" spellcheck="true">'+esc(t)+'</textarea>';
@@ -367,6 +416,7 @@ function build(){
     if(c.ny){
       const k=nyeKap[c.key];
       html+='<div class="chap chap-new" id="'+cid+'" data-kap="'+c.key+'"><span class="tag new">Nytt kapittel</span><div class="row1"><input class="chap-in" data-kap="'+c.key+'" aria-label="Tittel på det nye kapitlet" placeholder="Til dømes XIII. Frivillige" value="'+esc(k.tittel||"")+'"><button class="btn" data-act="dlkap" data-kap="'+c.key+'">Last ned skjema</button><button class="btn quiet danger" data-act="delkap" data-kap="'+c.key+'">Slett kapitlet</button></div>'
+        +'<p class="autonr" style="margin-top:10px">Dette blir automatisk lagt til i begrunnelsen i skjemaet: <i>'+esc(chapterNote(c.key))+'</i></p>'
         +'<label for="w-'+c.key+'">Begrunnelse for kapitlet (kjem med i skjemaet)</label><textarea class="chap-why" id="w-'+c.key+'" data-kap="'+c.key+'">'+esc(k.grunngjeving||"")+'</textarea></div>';
     } else html+='<h2 class="chap" id="'+cid+'">'+esc(c.title)+'</h2>';
     toc+='<a href="#'+cid+'" data-kap="'+c.key+'"><span>'+esc(c.title)+'</span><span class="n"></span></a>';
@@ -450,7 +500,6 @@ function onEdit(e){
   p.tittel=document.getElementById("e-ti").value;
   p.tekst=document.getElementById("e-tx").value;
   p.grunngjeving=document.getElementById("e-why").value;
-  const nr=document.getElementById("e-nr"); if(nr) p.nr=nr.value.trim();
   p.type=document.getElementById("e-type").value;
   if(p.oppheva && p.tekst.trim()) p.oppheva=false;
   if(o){ p.kap=o.kap; }
@@ -587,9 +636,9 @@ function exportHTML(){
   L.forEach(function(x){
     const o=byId[x.id], p=props[x.id]||{};
     if(x.kap.key!==lastKap){ b+='<h2>'+esc(x.kap.title)+(x.kap.ny?' (nytt kapittel)':'')+'</h2>'; lastKap=x.kap.key; }
-    if(x.chapter){ const k=nyeKap[x.id]; b+='<p><em>Forslag om nytt kapittel.</em></p>'+(k.grunngjeving&&k.grunngjeving.trim()?'<p class="why"><strong>Begrunnelse:</strong> '+esc(k.grunngjeving)+'</p>':''); return; }
+    if(x.chapter){ const k=nyeKap[x.id]; b+='<p><em>Forslag om nytt kapittel.</em></p>'+(k.grunngjeving&&k.grunngjeving.trim()?'<p class="why"><strong>Begrunnelse:</strong> '+esc(k.grunngjeving)+'</p>':'')+'<p class="why"><em>'+esc(chapterNote(x.id))+'</em></p>'; return; }
     let head, l, r;
-    if(p.ny){ head=(p.nr?"§ "+esc(p.nr)+" ":"Ny paragraf: ")+esc(p.tittel||""); l="<em>Ny paragraf</em>"; r="<strong>"+esc(p.tittel||"")+"</strong>\n<ins>"+esc(p.tekst||"")+"</ins>"; }
+    if(p.ny){ head="§ "+esc(autoNr(x.id))+" (ny) "+esc(p.tittel||""); l="<em>Ny paragraf</em>"; r="<strong>"+esc(p.tittel||"")+"</strong>\n<ins>"+esc(p.tekst||"")+"</ins>"; }
     else if(p.oppheva){ head=label(o)+" "+esc(o.tittel); l="<del>"+esc(o.tekst)+"</del>"; r="<em>Paragrafen blir oppheva.</em>"; }
     else {
       const nT=p.tekst!=null?p.tekst:o.tekst, nTi=p.tittel!=null?p.tittel:o.tittel;
@@ -600,6 +649,7 @@ function exportHTML(){
     }
     b+='<h3>'+head+'</h3><table><tr><th>Gjeldande tekst</th><th>Forslag til ny tekst</th></tr><tr><td>'+l+'</td><td>'+r+'</td></tr></table>';
     if(p.grunngjeving&&p.grunngjeving.trim()) b+='<p class="why"><strong>Begrunnelse:</strong> '+esc(p.grunngjeving)+'</p>';
+    if(p.ny&&shiftNote(x.id)) b+='<p class="why"><em>'+esc(shiftNote(x.id))+'</em></p>';
   });
   return b+'</body></html>';
 }
@@ -610,7 +660,7 @@ function exportMD(){
     const o=byId[x.id], p=props[x.id]||{};
     if(x.kap.key!==lastKap){ s+="\n## "+x.kap.title+(x.kap.ny?" (nytt kapittel)":"")+"\n"; lastKap=x.kap.key; }
     if(x.chapter){ const k=nyeKap[x.id]; s+="\n*Forslag om nytt kapittel.*\n"+(k.grunngjeving&&k.grunngjeving.trim()?"\n**Begrunnelse:** "+k.grunngjeving+"\n":""); return; }
-    if(p.ny){ s+="\n### Ny paragraf"+(p.nr?" § "+p.nr:"")+": "+(p.tittel||"")+"\n\n**Forslag:**\n\n"+(p.tekst||"")+"\n"; }
+    if(p.ny){ s+="\n### § "+autoNr(x.id)+" (ny) "+(p.tittel||"")+"\n\n**Forslag:**\n\n"+(p.tekst||"")+"\n"; }
     else {
       s+="\n### "+label(o)+" "+o.tittel+"\n\n**Gjeldande:**\n\n"+o.tekst+"\n\n";
       if(p.oppheva) s+="**Forslag:** Paragrafen blir oppheva.\n";
@@ -672,17 +722,17 @@ function formFor(id){
     const k=nyeKap[id], kids=rowIds(id).filter(isChanged);
     return {kapittel:(k.tittel||"Nytt kapittel")+" (nytt kapittel)", paragraf:"Hele kapitlet", type:"Nytt kapittel", stiller:stiller.trim(),
       lyder:[wrun("Nytt kapittel, har ingen gjeldende tekst.",{i:true})],
-      endres:[wrun(k.tittel||"Nytt kapittel",{b:true})].concat(kids.length?kids.map(function(x){ const p=props[x]; return wrun((p.nr?"§ "+p.nr+" ":"")+(p.tittel||"(uten tittel)")); }).concat([wrun("Paragrafene står som egne forslag.",{i:true})]):[wrun("(Ingen paragrafer ennå.)",{i:true})]),
-      begrunnelse:plainParas(k.grunngjeving)};
+      endres:[wrun(k.tittel||"Nytt kapittel",{b:true})].concat(kids.length?kids.map(function(x){ const p=props[x]; return wrun("§ "+autoNr(x)+" "+(p.tittel||"(uten tittel)")); }).concat([wrun("Paragrafene står som egne forslag.",{i:true})]):[wrun("(Ingen paragrafer ennå.)",{i:true})]),
+      begrunnelse:plainParas(k.grunngjeving).filter(Boolean).concat([wrun(chapterNote(id),{i:true})])};
   }
   const o=byId[id], p=props[id]||{};
   const kapKey=o?o.kap:p.kap;
   const ch=chapterOf(kapKey);
   const kap=ch?(ch.title+(ch.ny?" (nytt kapittel)":"")):"";
   const f={kapittel:kap, type:p.type||autoType(id), stiller:stiller.trim(),
-    begrunnelse:plainParas(p.grunngjeving)};
+    begrunnelse:plainParas(p.grunngjeving).filter(Boolean).concat(p.ny&&shiftNote(id)?[wrun(shiftNote(id),{i:true})]:[])};
   if(p.ny){
-    f.paragraf=p.nr?"§ "+p.nr+" (ny)":"Ny paragraf";
+    f.paragraf="§ "+autoNr(id)+" (ny)";
     f.lyder=[wrun("Ny paragraf, har ingen gjeldende tekst.",{i:true})];
     f.endres=[wrun(p.tittel||"",{b:true})].concat(plainParas(p.tekst));
     return f;
@@ -741,7 +791,7 @@ function safeName(s){ return s.replace(/[\\/:*?"<>|]+/g,"").trim(); }
 function tagFor(id){
   if(nyeKap[id]){ const r=(nyeKap[id].tittel||"").split(".")[0].trim(); return "kap "+(r&&r.length<8?r+" ":"")+"(nytt)"; }
   const p=props[id]||{};
-  if(p.ny) return p.nr?"§ "+p.nr+" (ny)":"ny paragraf";
+  if(p.ny) return "§ "+autoNr(id)+" (ny)";
   if(!byId[id].nr) return "kap XII innledning";
   let f=formFor(id).paragraf;
   if(p.oppheva) f+=" (oppheves)";
