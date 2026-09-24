@@ -63,6 +63,13 @@ button,input,textarea{font:inherit;color:inherit}
 .who input{border:1px solid var(--rule);border-radius:6px;background:var(--bg);padding:6px 10px;width:160px;color:var(--ink)}
 .intro{max-width:78ch;margin:6px 0 18px 84px;color:var(--muted);font-size:.92rem}
 .ed select{width:100%;border:1px solid var(--rule);border-radius:5px;background:var(--bg);padding:7px 10px;margin-bottom:10px}
+.menu-list .mh{font-weight:600;color:var(--ink);font-size:.8rem;margin:8px 10px 2px}
+.menu-list .note{font-size:.78rem;margin:4px 10px 6px}
+.menu-list button small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px;line-height:1.35}
+.menu-list button.danger{color:var(--del)}
+.menu-list{min-width:300px;max-width:min(360px,calc(100vw - 32px))}
+.rowacts{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+.rowacts .btn{padding:4px 10px;font-size:.82rem}
 .menu-list p{margin:6px 10px 4px;font-size:.78rem;color:var(--muted)}
 
 /* Layout */
@@ -172,13 +179,17 @@ ins{background:var(--ins-bg);color:var(--ins);text-decoration:none;border-radius
     <div class="menu">
       <button class="btn primary" id="expBtn" aria-haspopup="true" aria-expanded="false">Lagra og eksporter</button>
       <div class="menu-list" id="expMenu" role="menu">
-        <p>Skjema og lister tek berre med paragrafar du har endra.</p>
-        <button role="menuitem" data-fmt="docx">Alle forslag som skjema (.docx)</button>
-        <button role="menuitem" data-fmt="html">Endringsliste som nettside (.html)</button>
-        <button role="menuitem" data-fmt="md">Endringsliste som tekst (.md)</button>
+        <p class="mh">Last ned alle forslag</p>
+        <button role="menuitem" data-fmt="docx">Alle i eitt dokument, eitt skjema per side (.docx)</button>
+        <button role="menuitem" data-fmt="zip">Alle som separate filer (.zip)</button>
+        <button role="menuitem" data-fmt="html">Oversikt over alle endringar (.html)</button>
+        <p class="note">Vil du berre ha eitt forslag, trykk «Last ned» på den paragrafen.</p>
         <hr>
-        <button role="menuitem" data-fmt="json">Lagra utkastet som fil (.json)</button>
-        <button role="menuitem" data-fmt="open">Opna utkast frå fil</button>
+        <p class="mh">Ta vare på arbeidet</p>
+        <button role="menuitem" data-fmt="json"><span>Lagra arbeidet som fil</span><small>Tek vare på alle forslaga så du kan halda fram på ei anna maskin eller senda dei til nokon.</small></button>
+        <button role="menuitem" data-fmt="open"><span>Opna arbeid frå fil</span><small>Hentar inn ei fil du har lagra tidlegare.</small></button>
+        <hr>
+        <button role="menuitem" data-fmt="resetall" class="danger">Tilbakestill alle endringar</button>
       </div>
     </div>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
@@ -319,6 +330,7 @@ function rowHTML(id){
   }
   if(p&&p.grunngjeving&&p.grunngjeving.trim()) right+='<div class="why"><b>Begrunnelse:</b> '+esc(p.grunngjeving)+'</div>';
   else if(changed) right+='<button class="whylink" data-act="why">+ Legg til begrunnelse</button>';
+  if(changed) right+='<div class="rowacts"><button class="btn" data-act="dlrow">Last ned skjema</button><button class="btn quiet'+(isNew?' danger':'')+'" data-act="resetrow">'+(isNew?"Slett":"Tilbakestill")+'</button></div>';
   right+='<div class="hint">'+(changed?"Klikk for å redigera forslaget":"Klikk for å skriva eit forslag")+'</div>';
   const num = isNew ? (p.nr?("§ "+esc(p.nr)):"Ny") : (o.nr?("§ "+o.nr):"");
   return '<div class="num">'+num+'</div><div class="cell orig">'+left+'</div><div class="cell prop" tabindex="0" role="button" aria-label="Rediger '+esc(num||"innleiande tekst")+'">'+right+'</div>';
@@ -354,7 +366,7 @@ function build(){
     const cid="kap-"+c.key;
     if(c.ny){
       const k=nyeKap[c.key];
-      html+='<div class="chap chap-new" id="'+cid+'" data-kap="'+c.key+'"><span class="tag new">Nytt kapittel</span><div class="row1"><input class="chap-in" data-kap="'+c.key+'" aria-label="Tittel på det nye kapitlet" placeholder="Til dømes XIII. Frivillige" value="'+esc(k.tittel||"")+'"><button class="btn quiet danger" data-act="delkap" data-kap="'+c.key+'">Slett kapitlet</button></div>'
+      html+='<div class="chap chap-new" id="'+cid+'" data-kap="'+c.key+'"><span class="tag new">Nytt kapittel</span><div class="row1"><input class="chap-in" data-kap="'+c.key+'" aria-label="Tittel på det nye kapitlet" placeholder="Til dømes XIII. Frivillige" value="'+esc(k.tittel||"")+'"><button class="btn" data-act="dlkap" data-kap="'+c.key+'">Last ned skjema</button><button class="btn quiet danger" data-act="delkap" data-kap="'+c.key+'">Slett kapitlet</button></div>'
         +'<label for="w-'+c.key+'">Begrunnelse for kapitlet (kjem med i skjemaet)</label><textarea class="chap-why" id="w-'+c.key+'" data-kap="'+c.key+'">'+esc(k.grunngjeving||"")+'</textarea></div>';
     } else html+='<h2 class="chap" id="'+cid+'">'+esc(c.title)+'</h2>';
     toc+='<a href="#'+cid+'" data-kap="'+c.key+'"><span>'+esc(c.title)+'</span><span class="n"></span></a>';
@@ -520,6 +532,14 @@ docEl.addEventListener("click",function(e){
       kids.forEach(function(x){ delete props[x]; });
       Object.keys(nyeKap).forEach(function(x){ if(nyeKap[x].etter===k) nyeKap[x].etter=nyeKap[k].etter; });
       delete nyeKap[k]; saveLocal(); build(); return;
+    }
+    if(a==="dlrow"){ exportDocx([act.closest(".row").dataset.id]); return; }
+    if(a==="dlkap"){ exportDocx([act.dataset.kap]); return; }
+    if(a==="resetrow"){
+      const rid=act.closest(".row").dataset.id, p=props[rid];
+      if(p&&p.ny){ if(!confirm("Sletta den nye paragrafen?")) return; delete props[rid]; saveLocal(); build(); return; }
+      if(!confirm("Tilbakestilla "+(byId[rid].nr?"§ "+byId[rid].nr:"teksten")+" til gjeldande tekst? Forslaget og begrunnelsen blir sletta.")) return;
+      delete props[rid]; saveLocal(); paintRow(rid); updateMeta(); toast("Paragrafen er tilbakestilt."); return;
     }
     if(a==="why"){
       const rid=act.closest(".row").dataset.id; openEditor(rid);
@@ -718,16 +738,47 @@ async function buildDocx(ids){
   return zip.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
 }
 function safeName(s){ return s.replace(/[\\/:*?"<>|]+/g,"").trim(); }
+function tagFor(id){
+  if(nyeKap[id]){ const r=(nyeKap[id].tittel||"").split(".")[0].trim(); return "kap "+(r&&r.length<8?r+" ":"")+"(nytt)"; }
+  const p=props[id]||{};
+  if(p.ny) return p.nr?"§ "+p.nr+" (ny)":"ny paragraf";
+  if(!byId[id].nr) return "kap XII innledning";
+  let f=formFor(id).paragraf;
+  if(p.oppheva) f+=" (oppheves)";
+  return f;
+}
+function combinedName(ids){
+  const tags=ids.map(tagFor), base="Statuttendringsforslag ";
+  let name=base+tags.join(", ");
+  if(new Blob([name+".docx"]).size<=235) return name+".docx";
+  // too long for a filename: drop spaces after § first, then cut and count the rest
+  const tight=tags.map(function(x){return x.replace(/§ /g,"§");});
+  name=base+tight.join(", ");
+  if(new Blob([name+".docx"]).size<=235) return name+".docx";
+  let out=base, i=0;
+  while(i<tight.length){ const next=out+(i?", ":"")+tight[i]; const rest=" og "+(tight.length-i-1)+" til.docx"; if(new Blob([next+rest]).size>235) break; out=next; i++; }
+  return out+" og "+(tight.length-i)+" til.docx";
+}
+const DOCX_MIME="application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 async function exportDocx(ids){
   if(!stiller.trim()) toast("Tips: fyll inn forslagsstillar øvst, så kjem namnet med i skjemaet.");
   let blob;
   try{ blob=await buildDocx(ids); }
   catch(e){ toast("Klarte ikkje å laga Word-fila. Sjekk nettilkoplinga og prøv igjen."); return; }
-  let name;
-  if(ids.length===1 && nyeKap[ids[0]]){ name="Statuttendringsforslag nytt kapittel.docx"; }
-  else if(ids.length===1){ const o=byId[ids[0]], p=props[ids[0]]||{}; name="Statuttendringsforslag "+(p.ny?(p.nr?"§ "+p.nr:"ny paragraf"):(o.nr?"§ "+o.nr:"kap XII"))+".docx"; }
-  else name="Statuttendringsforslag ("+ids.length+" forslag).docx";
-  await saveFile(safeName(name),blob,"application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+  await saveFile(safeName(combinedName(ids)),blob,DOCX_MIME);
+}
+async function exportZip(ids){
+  if(!stiller.trim()) toast("Tips: fyll inn forslagsstillar øvst, så kjem namnet med i skjemaet.");
+  try{
+    const zip=new JSZip(), used={};
+    for(const id of ids){
+      let n=safeName("Statuttendringsforslag "+tagFor(id));
+      if(used[n]){ used[n]++; n+=" ("+used[n]+")"; } else used[n]=1;
+      zip.file(n+".docx", await buildDocx([id]));
+    }
+    const blob=await zip.generateAsync({type:"blob"});
+    await saveFile("Statuttendringsforslag ("+ids.length+" filer).zip",blob,"application/zip");
+  }catch(e){ toast("Klarte ikkje å laga filene. Sjekk nettilkoplinga og prøv igjen."); }
 }
 
 /* ---------- saving files ---------- */
@@ -796,6 +847,11 @@ expMenu.addEventListener("click",async function(e){
   if(editing) closeEditor();
   const fmt=b.dataset.fmt;
   if(fmt==="open"){ fileIn.click(); return; }
+  if(fmt==="resetall"){
+    if(!Object.keys(props).length && !Object.keys(nyeKap).length){ toast("Det er ingen endringar å tilbakestilla."); return; }
+    if(!confirm("Tilbakestilla alle endringar? Alle forslag, nye paragrafar og nye kapittel blir sletta. Vil du ta vare på dei, vel «Lagra arbeidet som fil» først.")) return;
+    props={}; nyeKap={}; editing=null; saveLocal(); build(); toast("Alle endringar er tilbakestilte."); return;
+  }
   if(fmt==="json"){
     const d=new Date(), stamp=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
     await saveFile("Utkast statuttendringar "+stamp+".json",draftJSON(),"application/json"); return;
@@ -803,8 +859,8 @@ expMenu.addEventListener("click",async function(e){
   const list=changedList();
   if(!list.length){ toast("Det er ingen endringar å lasta ned enno."); return; }
   if(fmt==="docx"){ await exportDocx(list.map(function(x){return x.id;})); return; }
-  const data= fmt==="html"?exportHTML():exportMD();
-  await saveFile("Endringsforslag statuttar H26."+fmt,data,fmt==="html"?"text/html":"text/markdown");
+  if(fmt==="zip"){ await exportZip(list.map(function(x){return x.id;})); return; }
+  await saveFile("Endringsforslag statuttar H26.html",exportHTML(),"text/html");
 });
 
 /* ---------- sticky offsets ---------- */
