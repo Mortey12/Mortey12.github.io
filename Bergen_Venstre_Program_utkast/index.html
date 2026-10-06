@@ -121,6 +121,7 @@ label.f textarea{resize:vertical;min-height:64px;font-family:var(--f-display);fo
 .seg.lang{display:inline-flex;padding:2px}
 .seg.lang button{padding:2px 8px;font-size:12px}
 .where{font-size:12.5px;color:var(--muted)}
+.addk{display:grid;gap:4px}
 .preview{border-top:1px dashed var(--line);padding-top:10px;display:grid;gap:8px}
 .prevhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .prevhead .seg{margin-left:auto}
@@ -200,8 +201,7 @@ details.card>summary{padding:11px 14px;cursor:pointer}
         <b id="selLabel"></b>
         <button class="btn small" id="selMore" title="Ta med avsnittet eller punktet under">+ neste</button>
         <button class="btn small" data-new="endre">Endra</button>
-        <button class="btn small" data-new="nytt">Nytt punkt etter</button>
-        <button class="btn small" data-new="overskrift">Ny overskrift etter</button>
+        <button class="btn small" data-new="leggtil">Legg til etter</button>
         <button class="btn small" data-new="stryk">Stryk</button>
         <button class="btn small" data-new="kommentar">Kommentar</button>
         <button class="btn small ghost x" id="selClear" aria-label="Fjern valet">✕</button>
@@ -239,7 +239,7 @@ details.card>summary{padding:11px 14px;cursor:pointer}
         <summary><span class="eyebrow">Om verktøyet</span></summary>
         <div class="about">
           <p style="margin:0">Dette er eit uoffisielt hjelpeverktøy, ikkje ein del av Bergen Venstre sitt skjema. Programteksten er henta ord for ord frå førsteutkastet, med same linjenummer som i PDF-en, også skrivefeil.</p>
-          <p style="margin:0">Ingenting blir sendt herifrå. Innspela blir berre lagra i denne nettlesaren, og du sender dei sjølv ved å kopiera felta inn i skjemaet.</p>
+          <p style="margin:0"><b style="color:var(--ink)">Ingenting blir lagra utanfor din eigen nettlesar.</b> Namnet ditt, kontaktinformasjonen og innspela blir verken sende eller lagra på nokon tenar. Du sender innspela sjølv ved å kopiera felta inn i skjemaet.</p>
         </div>
       </details>
       <details class="card">
@@ -298,8 +298,8 @@ let filter = 'alle', openId = null, draft = null, sel = null, anchor = null, las
 /* ---------- Felta i skjemaet ---------- */
 const range = (s, e) => s === e ? String(s) : s + '-' + e;
 const L = {
-  nn:{endre:'Endra linje', endreH:'Endra overskrifta på linje', nytt:'Nytt punkt', sub:'Ny underoverskrift', chap:'Nytt kapittel', text:'Tekst', vil:'Venstre vil:', etter:'etter linje', stryk:'Stryk linje', today:'I dag', prop:'Forslag', why:'Grunngjeving'},
-  nb:{endre:'Endre linje', endreH:'Endre overskriften på linje', nytt:'Nytt punkt', sub:'Ny underoverskrift', chap:'Nytt kapittel', text:'Tekst', vil:'Venstre vil:', etter:'etter linje', stryk:'Stryk linje', today:'I dag', prop:'Forslag', why:'Begrunnelse'}
+  nn:{endre:'Endring i linje', endreH:'Endring av overskrifta på linje', punkt:'Nytt punkt', avsnitt:'Nytt avsnitt', sub:'Ny underoverskrift', chap:'Nytt kapittel', text:'Tekst', vil:'Venstre vil:', etter:'etter linje', stryk:'Stryking av linje', today:'I dag', prop:'Forslag', why:'Grunngjeving'},
+  nb:{endre:'Endring i linje', endreH:'Endring av overskriften på linje', punkt:'Nytt punkt', avsnitt:'Nytt avsnitt', sub:'Ny underoverskrift', chap:'Nytt kapittel', text:'Tekst', vil:'Venstre vil:', etter:'etter linje', stryk:'Stryking av linje', today:'I dag', prop:'Forslag', why:'Begrunnelse'}
 };
 function gen(it){
   const T = L[P.lang] || L.nn;
@@ -307,23 +307,25 @@ function gen(it){
   let kap = w.chapter + (w.section ? ' / ' + w.section : '');
   const pts = (it.points || '').split('\n').map(x => x.replace(/^[\s●•*-]+/, '').trim()).filter(Boolean);
   const why = (it.why || '').trim() ? '\n\n' + T.why + ': ' + it.why.trim() : '';
-  const inSec = w.section ? ' i «' + w.section + '»' : (w.chapter ? ' i «' + w.chapter + '»' : '');
+  const inSec = w.section ? ', under «' + w.section + '»' : (w.chapter ? ', under «' + w.chapter + '»' : '');
   let linje = '', body = '';
   if (it.type === 'overskrift') {
     const title = (it.title || '').trim(); linje = 'etter ' + it.e;
     kap = it.level === 'ch' ? T.chap + ': ' + title : w.chapter + ' / ' + title;
-    body = (it.level === 'ch' ? T.chap + ', ' : T.sub + (w.chapter ? ' i «' + w.chapter + '»' : '') + ', ') + T.etter + ' ' + it.e + ':\n\n«' + title + '»' +
+    body = (it.level === 'ch' ? T.chap + ' ' + T.etter + ' ' + it.e : T.sub + ' ' + T.etter + ' ' + it.e + (w.chapter ? ', i «' + w.chapter + '»' : '')) + ':\n\n«' + title + '»' +
       ((it.neu || '').trim() ? '\n\n' + T.text + ':\n«' + it.neu.trim() + '»' : '') +
       (pts.length ? '\n\n' + T.vil + '\n' + pts.map(x => '- ' + x).join('\n') : '') + why;
   }
   else if (it.type === 'endre') { linje = range(it.s, it.e); body = (isHeadRange(it.s, it.e) ? T.endreH : T.endre) + ' ' + linje + (isHeadRange(it.s, it.e) ? '' : inSec) + '.\n\n' + T.today + ': «' + it.orig.trim() + '»\n' + T.prop + ': «' + it.neu.trim() + '»' + why; }
-  else if (it.type === 'nytt') { linje = 'etter ' + it.e; body = T.nytt + inSec + ', ' + T.etter + ' ' + it.e + ':\n\n«' + it.neu.trim() + '»' + why; }
+  else if (it.type === 'nytt') { linje = 'etter ' + it.e; body = (it.kind === 'avsnitt' ? T.avsnitt : T.punkt) + ' ' + T.etter + ' ' + it.e + inSec + ':\n\n«' + it.neu.trim() + '»' + why; }
   else if (it.type === 'stryk') { linje = range(it.s, it.e); body = T.stryk + ' ' + linje + inSec + ': «' + it.orig.trim() + '»' + why; }
   else { linje = it.s ? range(it.s, it.e) : ''; body = (it.neu || '').trim() + why; }
   return {kap, linje, body};
 }
-const TYPE = {endre:'Endra tekst', nytt:'Nytt punkt', overskrift:'Ny overskrift', stryk:'Stryk', kommentar:'Kommentar'};
-const typeLabel = it => it.type === 'endre' && isHeadRange(it.s, it.e) ? 'Endra overskrift' : it.type === 'overskrift' ? (it.level === 'ch' ? 'Nytt kapittel' : 'Ny underoverskrift') : TYPE[it.type];
+const TYPE = {endre:'Endra tekst', nytt:'Legg til', stryk:'Stryk', kommentar:'Kommentar'};
+const ADD = {punkt:'Punkt', avsnitt:'Avsnitt', overskrift:'Overskrift'};
+const kindFor = n => { const b = BLOCKS[lineBlock[n]]; return b && b.t === 'li' ? 'punkt' : 'avsnitt'; };
+const typeLabel = it => it.type === 'endre' && isHeadRange(it.s, it.e) ? 'Endra overskrift' : it.type === 'overskrift' ? (it.level === 'ch' ? 'Nytt kapittel' : 'Ny underoverskrift') : it.type === 'nytt' ? (it.kind === 'avsnitt' ? 'Nytt avsnitt' : 'Nytt punkt') : TYPE[it.type];
 const FORMFIELDS = ['Kapittel / tema', 'Kan innspillet knyttes til et konkret linjenummer?', 'Innspill / tilbakemelding'];
 
 /* ---------- Ord-for-ord-skilnad ---------- */
@@ -384,9 +386,9 @@ $('#selMore').onclick = () => { if (anchor !== null && lastSelIdx !== null) setS
 $('#selClear').onclick = () => { anchor = null; setSel(null); };
 $('#selbar').addEventListener('click', ev => {
   const t = ev.target.closest('[data-new]'); if (!t || !sel) return;
-  const type = t.dataset.new;
-  const after = type === 'nytt' || type === 'overskrift';
-  draft = {id:null, type, s: after ? sel.e : sel.s, e: sel.e, orig: after ? '' : sel.text, neu: type === 'endre' ? sel.text : '', why:'', title:'', level:'h', points:''};
+  const type = t.dataset.new === 'leggtil' ? 'nytt' : t.dataset.new;
+  const after = type === 'nytt';
+  draft = {id:null, type, kind: kindFor(sel.e), s: after ? sel.e : sel.s, e: sel.e, orig: after ? '' : sel.text, neu: type === 'endre' ? sel.text : '', why:'', title:'', level:'h', points:''};
   renderComposer(); showPanel();
   setTimeout(() => { const f = document.getElementById(type === 'stryk' ? 'cWhy' : type === 'overskrift' ? 'cTitle' : 'cNeu'); if (f) f.focus(); }, 30);
 });
@@ -437,14 +439,15 @@ function renderComposer(){
   slot.innerHTML =
   '<div class="card composer"><div class="chead"><h2>' + (d.id ? 'Rediger innspel' : 'Nytt innspel') + '</h2><span style="flex:1"></span><button class="btn small ghost" id="cCancel">Avbryt</button></div>' +
   '<div class="cbody">' +
-  '<div class="seg" role="group" aria-label="Type">' + Object.entries(TYPE).map(([k, v]) => '<button data-t="' + k + '" aria-pressed="' + (d.type === k) + '"' + (general && k !== 'kommentar' ? ' disabled' : '') + '>' + v + '</button>').join('') + '</div>' +
+  '<div class="seg" role="group" aria-label="Type">' + Object.entries(TYPE).map(([k, v]) => '<button data-t="' + k + '" aria-pressed="' + (k === 'nytt' ? isAfter(d) : d.type === k) + '"' + (general && k !== 'kommentar' ? ' disabled' : '') + '>' + v + '</button>').join('') + '</div>' +
+  (isAfter(d) ? '<div class="addk"><span class="where">Kva vil du leggja til?</span><div class="seg" role="group" aria-label="Kva vil du leggja til?">' + Object.entries(ADD).map(([k, v]) => '<button data-k="' + k + '" aria-pressed="' + (k === 'overskrift' ? d.type === 'overskrift' : d.type === 'nytt' && (d.kind || 'punkt') === k) + '">' + v + '</button>').join('') + '</div></div>' : '') +
   (general ? '<label class="f">Kapittel<select id="cChap">' + chapters.map(c => '<option' + (c === d.chapter ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>'
            : '<div class="row2"><label class="f">' + (isAfter(d) ? 'Etter linje' : 'Frå linje') + '<input id="cS" type="number" min="1" max="' + maxLine + '" value="' + (isAfter(d) ? d.e : d.s) + '"></label>' +
              (isAfter(d) ? '<div></div>' : '<label class="f">Til linje<input id="cE" type="number" min="1" max="' + maxLine + '" value="' + d.e + '"></label>') + '</div>' +
              '<div class="where" id="cWhere">' + esc(w.chapter) + (w.section ? ' / ' + esc(w.section) : '') + '</div>') +
   ((d.type === 'endre' || d.type === 'stryk') ? '<label class="f">Teksten i dag<textarea id="cOrig" rows="3">' + esc(d.orig) + '</textarea></label><div class="acts" style="margin-top:-4px"><button class="btn small ghost" id="cRequote">Hent teksten frå linjene på nytt</button></div>' : '') +
   (d.type === 'endre' ? '<label class="f">Ny tekst<textarea id="cNeu" rows="4">' + esc(d.neu) + '</textarea></label>' : '') +
-  (d.type === 'nytt' ? '<label class="f">Det nye punktet<textarea id="cNeu" rows="3">' + esc(d.neu) + '</textarea></label>' : '') +
+  (d.type === 'nytt' ? '<label class="f">' + (d.kind === 'avsnitt' ? 'Det nye avsnittet' : 'Det nye punktet') + '<textarea id="cNeu" rows="' + (d.kind === 'avsnitt' ? 5 : 3) + '">' + esc(d.neu) + '</textarea></label>' : '') +
   (d.type === 'overskrift' ? '<label class="f">Nivå<select id="cLevel"><option value="h"' + (d.level !== 'ch' ? ' selected' : '') + '>Underoverskrift, som «Fritidstilbud»</option><option value="ch"' + (d.level === 'ch' ? ' selected' : '') + '>Nytt kapittel, som «Kultur og næring»</option></select></label>' +
     '<label class="f">Overskrift<input id="cTitle" value="' + esc(d.title) + '" placeholder="Til dømes «Spillbyen Bergen»"></label>' +
     '<label class="f">Tekst under overskrifta (valfri)<textarea id="cNeu" rows="3">' + esc(d.neu) + '</textarea></label>' +
@@ -452,15 +455,16 @@ function renderComposer(){
   (d.type === 'kommentar' ? '<label class="f">Kommentaren din<textarea id="cNeu" rows="4">' + esc(d.neu) + '</textarea></label>' : '') +
   '<label class="f">Grunngjeving (valfri)<textarea id="cWhy" rows="2">' + esc(d.why) + '</textarea></label>' +
   '<div class="preview"><div class="prevhead"><span class="eyebrow">Slik blir det i skjemaet</span><div class="seg lang" role="group" aria-label="Språk i innspelet"><button data-lang="nn" aria-pressed="' + (P.lang !== 'nb') + '">Nynorsk</button><button data-lang="nb" aria-pressed="' + (P.lang === 'nb') + '">Bokmål</button></div></div><div id="cPrev"></div></div>' +
-  '<div class="acts"><button class="btn primary" id="cSave">' + (d.id ? 'Lagra endringane' : 'Legg til innspelet') + '</button></div>' +
+  '<div class="acts"><button class="btn primary" id="cSave">' + (d.id ? 'Lagra endringane' : 'Lagra innspelet') + '</button></div>' +
   '</div></div>';
   slot.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
-    const t = b.dataset.t; if (t === d.type || b.disabled) return;
-    if (t === 'nytt' || t === 'overskrift') d.s = d.e;
+    const t = b.dataset.t; if (b.disabled || t === d.type || (t === 'nytt' && isAfter(d))) return;
+    if (t === 'nytt') { d.s = d.e; if (!d.kind) d.kind = kindFor(d.e); if (d.neu === d.orig) d.neu = ''; }
     if ((t === 'endre' || t === 'stryk') && !d.orig && d.s) d.orig = quote(d.s, d.e);
     if (t === 'endre' && !d.neu) d.neu = d.orig;
     d.type = t; renderComposer();
   });
+  slot.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const k = b.dataset.k; if (k === 'overskrift') d.type = 'overskrift'; else { d.type = 'nytt'; d.kind = k; } renderComposer(); const f = document.getElementById(k === 'overskrift' ? 'cTitle' : 'cNeu'); if (f) f.focus(); });
   slot.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => { P.lang = b.dataset.lang; save(); slot.querySelectorAll('[data-lang]').forEach(x => x.setAttribute('aria-pressed', x === b)); preview(); renderList(); });
   const bind = (q, k, num) => { const el = slot.querySelector(q); if (el) el.addEventListener('input', () => {
     if (num) { let v = parseInt(el.value, 10); if (!v) return; v = Math.max(1, Math.min(maxLine, v));
