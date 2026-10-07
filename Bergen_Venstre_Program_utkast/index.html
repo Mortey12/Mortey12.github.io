@@ -186,7 +186,7 @@ details.card>summary{padding:11px 14px;cursor:pointer}
       <h1>Innspel til bystyreprogrammet</h1>
       <div class="sub">Førsteutkast til bystyreprogram for Bergen Venstre 2027 - 2031</div>
     </div>
-    <div class="progress"><span id="progTxt">0 av 0 sende</span><div class="bar"><i id="progBar"></i></div><button class="btn small ghost danger" id="resetBtn" aria-expanded="false" aria-controls="resetBar">Nullstill</button></div>
+    <div class="progress"><span id="progTxt">Ingen innspel enno</span><div class="bar"><i id="progBar"></i></div><button class="btn small ghost danger" id="resetBtn" aria-expanded="false" aria-controls="resetBar">Nullstill</button></div>
   </header>
   <div class="resetbar" id="resetBar" hidden>
     <span><b>Vil du starta på nytt?</b> Det kan ikkje angrast. Kopier ein tryggleikskopi først om du vil ta vare på innspela.</span>
@@ -231,8 +231,8 @@ details.card>summary{padding:11px 14px;cursor:pointer}
         <h2>Innspela dine</h2>
         <div class="chips" role="group" aria-label="Filter">
           <button class="chip" data-f="alle" aria-pressed="true">Alle</button>
-          <button class="chip" data-f="ikkje" aria-pressed="false">Ikkje sende</button>
-          <button class="chip" data-f="sende" aria-pressed="false">Sende</button>
+          <button class="chip" data-f="ikkje" aria-pressed="false">Ikkje sendt</button>
+          <button class="chip" data-f="sende" aria-pressed="false">Sendt</button>
         </div>
       </div>
       <div id="list" style="display:grid;gap:10px"></div>
@@ -539,7 +539,7 @@ function renderList(){
   const items = state.items.slice().sort((a, b) => sortKey(a) - sortKey(b));
   const shown = items.filter(it => filter === 'alle' || (filter === 'sende' ? it.sent : !it.sent));
   const done = state.items.filter(x => x.sent).length, tot = state.items.length;
-  $('#progTxt').textContent = tot ? done + ' av ' + tot + ' sende' : 'Ingen innspel enno';
+  $('#progTxt').textContent = tot ? 'Sendt: ' + done + ' av ' + tot : 'Ingen innspel enno';
   $('#progBar').style.width = tot ? (100 * done / tot) + '%' : '0';
   $('#tabCount').textContent = tot ? '(' + tot + ')' : '';
   if (!tot) { list.innerHTML = '<div class="card empty">Slik gjer du det:<ol><li>Fyll inn namnet ditt under «Om deg».</li><li>Trykk på eit avsnitt eller punkt i programmet, og vel kva du vil gjera med det.</li><li>Opna skjemaet og kopier felta inn eitt for eitt.</li><li>Merk innspelet som sendt.</li></ol></div>'; return; }
