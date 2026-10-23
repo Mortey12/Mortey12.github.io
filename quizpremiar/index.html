@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="nn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Premiejakt Kvarteret-quizen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+/* Oppsett: innlogging først. Inne: statusfilter øvst, lista til venstre, kart og runde til høgre. Mobil: faner. */
+:root{
+  --bg:#EEF2F3; --surface:#FFFFFF; --surface-2:#F6F8F9; --ink:#14232B; --muted:#55666F; --line:#D5DDE1;
+  --accent:#1D6A84; --accent-soft:#D9EBF1; --on-accent:#FFFFFF; --mark:#F0B035; --on-mark:#1E1606;
+  --ok:#2F8752; --err:#B04E45;
+  --f-display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", Roboto, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r:10px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E161A; --surface:#162228; --surface-2:#1B2930; --ink:#E2EAED; --muted:#93A4AC; --line:#26363E;
+  --accent:#5BB0CC; --accent-soft:#183644; --on-accent:#08161C; --mark:#F0B035; --on-mark:#1E1606;
+  --ok:#5DBB7F; --err:#D9776D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E161A; --surface:#162228; --surface-2:#1B2930; --ink:#E2EAED; --muted:#93A4AC; --line:#26363E;
+  --accent:#5BB0CC; --accent-soft:#183644; --on-accent:#08161C; --mark:#F0B035; --on-mark:#1E1606;
+  --ok:#5DBB7F; --err:#D9776D; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:16px 24px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font:700 clamp(22px,3vw,30px)/1.1 var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font:700 18px var(--f-display);margin:0}
+.sub{color:var(--muted);margin:2px 0 0;font-size:14px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.who{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.savestate{font:500 12px var(--f-mono);color:var(--muted);min-height:18px}
+.savestate.err{color:var(--err)} .savestate.ok{color:var(--ok)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.login{max-width:440px;margin:8vh auto 0}
+.login p{margin:0}
+.board{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px 5px 10px;font:500 13px var(--f-body);cursor:pointer}
+.chip .n{font:500 13px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.chip.edit{border-style:dashed;color:var(--muted)}
+.sdot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tools input,.tools select,.inp{font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.tools input[type=search]{flex:1 1 200px}
+.tabs{display:none;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;width:max-content}
+.tabs button{border:0;background:transparent;font:600 14px var(--f-body);padding:6px 16px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.work{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+.pane-list{min-width:0;display:flex;flex-direction:column;gap:6px}
+.pane-side{min-width:0;display:flex;flex-direction:column;gap:12px;position:sticky;top:12px}
+.group-h{font:700 12px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 2px 2px;display:flex;justify-content:space-between;align-items:center}
+.group-h > span:first-child{display:inline-flex;align-items:center;gap:6px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.row-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px 9px 12px;cursor:pointer}
+.row-head .stripe{width:4px;align-self:stretch;border-radius:2px}
+.row-title{font:700 15px var(--f-display);margin:0;overflow-wrap:anywhere}
+.row-meta{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.row-meta .prize{color:var(--ink);font-weight:700}
+.pill{font:600 12px var(--f-body);border-radius:999px;padding:2px 9px 2px 7px;white-space:nowrap;border:1px solid var(--line);display:inline-flex;align-items:center;gap:5px}
+.rbtn{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;font:600 12px var(--f-body);padding:4px 8px;cursor:pointer;white-space:nowrap}
+.rbtn.on{background:var(--mark);border-color:var(--mark);color:var(--on-mark)}
+.right{display:flex;gap:6px;align-items:center}
+.detail{border-top:1px solid var(--line);padding:12px;display:grid;gap:10px;background:var(--surface-2)}
+fieldset{border:0;margin:0;padding:0;min-width:0;display:grid;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font:700 11px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select,.field textarea{font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0;width:100%}
+.field .mono{font-family:var(--f-mono);font-size:13px}
+.field textarea{resize:vertical;line-height:1.5}
+textarea.letter{min-height:280px}
+.inline{display:flex;gap:6px;align-items:center}
+.inline input{flex:1}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;font:600 13px var(--f-body);padding:7px 12px;cursor:pointer;text-decoration:none;display:inline-flex;gap:6px;align-items:center;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{color:var(--err)}
+.btn:disabled{opacity:.5;cursor:default}
+.mapbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+.mapbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border-bottom:1px solid var(--line);align-items:center}
+#map{width:100%;height:min(62vh,560px);background:var(--surface-2)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:6px 10px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.pin-num{width:24px;height:24px;border-radius:50%;background:var(--mark);color:var(--on-mark);font:500 12px/24px var(--f-mono);text-align:center;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.pin-home{width:16px;height:16px;background:#14232B;transform:rotate(45deg);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.leaflet-popup-content{font:14px/1.45 var(--f-body);margin:12px 14px}
+.leaflet-popup-content .btn{font-size:12px;padding:5px 9px}
+.round{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
+.round ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px}
+.round li{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:8px;align-items:center;font-size:14px}
+.round .num{width:24px;height:24px;border-radius:50%;background:var(--mark);color:var(--on-mark);font:500 12px var(--f-mono);display:grid;place-items:center}
+.round .num.home{background:var(--ink);color:var(--bg)}
+.round .dist{font:400 12px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.round .x{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px}
+.sum{font:500 13px var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:14px;padding:16px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}
+.banner{background:var(--accent-soft);border-radius:8px;padding:8px 12px;font-size:14px}
+.addform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:10px;margin-top:8px}
+.copied{color:var(--ok);font-size:12px}
+.err-msg{color:var(--err);font-size:13px}
+.panel{max-width:720px}
+.strow{display:grid;grid-template-columns:40px minmax(0,1fr) auto 32px 32px 32px;gap:6px;align-items:center}
+.strow input[type=color]{width:40px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
+.strow input[type=text]{font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 9px;min-width:0;width:100%}
+.strow .use{font:400 12px var(--f-mono);color:var(--muted);white-space:nowrap}
+.ibtn{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px}
+.ibtn:disabled{opacity:.35;cursor:default}
+.acrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+.acrow .mono{font-family:var(--f-mono);font-size:13px;overflow-wrap:anywhere}
+@media (max-width:900px){
+  .tabs{display:flex}
+  .work{grid-template-columns:minmax(0,1fr)}
+  .pane-side{position:static}
+  .work[data-tab="liste"] .pane-side{display:none}
+  .work[data-tab="kart"] .pane-list,.work[data-tab="runde"] .pane-list{display:none}
+  .work[data-tab="kart"] .round{display:none}
+  .work[data-tab="runde"] .mapbox{display:none}
+  #map{height:62vh}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Innlogging -->
+  <section id="vLogin" class="card login" hidden>
+    <h1>Premiejakt for Kvarteret-quizen</h1>
+    <p class="sub">For quizgruppa i Studentersamfunnet i Bergen. Logg inn for å sjå lista.</p>
+    <button class="btn primary" id="btnGoogle">Logg inn med Google</button>
+    <div class="row-meta" style="text-align:center">eller få ei innloggingslenkje på e-post</div>
+    <form id="formLink" class="inline">
+      <input class="inp" id="linkEmail" type="email" required placeholder="din@epost.no" autocomplete="email" style="flex:1">
+      <button class="btn" type="submit">Send lenkje</button>
+    </form>
+    <form id="formConfirm" class="inline" hidden>
+      <input class="inp" id="confirmEmail" type="email" required placeholder="Skriv e-posten du bad om lenkje til" style="flex:1">
+      <button class="btn primary" type="submit">Logg inn</button>
+    </form>
+    <div id="loginMsg" class="row-meta" aria-live="polite"></div>
+  </section>
+
+  <!-- Ingen tilgang -->
+  <section id="vNoAccess" class="card login" hidden>
+    <h2>Du har ikkje tilgang enno</h2>
+    <p>Du er logga inn som <strong id="naEmail"></strong>, men adressa står ikkje på tilgangslista. Be ein administrator i quizgruppa om å leggje deg til.</p>
+    <button class="btn" data-logout>Logg ut</button>
+  </section>
+
+  <!-- Oppsett manglar -->
+  <section id="vSetup" class="card login" hidden>
+    <h2>Oppsettet er ikkje ferdig</h2>
+    <p>Firebase-oppsettet manglar i denne fila. Lim inn <code>firebaseConfig</code> frå Firebase-konsollen.</p>
+  </section>
+
+  <!-- Appen -->
+  <div id="vApp" class="wrap" hidden>
+    <header class="top">
+      <div>
+        <h1>Premiejakt for Kvarteret-quizen</h1>
+        <p class="sub">Sponsorar, status, tekstar og gårundar på ein stad</p>
+      </div>
+      <div class="who">
+        <span id="savestate" class="savestate" aria-live="polite"></span>
+        <span id="whoami"></span>
+        <button class="btn" id="btnAdmin" hidden>Tilgang og data</button>
+        <button class="btn" data-logout>Logg ut</button>
+      </div>
+    </header>
+
+    <div id="readonlyNote" class="banner" hidden>Du har lesetilgang. Be ein administrator om redigeringstilgang om du skal oppdatere lista.</div>
+
+    <section id="adminPanel" class="card panel" hidden></section>
+
+    <div class="board" id="board" role="group" aria-label="Filtrer på status"></div>
+    <section class="card panel" id="stedit" hidden></section>
+
+    <div class="tools">
+      <input id="q" type="search" placeholder="Søk etter namn, notat eller e-post" aria-label="Søk">
+      <select id="fOmr" aria-label="Område"></select>
+      <select id="fKat" aria-label="Kategori"></select>
+      <input id="gmailAcc" type="email" placeholder="Gmail-kontoen de sender frå" aria-label="Gmail-kontoen de sender frå" style="flex:0 1 260px">
+    </div>
+
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="liste" aria-selected="true">Liste</button>
+      <button role="tab" data-tab="kart" aria-selected="false">Kart</button>
+      <button role="tab" data-tab="runde" aria-selected="false">Runde <span id="tabCount"></span></button>
+    </div>
+
+    <div class="work" id="work" data-tab="liste">
+      <section class="pane-list" id="list" aria-label="Aktørar"></section>
+      <aside class="pane-side">
+        <div class="mapbox">
+          <div class="mapbar">
+            <button class="btn" data-view="sentrum">Sentrum</button>
+            <button class="btn" data-view="sor">Fantoft og sør</button>
+            <button class="btn" data-view="alt">Heile Bergen</button>
+          </div>
+          <div id="map" aria-label="Kart over aktørane"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="round" id="round"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, updateDoc, setDoc, deleteDoc, addDoc, getDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ===== Lim inn firebaseConfig frå Firebase-konsollen her ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyB9pQJFv0_uhsWlEfMyibc608uxxDAtpkI",
+  authDomain: "quiz-samarbeid.firebaseapp.com",
+  projectId: "quiz-samarbeid",
+  storageBucket: "quiz-samarbeid.firebasestorage.app",
+  messagingSenderId: "968266660672",
+  appId: "1:968266660672:web:e86724467bb2b398edd8a5"
+};
+/* ============================================================= */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ls = { get(k){ try { return localStorage.getItem(k); } catch(_) { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(_) {} }, del(k){ try { localStorage.removeItem(k); } catch(_) {} } };
+const show = id => ["vLogin","vNoAccess","vSetup","vApp"].forEach(v => $("#"+v).hidden = v !== id);
+const errText = e => ({ "permission-denied":"du har ikkje lov til dette", "unavailable":"ingen kontakt med tenaren", "auth/invalid-email":"ugyldig e-postadresse", "auth/invalid-action-code":"lenkja er brukt eller gått ut", "auth/popup-closed-by-user":"innlogginga vart avbroten" }[e && e.code] || (e && e.message) || "ukjend feil");
+
+if (!firebaseConfig.apiKey) { show("vSetup"); throw new Error("firebaseConfig manglar"); }
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+auth.languageCode = "no";
+const db = getFirestore(app);
+
+/* ---------- statusar og kategoriar ---------- */
+const DEF_ST = [{namn:"Ikkje kontakta",farge:"#8C9AA1"},{namn:"Kontakta",farge:"#5B8DB8"},{namn:"Fått epost",farge:"#2F5FA8"},{namn:"Planlagt",farge:"#7A5BB5"},{namn:"Ja",farge:"#2F8752"},{namn:"Nei",farge:"#B04E45"}];
+let STLIST = DEF_ST, STATUSES = DEF_ST.map(s => s.namn);
+const setStatuses = l => { STLIST = l; STATUSES = l.map(s => s.namn); };
+const stColor = s => (STLIST.find(x => x.namn === s) || {farge:"#8C9AA1"}).farge;
+const dot = s => `<i class="sdot" style="background:${esc(stColor(s))}"></i>`;
+const KATS = ["Fleksible premiar","Daglegvare (gåvekort)","Aktivitetar","Kultur og arrangement","Kreativ teikning","Kreativ teikning (sensuell)","Mat og rundepremiar","Fantoft og studentbyane"];
+const HOME = {namn:"Kvarteret", lat:60.3896713, lon:5.3218932};
+
+const S = { items:new Map(), loaded:false, open:null, st:new Set(), omr:"", kat:"", q:"", route:[], email:"", role:"", canWrite:false, isAdmin:false, access:[] };
+try { S.route = JSON.parse(ls.get("runde") || "[]"); } catch(_) {}
+const saveRoute = () => ls.set("runde", JSON.stringify(S.route));
+let unsubs = [];
+
+/* ---------- innlogging ---------- */
+const linkSettings = { url: location.origin + location.pathname, handleCodeInApp: true };
+$("#btnGoogle").addEventListener("click", async () => {
+  $("#loginMsg").textContent = "";
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { if (e.code === "auth/popup-blocked") signInWithRedirect(auth, new GoogleAuthProvider()); else $("#loginMsg").textContent = "Klarte ikkje logge inn: " + errText(e); }
+});
+$("#formLink").addEventListener("submit", async e => {
+  e.preventDefault(); const email = $("#linkEmail").value.trim();
+  try { await sendSignInLinkToEmail(auth, email, linkSettings); ls.set("loginEmail", email); $("#loginMsg").textContent = `Sendt. Opne lenkja i e-posten til ${email} på denne eininga.`; }
+  catch (er) { $("#loginMsg").textContent = "Klarte ikkje sende lenkja: " + errText(er); }
+});
+async function finishLink(email){
+  try { await signInWithEmailLink(auth, email, location.href); ls.del("loginEmail"); history.replaceState(null, "", location.pathname); }
+  catch (e) { $("#loginMsg").textContent = "Klarte ikkje logge inn: " + errText(e); }
+}
+if (isSignInWithEmailLink(auth, location.href)) {
+  const saved = ls.get("loginEmail");
+  if (saved) finishLink(saved);
+  else { $("#formLink").hidden = true; $("#formConfirm").hidden = false; $("#loginMsg").textContent = "Stadfest e-postadressa for å fullføre innlogginga."; }
+}
+$("#formConfirm").addEventListener("submit", e => { e.preventDefault(); finishLink($("#confirmEmail").value.trim()); });
+document.addEventListener("click", e => { if (e.target.closest("[data-logout]")) signOut(auth); });
+
+onAuthStateChanged(auth, async user => {
+  unsubs.forEach(u => u()); unsubs = [];
+  if (!user) { show("vLogin"); return; }
+  S.email = (user.email || "").toLowerCase();
+  let acc = null;
+  try { acc = await getDoc(doc(db, "tilgang", S.email)); } catch (_) { acc = null; }
+  if (!acc || !acc.exists()) { $("#naEmail").textContent = S.email; show("vNoAccess"); return; }
+  S.role = acc.data().rolle || "lesar";
+  S.canWrite = S.role === "admin" || S.role === "redaktor";
+  S.isAdmin = S.role === "admin";
+  $("#whoami").textContent = `${S.email} · ${({admin:"administrator",redaktor:"redaktør",lesar:"lesar"})[S.role] || S.role}`;
+  $("#btnAdmin").hidden = !S.isAdmin;
+  $("#readonlyNote").hidden = S.canWrite;
+  show("vApp");
+  initMap();
+  start();
+});
+
+function start(){
+  unsubs.push(onSnapshot(doc(db, "config", "statusar"), snap => {
+    const l = snap.exists() && snap.data().liste;
+    if (Array.isArray(l) && l.length) { setStatuses(l.filter(s => s && s.namn).map(s => ({namn:String(s.namn), farge:String(s.farge || "#8C9AA1")}))); renderAll(); }
+  }, () => {}));
+  unsubs.push(onSnapshot(collection(db, "aktorar"), snap => {
+    const focusDetail = S.open && document.querySelector(`[data-detail="${CSS.escape(S.open)}"]`);
+    const pending = new Set(Object.keys(timers));
+    const next = new Map();
+    snap.docs.forEach(d => { const data = {...d.data(), id: d.id}; const local = S.items.get(d.id);
+      if (local) Object.keys(local).forEach(k => { if (pending.has(d.id+":"+k)) data[k] = local[k]; });
+      next.set(d.id, data); });
+    S.items = next; S.loaded = true; S.route = S.route.filter(id => next.has(id));
+    if (focusDetail && !focusDetail.contains(document.activeElement)) {
+      const a = next.get(S.open); if (a) focusDetail.querySelectorAll("[data-f]").forEach(el => { const v = a[el.dataset.f] ?? ""; if (el.value !== v && !pending.has(S.open+":"+el.dataset.f)) el.value = v; });
+    }
+    renderSelects(); renderAll(); if (draft) renderEditor();
+  }, e => setSave("err", "Mista kontakt med databasen: " + errText(e))));
+  if (S.isAdmin) unsubs.push(onSnapshot(collection(db, "tilgang"), snap => { S.access = snap.docs.map(d => ({email:d.id, ...d.data()})); renderAdmin(); }, () => {}));
+}
+
+/* ---------- lagring ---------- */
+const queues = {}, timers = {};
+function setSave(kind, msg){ const el = $("#savestate"); el.className = "savestate " + (kind || ""); el.textContent = msg || ""; }
+function write(id, patch){
+  const cur = S.items.get(id); if (cur) S.items.set(id, {...cur, ...patch});
+  if (!S.canWrite) { setSave("err", "Ikkje lagra: du har berre lesetilgang"); return; }
+  setSave("", "Lagrar …");
+  const p = (queues[id] || Promise.resolve()).then(() => updateDoc(doc(db, "aktorar", id), {...patch, endraAv: S.email, endra: serverTimestamp()}))
+    .then(() => setSave("ok", "Lagra"), e => setSave("err", "Ikkje lagra: " + errText(e)));
+  queues[id] = p.catch(() => {});
+}
+function writeLater(id, field, value){
+  const k = id + ":" + field; clearTimeout(timers[k]);
+  const cur = S.items.get(id); if (cur) S.items.set(id, {...cur, [field]: value});
+  timers[k] = setTimeout(() => { delete timers[k]; write(id, {[field]: value}); }, 700);
+  setSave("", "Endra …");
+}
+function flush(id, field, value){ const k = id + ":" + field; if (timers[k]) { clearTimeout(timers[k]); delete timers[k]; write(id, {[field]: value}); } }
+addEventListener("beforeunload", e => { if (Object.keys(timers).length) { Object.keys(timers).forEach(k => { const [id, f] = k.split(":"); const a = S.items.get(id); clearTimeout(timers[k]); delete timers[k]; if (a) write(id, {[f]: a[f]}); }); e.preventDefault(); } });
+
+/* ---------- filter ---------- */
+function visible(){
+  const q = S.q.trim().toLowerCase();
+  return [...S.items.values()].filter(a =>
+    (!S.st.size || S.st.has(a.status || STATUSES[0])) &&
+    (!S.omr || a.omrade === S.omr) && (!S.kat || a.kategori === S.kat) &&
+    (!q || [a.namn,a.notat,a.epost,a.omrade,a.premie].join(" ").toLowerCase().includes(q)));
+}
+function renderBoard(){
+  const all = [...S.items.values()];
+  $("#board").innerHTML = STATUSES.map(s => {
+    const n = all.filter(a => (a.status || STATUSES[0]) === s).length;
+    return `<button class="chip" data-st="${esc(s)}" aria-pressed="${S.st.has(s)}">${dot(s)}${esc(s)}<span class="n">${n}</span></button>`;
+  }).join("") + (S.canWrite ? `<button class="chip edit" id="stEditBtn" aria-expanded="${!!draft}">${draft ? "Lukk" : "Endre statusar"}</button>` : "");
+  $("#legend").innerHTML = STATUSES.map(s => `<span>${dot(s)}${esc(s)}</span>`).join("") + `<span><i class="sdot" style="background:#14232B;border-radius:2px"></i>Kvarteret</span>`;
+}
+function renderSelects(){
+  const omr = [...new Set([...S.items.values()].map(a => a.omrade).filter(Boolean))].sort((a,b) => a.localeCompare(b, "nn"));
+  const fill = (sel, vals, first, cur) => { sel.innerHTML = `<option value="">${first}</option>` + vals.map(v => `<option${v===cur?" selected":""}>${esc(v)}</option>`).join(""); };
+  fill($("#fOmr"), omr, "Alle område", S.omr);
+  fill($("#fKat"), KATS, "Alle kategoriar", S.kat);
+}
+
+/* ---------- gmail ---------- */
+function gmailUrl(id){
+  const a = S.items.get(id) || {};
+  const txEl = document.getElementById("tx-" + id), epEl = document.getElementById("ep-" + id);
+  const tx = txEl ? txEl.value : (a.tekst || ""), ep = epEl ? epEl.value : (a.epost || "");
+  let su = "", body = tx; const m = tx.match(/^\s*Emne:\s*(.*)\n+/); if (m) { su = m[1].trim(); body = tx.slice(m[0].length); }
+  const to = (ep.match(/[^\s,;()]+@[^\s,;()]+/) || [""])[0];
+  const acc = ls.get("gmail") || "";
+  const q = [["view","cm"],["fs","1"],["to",to],["su",su],["body",body]].concat(acc ? [["authuser",acc]] : []);
+  return "https://mail.google.com/mail/?" + q.map(([k,v]) => k + "=" + encodeURIComponent(v)).join("&");
+}
+$("#gmailAcc").value = ls.get("gmail") || "";
+$("#gmailAcc").addEventListener("change", e => ls.set("gmail", e.target.value.trim()));
+
+/* ---------- statusredigering ---------- */
+let draft = null;
+function openEditor(){ draft = STLIST.map(s => ({namn:s.namn, farge:s.farge, orig:s.namn})); renderEditor(); renderBoard(); }
+function closeEditor(){ draft = null; renderEditor(); renderBoard(); }
+function renderEditor(){
+  const host = $("#stedit");
+  if (!draft) { host.hidden = true; host.innerHTML = ""; return; }
+  host.hidden = false;
+  const all = [...S.items.values()]; const cnt = n => all.filter(a => (a.status || STATUSES[0]) === n).length;
+  host.innerHTML = `<h2>Endre statusar</h2>` + draft.map((s,i) => { const n = s.orig ? cnt(s.orig) : 0; return `<div class="strow" data-i="${i}">
+      <input type="color" value="${esc(s.farge)}" data-sf="farge" aria-label="Farge">
+      <input type="text" value="${esc(s.namn)}" data-sf="namn" aria-label="Namn på status">
+      <span class="use">${n} stk</span>
+      <button class="ibtn" data-smove="-1" ${i===0?"disabled":""} aria-label="Flytt opp">↑</button>
+      <button class="ibtn" data-smove="1" ${i===draft.length-1?"disabled":""} aria-label="Flytt ned">↓</button>
+      <button class="ibtn" data-sdel ${n||draft.length<2?"disabled":""} title="${n?"Flytt aktørane til ein annan status først":"Fjern"}" aria-label="Fjern">✕</button></div>`; }).join("") +
+    `<div class="row-meta">Trykk på fargen for å endre han. Rekkjefølgja her blir rekkjefølgja i lista, og den øvste blir brukt på nye aktørar. Ein status kan berre fjernast når ingen aktørar har han.</div>
+    <div class="actions"><button class="btn" id="stAdd">+ Ny status</button><span style="flex:1"></span><span class="err-msg" id="stMsg"></span><button class="btn" id="stCancel">Avbryt</button><button class="btn primary" id="stSave">Lagre</button></div>`;
+}
+async function saveStatuses(){
+  const liste = draft.map(s => ({namn: s.namn.trim(), farge: s.farge}));
+  const names = liste.map(s => s.namn);
+  if (names.some(n => !n)) { $("#stMsg").textContent = "Alle statusar må ha eit namn"; return; }
+  if (new Set(names).size !== names.length) { $("#stMsg").textContent = "To statusar har same namn"; return; }
+  const renames = draft.filter(s => s.orig && s.orig !== s.namn.trim()).map(s => [s.orig, s.namn.trim()]);
+  setSave("", "Lagrar …");
+  try { await setDoc(doc(db, "config", "statusar"), {liste}); } catch (e) { $("#stMsg").textContent = "Ikkje lagra: " + errText(e); setSave("", ""); return; }
+  setStatuses(liste);
+  [...S.items.values()].forEach(a => { const r = renames.find(([o]) => o === (a.status || DEF_ST[0].namn)); if (r) write(a.id, {status: r[1]}); });
+  setSave("ok", "Lagra");
+  S.st.clear(); draft = null; renderEditor(); renderAll();
+}
+
+/* ---------- tilgang og data (admin) ---------- */
+const ROLES = {admin:"Administrator", redaktor:"Redaktør", lesar:"Lesar"};
+function renderAdmin(){
+  const host = $("#adminPanel"); if (host.hidden) return;
+  host.innerHTML = `<h2>Tilgang</h2>
+    <div class="row-meta">Berre e-postadressene her kan logge inn. Redaktørar kan endre lista, lesarar kan berre sjå. Administratorar kan i tillegg styre tilgangen.</div>
+    <div>${S.access.sort((a,b) => a.email.localeCompare(b.email)).map(a => `<div class="acrow"><span class="mono">${esc(a.email)}</span>
+      <select class="inp" data-acrole="${esc(a.email)}" ${a.email===S.email?"disabled":""}>${Object.entries(ROLES).map(([k,v]) => `<option value="${k}"${a.rolle===k?" selected":""}>${v}</option>`).join("")}</select>
+      <button class="btn danger" data-acdel="${esc(a.email)}" ${a.email===S.email?"disabled":""}>Fjern</button></div>`).join("")}</div>
+    <form class="inline" id="acForm"><input class="inp" id="acEmail" type="email" required placeholder="ny@epost.no" style="flex:1">
+      <select class="inp" id="acRole">${Object.entries(ROLES).map(([k,v]) => `<option value="${k}"${k==="redaktor"?" selected":""}>${v}</option>`).join("")}</select>
+      <button class="btn primary" type="submit">Gi tilgang</button></form>
+    <span class="err-msg" id="acMsg"></span>
+    <h2>Data</h2>
+    <div class="row-meta">Ta ein kopi av alt jamleg. Importering skriv over aktørar med same id.</div>
+    <div class="actions"><button class="btn" id="btnExport">Last ned kopi (JSON)</button>
+      <label class="btn">Importer frå fil<input type="file" id="fileImport" accept="application/json,.json" hidden></label>
+      <span id="impMsg" class="row-meta"></span></div>`;
+}
+async function importFile(file){
+  const msg = $("#impMsg");
+  try {
+    const data = JSON.parse(await file.text());
+    const list = Array.isArray(data) ? data : (data.aktorar || []);
+    if (!list.length) { msg.textContent = "Fann ingen aktørar i fila."; return; }
+    for (let i = 0; i < list.length; i += 400) {
+      const b = writeBatch(db);
+      list.slice(i, i + 400).forEach(({id, ...rest}) => b.set(doc(db, "aktorar", String(id)), {...rest, endraAv: S.email, endra: serverTimestamp()}));
+      await b.commit();
+    }
+    if (Array.isArray(data.statusar) && data.statusar.length) await setDoc(doc(db, "config", "statusar"), {liste: data.statusar});
+    msg.textContent = `Importerte ${list.length} aktørar.`;
+  } catch (e) { msg.textContent = "Importen feila: " + errText(e); }
+}
+function exportData(){
+  const aktorar = [...S.items.values()].map(({endra, ...a}) => ({...a, endra: endra && endra.toDate ? endra.toDate().toISOString() : null}));
+  const blob = new Blob([JSON.stringify({aktorar, statusar: STLIST}, null, 1)], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `quizpremiar-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- liste ---------- */
+const fmtTime = t => { const d = t && t.toDate ? t.toDate() : null; return d ? d.toLocaleString("nb-NO", {weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}) : ""; };
+function rowHead(a){
+  const inR = S.route.includes(a.id); const st = a.status || STATUSES[0];
+  const meta = [a.omrade, a.kategori].filter(Boolean).join(" · ");
+  return `<div class="row-head" data-open="${esc(a.id)}" role="button" tabindex="0" aria-expanded="${S.open===a.id}">
+    <span class="stripe" style="background:${esc(stColor(st))}"></span>
+    <div style="min-width:0"><p class="row-title">${esc(a.namn)}</p>
+      <div class="row-meta">${esc(meta)}${a.premie ? ` · <span class="prize">${esc(a.premie)}</span>` : ""}${a.mote ? ` · Møte ${esc(a.mote)}` : ""}</div></div>
+    <div class="right"><span class="pill">${dot(st)}${esc(st)}</span>
+      ${a.lat ? `<button class="rbtn${inR?" on":""}" data-route="${esc(a.id)}" aria-pressed="${inR}">${inR?"I runden":"+ Runde"}</button>` : ""}</div>
+  </div>`;
+}
+function detailHTML(a){
+  const opt = (arr, cur) => arr.map(v => `<option${v===cur?" selected":""}>${esc(v)}</option>`).join("");
+  const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.lat ? a.lat+","+a.lon : a.namn+", Bergen")}`;
+  const id = esc(a.id);
+  return `<div class="detail" data-detail="${id}"><fieldset ${S.canWrite ? "" : "disabled"}>
+    <div class="grid2">
+      <div class="field"><label for="st-${id}">Status</label><select id="st-${id}" data-f="status">${opt(STATUSES, a.status||STATUSES[0])}</select></div>
+      <div class="field"><label for="mo-${id}">Møtedato</label><input id="mo-${id}" data-f="mote" value="${esc(a.mote)}" placeholder="t.d. tysdag 27.10"></div>
+      <div class="field"><label for="pr-${id}">Premie</label><input id="pr-${id}" data-f="premie" value="${esc(a.premie)}" placeholder="Kva de har fått"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="ep-${id}">E-post</label><div class="inline"><input class="mono" id="ep-${id}" data-f="epost" value="${esc(a.epost)}"></div></div>
+      <div class="field"><label for="tl-${id}">Telefon</label><div class="inline"><input class="mono" id="tl-${id}" data-f="telefon" value="${esc(a.telefon)}"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="om-${id}">Område</label><input id="om-${id}" data-f="omrade" value="${esc(a.omrade)}"></div>
+      <div class="field"><label for="ka-${id}">Kategori</label><select id="ka-${id}" data-f="kategori">${opt(KATS, a.kategori)}</select></div>
+    </div>
+    <div class="field"><label for="no-${id}">Notat</label><textarea id="no-${id}" data-f="notat" rows="2">${esc(a.notat)}</textarea></div>
+    <div class="field"><label for="tx-${id}">Tekst til e-post</label><textarea class="letter" id="tx-${id}" data-f="tekst">${esc(a.tekst)}</textarea></div>
+    </fieldset>
+    <div class="actions">
+      <a class="btn primary" data-gmail="${id}" href="${esc(gmailUrl(a.id))}" target="_blank" rel="noopener">Skriv i Gmail</a>
+      <button class="btn" data-copy="tx-${id}">Kopier teksten</button>
+      <button class="btn" data-copy="ep-${id}">Kopier e-post</button>
+      <a class="btn" href="${esc(maps)}" target="_blank" rel="noopener">Google Maps</a>
+      <span class="copied" data-copied="${id}"></span>
+      <span style="flex:1"></span>
+      ${S.canWrite ? `<button class="btn danger" data-del="${id}">Slett</button>` : ""}
+    </div>
+    ${a.endraAv ? `<div class="row-meta">Sist endra av ${esc(a.endraAv)}${a.endra ? ", " + esc(fmtTime(a.endra)) : ""}</div>` : ""}
+  </div>`;
+}
+function renderList(){
+  const host = $("#list");
+  const keep = S.open && host.querySelector(`[data-detail="${CSS.escape(S.open)}"]`);
+  const editing = keep && keep.contains(document.activeElement) ? keep : null;
+  if (!S.loaded) { host.innerHTML = `<div class="empty">Hentar aktørane …</div>`; return; }
+  if (!S.items.size) { host.innerHTML = `<div class="empty">Ingen aktørar enno.${S.isAdmin ? " Importer lista under «Tilgang og data»." : ""}</div>` + (S.canWrite ? addForm() : ""); return; }
+  const vis = visible();
+  const groups = STATUSES.map(s => [s, vis.filter(a => (a.status || STATUSES[0]) === s)]).filter(([,l]) => l.length);
+  const orphan = vis.filter(a => !STATUSES.includes(a.status || STATUSES[0])); if (orphan.length) groups.push(["Utan gyldig status", orphan]);
+  if (editing) editing.remove();
+  host.innerHTML = (vis.length ? "" : `<div class="empty">Ingen treff med desse filtra.</div>`) + groups.map(([k,l]) =>
+    `<div class="group-h"><span>${dot(k)}${esc(k)}</span><span>${l.length}</span></div>` +
+    l.sort((a,b) => a.namn.localeCompare(b.namn, "nn")).map(a => `<div class="row" data-row="${esc(a.id)}">${rowHead(a)}${S.open===a.id && !editing ? detailHTML(a) : ""}</div>`).join("")
+  ).join("") + (S.canWrite ? addForm() : "");
+  if (editing) { const row = host.querySelector(`[data-row="${CSS.escape(S.open)}"]`); if (row) row.appendChild(editing); }
+}
+function addForm(){
+  return `<form class="addform" id="addform"><div class="field"><label for="nyNamn">Ny aktør</label><input id="nyNamn" required placeholder="Namn"></div>
+    <div class="field"><label for="nyKat">Kategori</label><select id="nyKat">${KATS.map(k => `<option>${esc(k)}</option>`).join("")}</select></div>
+    <div class="field"><label for="nyOmr">Område</label><input id="nyOmr" placeholder="t.d. Sentrum"></div>
+    <div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">Legg til</button></div></form>`;
+}
+function refreshHead(id){ const row = document.querySelector(`[data-row="${CSS.escape(id)}"]`); const a = S.items.get(id); if (!row || !a) return; const tmp = document.createElement("div"); tmp.innerHTML = rowHead(a); row.replaceChild(tmp.firstElementChild, row.querySelector(".row-head")); }
+
+/* ---------- kart ---------- */
+let map = null, layer = null;
+const VIEWS = { sentrum: [[60.3925, 5.3245], 15], sor: [[60.33, 5.32], 12], alt: [[60.38, 5.28], 11] };
+function initMap(){
+  if (map) { setTimeout(() => map.invalidateSize(), 50); return; }
+  map = L.map("map", {zoomControl:true}).setView(...VIEWS.sentrum);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-bidragsytarar'}).addTo(map);
+  layer = L.layerGroup().addTo(map);
+  map.on("zoomend", drawMap);
+  new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById("map"));
+}
+function popupHTML(a){
+  const inR = S.route.includes(a.id); const st = a.status || STATUSES[0];
+  return `<strong style="font-family:var(--f-display)">${esc(a.namn)}</strong><br><span class="pill" style="margin:4px 0">${dot(st)}${esc(st)}</span>
+    ${a.notat ? `<div class="row-meta" style="margin:4px 0">${esc(a.notat)}</div>` : ""}
+    <div class="actions" style="margin-top:6px"><button class="btn${inR?"":" primary"}" data-route="${esc(a.id)}">${inR?"Fjern frå runden":"Legg i runden"}</button><button class="btn" data-goto="${esc(a.id)}">Opne</button></div>`;
+}
+function drawMap(){
+  if (!map) return;
+  layer.clearLayers();
+  const order = routeOrder();
+  if (order.length) L.polyline([HOME, ...order].map(a => [a.lat, a.lon]), {color:"#F0B035", weight:4, opacity:.9}).addTo(layer);
+  const vis = new Set(visible().map(a => a.id));
+  const labels = map.getZoom() >= 16;
+  [...S.items.values()].filter(a => a.lat && (vis.has(a.id) || S.route.includes(a.id))).forEach(a => {
+    const idx = order.findIndex(o => o.id === a.id);
+    const m = idx >= 0
+      ? L.marker([a.lat, a.lon], {icon: L.divIcon({className:"", html:`<div class="pin-num">${idx+1}</div>`, iconSize:[24,24], iconAnchor:[12,12]})})
+      : L.circleMarker([a.lat, a.lon], {radius:8, color:"#fff", weight:2, fillColor: stColor(a.status || STATUSES[0]), fillOpacity:1});
+    m.bindTooltip(a.namn, {direction:"right", offset:[10,0], permanent: labels || idx >= 0});
+    m.bindPopup(() => popupHTML(a));
+    m.addTo(layer);
+  });
+  L.marker([HOME.lat, HOME.lon], {icon: L.divIcon({className:"", html:`<div class="pin-home"></div>`, iconSize:[16,16], iconAnchor:[8,8]})}).bindTooltip("Kvarteret", {direction:"right", offset:[10,0], permanent:true}).addTo(layer);
+}
+
+/* ---------- runde ---------- */
+const hav = (a, b) => { const R = 6371000, r = Math.PI/180; const dl = (b.lat-a.lat)*r, dn = (b.lon-a.lon)*r; const h = Math.sin(dl/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+function routeOrder(){
+  const left = S.route.map(id => S.items.get(id)).filter(a => a && a.lat); const out = []; let cur = HOME;
+  while (left.length) { let bi = 0, bd = Infinity; left.forEach((a,i) => { const d = hav(cur,a); if (d < bd) { bd = d; bi = i; } }); cur = left.splice(bi,1)[0]; out.push(cur); }
+  return out;
+}
+const ll = a => a.lat.toFixed(6) + "," + a.lon.toFixed(6);
+function gLinks(order){
+  const links = []; let from = HOME;
+  for (let i = 0; i < order.length; i += 10) { const chunk = order.slice(i, i+10); const dest = chunk[chunk.length-1]; const way = chunk.slice(0,-1).map(ll).join("|");
+    links.push(`https://www.google.com/maps/dir/?api=1&origin=${ll(from)}&destination=${ll(dest)}${way ? "&waypoints=" + encodeURIComponent(way) : ""}&travelmode=walking`); from = dest; }
+  return links;
+}
+function renderRound(){
+  const order = routeOrder(); $("#tabCount").textContent = order.length ? `(${order.length})` : "";
+  const host = $("#round");
+  if (!order.length) { host.innerHTML = `<h2>Dagens runde</h2><div class="empty">Trykk «+ Runde» i lista eller på ein stad i kartet. Ruta startar ved Kvarteret og går til næraste stad kvar gong.</div>`; return; }
+  let prev = HOME, tot = 0;
+  const lis = order.map((a,i) => { const d = hav(prev,a); tot += d; prev = a; const st = a.status || STATUSES[0];
+    return `<li><span class="num">${i+1}</span><span style="min-width:0"><a href="#" data-goto="${esc(a.id)}" style="color:var(--ink)">${esc(a.namn)}</a> <span class="row-meta">· ${dot(st)} ${esc(st)}</span></span><span class="dist">${d<1000 ? Math.round(d)+" m" : (d/1000).toFixed(1)+" km"}</span><button class="x" data-route="${esc(a.id)}" aria-label="Fjern ${esc(a.namn)} frå runden">×</button></li>`; }).join("");
+  const links = gLinks(order);
+  host.innerHTML = `<h2>Dagens runde</h2>
+    <ol><li><span class="num home">K</span><span>Kvarteret</span><span class="dist">start</span><span></span></li>${lis}</ol>
+    <div class="sum">${(tot/1000).toFixed(1)} km i luftlinje · om lag ${Math.round(tot/1000/4.5*60)} min gange</div>
+    <div class="actions">${links.map((l,i) => `<a class="btn primary" href="${esc(l)}" target="_blank" rel="noopener">Opne ${links.length>1 ? `del ${i+1} ` : ""}i Google Maps</a>`).join("")}
+      <button class="btn" id="clearRound">Tøm runden</button></div>
+    ${links.length>1 ? `<div class="row-meta">Google Maps tek maks ti stopp om gongen, så ruta er delt i ${links.length}.</div>` : ""}`;
+}
+function toggleRoute(id){ const i = S.route.indexOf(id); if (i >= 0) S.route.splice(i,1); else S.route.push(id); saveRoute(); map && map.closePopup(); renderAll(); }
+
+/* ---------- hendingar ---------- */
+function renderAll(){ renderBoard(); renderList(); drawMap(); renderRound(); }
+function setTab(t){ $("#work").dataset.tab = t; document.querySelectorAll("#tabs [data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t)); if (map) setTimeout(() => map.invalidateSize(), 30); }
+
+document.addEventListener("click", async e => {
+  const t = e.target;
+  const gm = t.closest("[data-gmail]"); if (gm) { gm.href = gmailUrl(gm.dataset.gmail); return; }
+  if (t.closest("#stEditBtn")) { draft ? closeEditor() : openEditor(); return; }
+  if (t.closest("#stedit")) {
+    const row = t.closest("[data-i]"); const i = row ? +row.dataset.i : -1;
+    const mv = t.closest("[data-smove]"); if (mv && i >= 0) { const j = i + +mv.dataset.smove; [draft[i], draft[j]] = [draft[j], draft[i]]; renderEditor(); return; }
+    if (t.closest("[data-sdel]") && i >= 0) { draft.splice(i,1); renderEditor(); return; }
+    if (t.id === "stAdd") { draft.push({namn:"Ny status", farge:"#C7841A", orig:null}); renderEditor(); return; }
+    if (t.id === "stCancel") { closeEditor(); return; }
+    if (t.id === "stSave") { saveStatuses(); return; }
+    return;
+  }
+  if (t.id === "btnAdmin") { const p = $("#adminPanel"); p.hidden = !p.hidden; renderAdmin(); return; }
+  if (t.id === "btnExport") { exportData(); return; }
+  const acd = t.closest("[data-acdel]"); if (acd) {
+    if (acd.dataset.armed) { try { await deleteDoc(doc(db, "tilgang", acd.dataset.acdel)); } catch (er) { $("#acMsg").textContent = "Klarte ikkje fjerne: " + errText(er); } }
+    else { acd.dataset.armed = "1"; acd.textContent = "Trykk igjen"; setTimeout(() => { if (acd.isConnected) { delete acd.dataset.armed; acd.textContent = "Fjern"; } }, 3000); }
+    return;
+  }
+  const chip = t.closest("[data-st]"); if (chip) { const s = chip.dataset.st; S.st.has(s) ? S.st.delete(s) : S.st.add(s); renderAll(); return; }
+  const r = t.closest("[data-route]"); if (r) { e.stopPropagation(); toggleRoute(r.dataset.route); return; }
+  const go = t.closest("[data-goto]"); if (go) { e.preventDefault(); const id = go.dataset.goto; S.open = id; setTab("liste"); S.st.clear(); S.omr = S.kat = S.q = ""; $("#q").value = ""; renderSelects(); map && map.closePopup(); renderAll();
+    const row = document.querySelector(`[data-row="${CSS.escape(id)}"]`); row && row.scrollIntoView({block:"start", behavior:"smooth"}); return; }
+  const cp = t.closest("[data-copy]"); if (cp) { const el = document.getElementById(cp.dataset.copy); const done = cp.closest(".detail") && cp.closest(".detail").querySelector("[data-copied]");
+    try { await navigator.clipboard.writeText(el.value); if (done) done.textContent = "Kopiert"; } catch (_) { el.removeAttribute("disabled"); el.focus(); el.select(); if (done) done.textContent = "Merka, trykk Ctrl+C"; }
+    if (done) setTimeout(() => done.textContent = "", 2000); return; }
+  const del = t.closest("[data-del]"); if (del) {
+    if (del.dataset.armed) { const id = del.dataset.del; try { await deleteDoc(doc(db, "aktorar", id)); S.open = null; S.route = S.route.filter(x => x !== id); saveRoute(); setSave("ok","Sletta"); } catch (er) { setSave("err", "Ikkje sletta: " + errText(er)); } }
+    else { del.dataset.armed = "1"; del.textContent = "Trykk igjen for å slette"; setTimeout(() => { if (del.isConnected) { delete del.dataset.armed; del.textContent = "Slett"; } }, 3000); }
+    return; }
+  const v = t.closest("[data-view]"); if (v && map) { map.setView(...VIEWS[v.dataset.view]); return; }
+  if (t.id === "clearRound") { S.route = []; saveRoute(); renderAll(); return; }
+  const tab = t.closest("[data-tab]"); if (tab && tab.closest("#tabs")) { setTab(tab.dataset.tab); return; }
+  const h = t.closest("[data-open]"); if (h) { const id = h.dataset.open; S.open = S.open === id ? null : id; renderList(); }
+});
+document.addEventListener("keydown", e => { const h = e.target.closest && e.target.closest("[data-open]"); if (h && (e.key === "Enter" || e.key === " ") && e.target === h) { e.preventDefault(); h.click(); } });
+document.addEventListener("input", e => {
+  const sf = e.target.dataset && e.target.dataset.sf; if (sf && draft) { const row = e.target.closest("[data-i]"); if (row) draft[+row.dataset.i][sf] = e.target.value; return; }
+  const f = e.target.dataset && e.target.dataset.f; const d = e.target.closest(".detail"); if (f && d && e.target.tagName !== "SELECT") writeLater(d.dataset.detail, f, e.target.value);
+});
+document.addEventListener("change", async e => {
+  const f = e.target.dataset && e.target.dataset.f; const d = e.target.closest(".detail");
+  if (f && d) { if (e.target.tagName === "SELECT") write(d.dataset.detail, {[f]: e.target.value}); else flush(d.dataset.detail, f, e.target.value);
+    if (f === "status") { e.target.blur(); renderList(); } else refreshHead(d.dataset.detail); renderBoard(); drawMap(); renderRound(); return; }
+  if (e.target.id === "fOmr") { S.omr = e.target.value; renderAll(); }
+  if (e.target.id === "fKat") { S.kat = e.target.value; renderAll(); }
+  if (e.target.dataset.acrole) { try { await setDoc(doc(db, "tilgang", e.target.dataset.acrole), {rolle: e.target.value}, {merge:true}); } catch (er) { $("#acMsg").textContent = "Klarte ikkje endre: " + errText(er); } }
+  if (e.target.id === "fileImport" && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ""; }
+});
+document.addEventListener("focusout", e => { const f = e.target.dataset && e.target.dataset.f; const d = e.target.closest && e.target.closest(".detail"); if (f && d) { flush(d.dataset.detail, f, e.target.value); refreshHead(d.dataset.detail); } });
+$("#q").addEventListener("input", e => { S.q = e.target.value; renderList(); drawMap(); });
+document.addEventListener("submit", async e => {
+  if (e.target.id === "acForm") { e.preventDefault(); const em = $("#acEmail").value.trim().toLowerCase(); if (!em) return;
+    try { await setDoc(doc(db, "tilgang", em), {rolle: $("#acRole").value, lagtTilAv: S.email, lagtTil: serverTimestamp()}); $("#acEmail").value = ""; $("#acMsg").textContent = ""; }
+    catch (er) { $("#acMsg").textContent = "Klarte ikkje gi tilgang: " + errText(er); } return; }
+  if (e.target.id !== "addform") return; e.preventDefault();
+  const namn = $("#nyNamn").value.trim(); if (!namn) return;
+  const body = {namn, kategori: $("#nyKat").value, omrade: $("#nyOmr").value.trim(), status: STATUSES[0], notat:"", epost:"", telefon:"", tekst:"", premie:"", mote:"", endraAv:S.email, endra:serverTimestamp()};
+  setSave("", "Legg til …"); try { const ref = await addDoc(collection(db, "aktorar"), body); S.open = ref.id; setSave("ok", "Lagt til"); } catch (er) { setSave("err", "Ikkje lagt til: " + errText(er)); }
+});
+</script>
+</body>
+</html>
