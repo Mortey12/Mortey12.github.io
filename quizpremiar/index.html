@@ -191,6 +191,7 @@ textarea.letter{min-height:280px}
       <input id="q" type="search" placeholder="Søk etter namn, notat eller e-post" aria-label="Søk">
       <select id="fOmr" aria-label="Område"></select>
       <select id="fKat" aria-label="Kategori"></select>
+      <select id="sortSel" aria-label="Sortering"></select>
       <input id="gmailAcc" type="email" placeholder="Gmail-kontoen de sender frå" aria-label="Gmail-kontoen de sender frå" style="flex:0 1 260px">
     </div>
 
@@ -256,7 +257,8 @@ const dot = s => `<i class="sdot" style="background:${esc(stColor(s))}"></i>`;
 const KATS = ["Fleksible premiar","Daglegvare (gåvekort)","Aktivitetar","Kultur og arrangement","Kreativ teikning","Kreativ teikning (sensuell)","Mat og rundepremiar","Fantoft og studentbyane"];
 const HOME = {namn:"Kvarteret", lat:60.3896713, lon:5.3218932};
 
-const S = { items:new Map(), loaded:false, open:null, st:new Set(), omr:"", kat:"", q:"", route:[], email:"", role:"", canWrite:false, isAdmin:false, access:[] };
+const S = { items:new Map(), loaded:false, open:null, st:new Set(), omr:"", kat:"", q:"", route:[], email:"", role:"", canWrite:false, isAdmin:false, access:[], sort:"status" };
+const SORTS = { status:"Sorter: status, Ikkje kontakta først", statusRev:"Sorter: status, Ja først", namn:"Sorter: namn A–Å", omrade:"Sorter: område", kategori:"Sorter: kategori", endra:"Sorter: sist endra først" };
 try { S.route = JSON.parse(ls.get("runde") || "[]"); } catch(_) {}
 const saveRoute = () => ls.set("runde", JSON.stringify(S.route));
 let unsubs = [];
@@ -361,7 +363,7 @@ function renderBoard(){
   $("#legend").innerHTML = STATUSES.map(s => `<span>${dot(s)}${esc(s)}</span>`).join("") + `<span><i class="sdot" style="background:#14232B;border-radius:2px"></i>Kvarteret</span>`;
 }
 function renderSelects(){
-  const omr = [...new Set([...S.items.values()].map(a => a.omrade).filter(Boolean))].sort((a,b) => a.localeCompare(b, "nn"));
+  const omr = [...new Set([...S.items.values()].map(a => a.omrade).filter(Boolean))].sort((a,b) => a.localeCompare(b, "nb"));
   const fill = (sel, vals, first, cur) => { sel.innerHTML = `<option value="">${first}</option>` + vals.map(v => `<option${v===cur?" selected":""}>${esc(v)}</option>`).join(""); };
   fill($("#fOmr"), omr, "Alle område", S.omr);
   fill($("#fKat"), KATS, "Alle kategoriar", S.kat);
@@ -378,6 +380,9 @@ function gmailUrl(id){
   const q = [["view","cm"],["fs","1"],["to",to],["su",su],["body",body]].concat(acc ? [["authuser",acc]] : []);
   return "https://mail.google.com/mail/?" + q.map(([k,v]) => k + "=" + encodeURIComponent(v)).join("&");
 }
+S.sort = SORTS[ls.get("sort")] ? ls.get("sort") : "status";
+$("#sortSel").innerHTML = Object.entries(SORTS).map(([k,v]) => `<option value="${k}"${k===S.sort?" selected":""}>${v}</option>`).join("");
+$("#sortSel").addEventListener("change", e => { S.sort = e.target.value; ls.set("sort", S.sort); renderList(); });
 $("#gmailAcc").value = ls.get("gmail") || "";
 $("#gmailAcc").addEventListener("change", e => ls.set("gmail", e.target.value.trim()));
 
@@ -507,12 +512,28 @@ function renderList(){
   if (!S.loaded) { host.innerHTML = `<div class="empty">Hentar aktørane …</div>`; return; }
   if (!S.items.size) { host.innerHTML = `<div class="empty">Ingen aktørar enno.${S.isAdmin ? " Importer lista under «Tilgang og data»." : ""}</div>` + (S.canWrite ? addForm() : ""); return; }
   const vis = visible();
-  const groups = STATUSES.map(s => [s, vis.filter(a => (a.status || STATUSES[0]) === s)]).filter(([,l]) => l.length);
-  const orphan = vis.filter(a => !STATUSES.includes(a.status || STATUSES[0])); if (orphan.length) groups.push(["Utan gyldig status", orphan]);
+  const byName = (a,b) => a.namn.localeCompare(b.namn, "nb");
+  let groups;
+  if (S.sort === "status" || S.sort === "statusRev") {
+    let order = [...STATUSES];
+    if (S.sort === "statusRev") { order.reverse(); const nei = order.indexOf("Nei"); if (nei >= 0) order.push(order.splice(nei, 1)[0]); }
+    groups = order.map(s => [s, vis.filter(a => (a.status || STATUSES[0]) === s).sort(byName), true]);
+    const orphan = vis.filter(a => !STATUSES.includes(a.status || STATUSES[0])); if (orphan.length) groups.push(["Utan gyldig status", orphan.sort(byName), false]);
+  } else if (S.sort === "omrade" || S.sort === "kategori") {
+    const key = S.sort, none = key === "omrade" ? "Utan område" : "Utan kategori";
+    const vals = key === "kategori" ? [...KATS, none] : [...new Set(vis.map(a => a.omrade || none))].sort((a,b) => a === none ? 1 : b === none ? -1 : a.localeCompare(b, "nb"));
+    groups = vals.map(v => [v, vis.filter(a => (a[key] || none) === v).sort(byName), false]);
+  } else if (S.sort === "endra") {
+    const ms = a => (a.endra && a.endra.toMillis) ? a.endra.toMillis() : 0;
+    groups = [["Sist endra først", [...vis].sort((a,b) => ms(b) - ms(a)), false]];
+  } else {
+    groups = [["Alle aktørar", [...vis].sort(byName), false]];
+  }
+  groups = groups.filter(([,l]) => l.length);
   if (editing) editing.remove();
-  host.innerHTML = (vis.length ? "" : `<div class="empty">Ingen treff med desse filtra.</div>`) + groups.map(([k,l]) =>
-    `<div class="group-h"><span>${dot(k)}${esc(k)}</span><span>${l.length}</span></div>` +
-    l.sort((a,b) => a.namn.localeCompare(b.namn, "nn")).map(a => `<div class="row" data-row="${esc(a.id)}">${rowHead(a)}${S.open===a.id && !editing ? detailHTML(a) : ""}</div>`).join("")
+  host.innerHTML = (vis.length ? "" : `<div class="empty">Ingen treff med desse filtra.</div>`) + groups.map(([k,l,isSt]) =>
+    `<div class="group-h"><span>${isSt ? dot(k) : ""}${esc(k)}</span><span>${l.length}</span></div>` +
+    l.map(a => `<div class="row" data-row="${esc(a.id)}">${rowHead(a)}${S.open===a.id && !editing ? detailHTML(a) : ""}</div>`).join("")
   ).join("") + (S.canWrite ? addForm() : "");
   if (editing) { const row = host.querySelector(`[data-row="${CSS.escape(S.open)}"]`); if (row) row.appendChild(editing); }
 }
