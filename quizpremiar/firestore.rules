@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Innlogga med stadfesta e-post (Google-konto eller innloggingslenkje)
+    function epost() { return request.auth.token.email.lower(); }
+    function innlogga() { return request.auth != null && request.auth.token.email_verified == true; }
+    function tilgangDoc() { return /databases/$(database)/documents/tilgang/$(epost()); }
+    function harTilgang() { return innlogga() && exists(tilgangDoc()); }
+    function rolle() { return get(tilgangDoc()).data.rolle; }
+    function kanEndre() { return harTilgang() && rolle() in ['admin', 'redaktor']; }
+    function erAdmin() { return harTilgang() && rolle() == 'admin'; }
+
+    // Aktørane: alle på lista kan lese, redaktørar og admin kan endre
+    match /aktorar/{id} {
+      allow read: if harTilgang();
+      allow create, update: if kanEndre();
+      allow delete: if kanEndre();
+    }
+
+    // Statusar og andre innstillingar
+    match /config/{id} {
+      allow read: if harTilgang();
+      allow write: if kanEndre();
+    }
+
+    // Tilgangslista: berre admin kan endre kven som slepp inn
+    match /tilgang/{e} {
+      allow read: if harTilgang();
+      allow write: if erAdmin();
+    }
+
+    // Alt anna er stengt
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
