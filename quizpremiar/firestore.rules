@@ -5,7 +5,7 @@ service cloud.firestore {
 
     // Innlogga med stadfesta e-post (Google-konto eller innloggingslenkje)
     function epost() { return request.auth.token.email.lower(); }
-    function innlogga() { return request.auth != null && request.auth.token.email_verified == true; }
+    function innlogga() { return request.auth != null && request.auth.token.get('email_verified', false) == true && request.auth.token.get('email', '') != ''; }
     function tilgangDoc() { return /databases/$(database)/documents/tilgang/$(epost()); }
     function harTilgang() { return innlogga() && exists(tilgangDoc()); }
     function rolle() { return get(tilgangDoc()).data.rolle; }
@@ -50,6 +50,60 @@ service cloud.firestore {
     // Laga og poenga deira
     match /etneLag/{id} {
       allow read, write: if etneAdmin();
+    }
+
+    // ---- Etnequizen: mobilane til laga (anonym innlogging) ----
+    function liveDoc() { return /databases/$(database)/documents/etneLive/no; }
+    function mobilDoc(bord) { return /databases/$(database)/documents/etneMobil/$(bord); }
+    function eigBord(bord) { return request.auth != null && get(mobilDoc(bord)).data.uid == request.auth.uid; }
+    function jokerOpen() { return !exists(liveDoc()) || get(liveDoc()).data.get('jokerLaast', false) != true; }
+
+    // Hemmeleg kode per bord (står i QR-koden). Berre quizmasteren ser dei.
+    match /etneKode/{bord} {
+      allow read, write: if etneAdmin();
+    }
+    // Det som er ope no: hurtigspørsmål utan fasit, joker-lås og resultat-flagg
+    match /etneLive/{doc} {
+      allow read: if request.auth != null;
+      allow write: if etneAdmin();
+    }
+    // Kva mobil som høyrer til kvart bord. Første mobil med rett kode får bordet.
+    match /etneMobil/{bord} {
+      allow read: if etneAdmin() || (request.auth != null && (resource == null || resource.data.uid == request.auth.uid));
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'kode', 'namn', 'joker', 't'])
+        && request.resource.data.namn is string && request.resource.data.namn.size() <= 40
+        && request.resource.data.joker is string && request.resource.data.joker.size() <= 40
+        && exists(/databases/$(database)/documents/etneKode/$(bord))
+        && request.resource.data.kode == get(/databases/$(database)/documents/etneKode/$(bord)).data.kode;
+      allow update: if etneAdmin() || (request.auth != null && resource.data.uid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['namn', 'joker'])
+        && request.resource.data.namn is string && request.resource.data.namn.size() <= 40
+        && request.resource.data.joker is string && request.resource.data.joker.size() <= 40
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['joker']) || jokerOpen()));
+      allow delete: if etneAdmin();
+    }
+    // Svar i hurtigrundane: eitt svar per bord per spørsmål, berre medan klokka går
+    match /etneSvar/{id} {
+      allow read: if etneAdmin() || (request.auth != null && (resource == null || resource.data.uid == request.auth.uid));
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['live', 'bord', 'uid', 'svar', 't'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.t == request.time
+        && request.resource.data.bord is string
+        && request.resource.data.svar is string && request.resource.data.svar.size() <= 80
+        && eigBord(request.resource.data.bord)
+        && get(liveDoc()).data.open == true
+        && request.resource.data.live == get(liveDoc()).data.id
+        && id == get(liveDoc()).data.id + '_' + request.resource.data.bord
+        && request.time < get(liveDoc()).data.opna + duration.value(get(liveDoc()).data.tid + 2, 's');
+      allow update, delete: if etneAdmin();
+    }
+    // Oppsummeringa etter quizen: berre mobilen til bordet kan lese ho
+    match /etneResultat/{bord} {
+      allow read: if etneAdmin() || eigBord(bord);
+      allow write: if etneAdmin();
     }
 
     // Alt anna er stengt

@@ -2,6 +2,7 @@
   // Teiknar det som skal vere på storskjermen: eitt punkt i køyreplanen, pause, poengtavle eller avsløring.
   import { katInfo, nummerer, rangering, fasitFor, fmt } from "./quiz.js";
   import { hentBilete } from "./firebase.js";
+  import HurtigSlide from "./HurtigSlide.svelte";
   let { quiz, steg = 0, modus = "plan", lag = [], avslort = 0, sist = 0 } = $props();
 
   const plan = $derived(nummerer(quiz));
@@ -19,6 +20,7 @@
   const kategoriInfo = $derived.by(() => {
     if (it?.type !== "kategori") return "";
     const n = plan.filter(x => x.type === "sporsmal" && x.kat === it.kat && x.nummerert !== false).length;
+    if (k?.hurtig) return [n ? `${n} spørsmål` : "", "svar på mobilen", "raskaste rette svar får mest"].filter(Boolean).join(" · ") + (k.premie ? `\nPremie: ${k.premie}` : "");
     return [n ? `${n} spørsmål` : "", k?.maks ? `opptil ${fmt(k.maks)} poeng` : ""].filter(Boolean).join(" · ");
   });
   const fasitIds = $derived.by(() => {
@@ -80,11 +82,13 @@
   <div class="slide s-mid s-tittel"><h1 class="stor">{quiz.tittel || "Etnequizen"}</h1><span class="under">Køyreplanen er tom</span></div>
 {:else if it.type === "tittel" || it.type === "pause"}
   <div class="slide s-mid s-tittel"><span class="over">{it.undertittel || quiz.undertittel || "Etnequizen"}</span><h1 class="stor">{it.tittel || (it.type === "pause" ? "Pause" : quiz.tittel)}</h1>{#if it.tekst}<span class="under" style="white-space:pre-line">{it.tekst}</span>{/if}</div>
+{:else if it.type === "hurtigresultat" || (it.type === "sporsmal" && k?.hurtig)}
+  <HurtigSlide {it} {k} {plan} />
 {:else if it.type === "kategori"}
   <div class="slide s-mid s-kat">
-    {#if k?.nr}<span class="pill">Kategori {k.nr}</span>{:else}<span class="pill gull">Ekstra</span>{/if}
+    {#if k?.nr}<span class="pill">Kategori {k.nr}</span>{:else if k?.hurtig}<span class="pill gull">⚡ Hurtigrunde</span>{:else}<span class="pill gull">Ekstra</span>{/if}
     <h1 class="stor">{k?.namn ?? "?"}</h1>
-    {#if kategoriInfo}<span class="under">{kategoriInfo}</span>{/if}
+    {#if kategoriInfo}<span class="under" style="white-space:pre-line">{kategoriInfo}</span>{/if}
   </div>
 {:else if it.type === "sporsmal"}
   <div class="slide">

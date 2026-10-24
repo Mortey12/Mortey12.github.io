@@ -22,7 +22,13 @@ export function melding(tekst, feil = false){ red.melding = tekst; red.feil = fe
 
 // Kva som er på storskjermen
 export async function setState(patch){
-  Object.assign(live.state, patch);
+  for (const [k, v] of Object.entries(patch)) live.state[k] = v && typeof v === "object" && !Array.isArray(v) ? { ...(live.state[k] || {}), ...v } : v;
   try { await setDoc(doc(db, "etne", "state"), patch, { merge: true }); }
   catch (e) { melding("Skjermen vart ikkje oppdatert: " + feiltekst(e), true); }
+}
+
+// Kva mobilane ser: hurtigspørsmål, joker-lås og resultat
+export async function setNo(patch){
+  try { await setDoc(doc(db, "etneLive", "no"), patch, { merge: true }); }
+  catch (e) { melding("Mobilane vart ikkje oppdaterte: " + feiltekst(e), true); }
 }

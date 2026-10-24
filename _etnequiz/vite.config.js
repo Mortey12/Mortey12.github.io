@@ -10,6 +10,6 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, "../etnequiz"),
     emptyOutDir: true,
-    rollupOptions: { input: { index: resolve(__dirname, "index.html"), skjerm: resolve(__dirname, "skjerm.html") } }
+    rollupOptions: { input: { index: resolve(__dirname, "index.html"), skjerm: resolve(__dirname, "skjerm.html"), mobil: resolve(__dirname, "mobil.html") } }
   }
 });
