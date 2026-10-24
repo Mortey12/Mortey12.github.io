@@ -1,0 +1,37 @@
+/* Quizmasterpanelet: lyst og lettlese på laptop, med same granfarge og julraudt som skjermen. */
+:root{
+  --p-bg:#F5F1E8; --p-flate:#FFFFFF; --p-flate-2:#FBF8F2; --p-blekk:#14261F; --p-dempa:#55655D; --p-linje:#DCD5C6;
+  --p-gran:#0F2E24; --p-raud:#B3262E; --p-gull:#E8B84A; --p-ok:#2A7A4B; --p-feil:#B3262E;
+  --p-r:14px; color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--p-bg);color:var(--p-blekk);font:15px/1.5 var(--f-tekst)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--p-gran);outline-offset:2px}
+.inner{max-width:1500px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (min-width:800px){.inner{padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}}
+h2{font-family:var(--f-tittel);font-size:24px;margin:0}
+h3{font-family:var(--f-tittel);font-size:19px;margin:0}
+.btn{border:2px solid var(--p-blekk);background:var(--p-flate);color:var(--p-blekk);border-radius:999px;font:700 14px var(--f-tekst);padding:8px 16px;min-height:42px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
+.btn.primary{background:var(--p-gran);border-color:var(--p-gran);color:#F7F1E3}
+.btn.raud{background:var(--p-raud);border-color:var(--p-raud);color:#fff}
+.btn.gull{background:var(--p-gull);border-color:var(--p-gull);color:var(--p-gran)}
+.btn.liten{min-height:34px;padding:4px 12px;font-size:13px}
+.btn.fare{color:var(--p-feil);border-color:var(--p-feil)}
+.btn[aria-pressed="true"]{background:var(--p-gull);border-color:var(--p-gull);color:var(--p-gran)}
+.btn:disabled{opacity:.45;cursor:default}
+.ibtn{border:1.5px solid var(--p-linje);background:var(--p-flate-2);border-radius:8px;min-width:34px;height:34px;cursor:pointer;font-size:14px;padding:0 8px}
+.ibtn:disabled{opacity:.35;cursor:default}
+.inp,.felt input,.felt select,.felt textarea{font-size:15px;background:var(--p-flate);border:1.5px solid var(--p-linje);border-radius:10px;padding:8px 11px;min-width:0;width:100%}
+.inp:focus,.felt input:focus,.felt select:focus,.felt textarea:focus{border-color:var(--p-gran);outline:none}
+.felt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.felt > label,.felt > .lbl{font:700 12px var(--f-tekst);letter-spacing:.06em;text-transform:uppercase;color:var(--p-dempa)}
+.felt textarea{resize:vertical;line-height:1.45}
+.kort{background:var(--p-flate);border:1px solid var(--p-linje);border-radius:var(--p-r);padding:16px}
+.rad{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.dempa{color:var(--p-dempa);font-size:14px}
+.feiltekst{color:var(--p-feil);font-size:14px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
