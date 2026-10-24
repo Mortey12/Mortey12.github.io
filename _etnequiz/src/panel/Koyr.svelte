@@ -1,8 +1,10 @@
 <script>
   // Køyr quizen: køyreplan, førehandsvising av storskjermen, fasit berre for quizmasteren og knappar.
   import { live } from "../lib/data.svelte.js";
-  import { setState } from "./red.svelte.js";
+  import { setState, setNo, melding } from "./red.svelte.js";
   import { katInfo, nummerer, kortTittel, rangering, avsloringSteg, fasitFor } from "../lib/quiz.js";
+  import { sendResultat } from "./resultat.js";
+  import HurtigStyring from "./HurtigStyring.svelte";
   import Stage from "../lib/Stage.svelte";
   import Slide from "../lib/Slide.svelte";
 
@@ -11,15 +13,28 @@
   const st = $derived(live.state);
   const steg = $derived(Math.min(st.steg || 0, Math.max(plan.length - 1, 0)));
   const it = $derived(plan[steg]);
-  const neste = $derived(plan[steg + 1]);
+  const neste = $derived(plan.slice(steg + 1).find(p => !p.skjult));
   const antalLag = $derived(rangering(live.lag, live.quiz).length);
   const stegListe = $derived(avsloringSteg(antalLag));
 
-  function gaaTil(i){ setState({ steg: Math.max(0, Math.min(i, plan.length - 1)), modus: "plan" }); }
+  const hurtigQ = p => p?.type === "sporsmal" && !!kats.get(p.kat)?.hurtig;
+  function gaaTil(i){
+    i = Math.max(0, Math.min(i, plan.length - 1));
+    setState({ steg: i, modus: "plan" });
+    const p = plan[i];
+    // Mobilane: vent på neste hurtigspørsmål, eller kvil
+    if (hurtigQ(p)) { if (live.no.id !== live.state.opningar?.[p.id] || !live.no.id) setNo({ id: null, open: false, vent: true, kat: kats.get(p.kat)?.namn || "", nr: p.qNr || null, tot: p.qTot || null }); }
+    else if (live.no.id || live.no.vent) setNo({ id: null, open: false, vent: false });
+    // Jokeren blir låst når det første vanlege spørsmålet kjem på skjermen
+    if (p?.type === "sporsmal" && !hurtigQ(p) && !live.no.jokerLaast) setNo({ jokerLaast: true });
+  }
+  // Spørsmål som berre står på arket, blir hoppa over
+  const synleg = i => plan[i] && !plan[i].skjult;
+  const nesteSynleg = (fra, d) => { let i = fra + d; while (i >= 0 && i < plan.length && !synleg(i)) i += d; return i >= 0 && i < plan.length ? i : -1; };
   function fram(){
     if (st.modus === "avsloring") { const nx = stegListe.find(v => v > (st.avslort || 0)); if (nx !== undefined) setState({ sist: st.avslort || 0, avslort: nx }); return; }
     if (st.modus !== "plan") { setState({ modus: "plan" }); return; }
-    if (steg < plan.length - 1) gaaTil(steg + 1);
+    const n = nesteSynleg(steg, 1); if (n >= 0) gaaTil(n);
   }
   function tilbake(){
     if (st.modus === "avsloring") {
@@ -28,7 +43,7 @@
       setState({ avslort: ny, sist: forr.length ? forr[forr.length - 1] : 0 }); return;
     }
     if (st.modus !== "plan") { setState({ modus: "plan" }); return; }
-    if (steg > 0) gaaTil(steg - 1);
+    const n = nesteSynleg(steg, -1); if (n >= 0) gaaTil(n);
   }
   const veksle = m => setState({ modus: st.modus === m ? "plan" : m });
   const startAvsloring = () => setState({ modus: "avsloring", avslort: 0, sist: 0 });
@@ -38,6 +53,10 @@
     if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); fram(); }
     else if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); tilbake(); }
     else if (["b", "B", "."].includes(e.key)) { e.preventDefault(); veksle("pause"); }
+  }
+  async function sendRes(){
+    try { const n = await sendResultat(); await setNo({ resultat: true, resultatT: Date.now() }); melding(`Resultatet er sendt til ${n} mobilar`); }
+    catch (e) { melding("Resultatet vart ikkje sendt: " + (e.message || e), true); }
   }
   const opneSkjerm = () => window.open("skjerm.html", "etneskjerm", "popup,width=1280,height=720");
 
@@ -53,8 +72,8 @@
     <h3>Køyreplan</h3>
     <ol bind:this={liste}>
       {#each plan as p, i}
-        <li><button type="button" data-i={i} class="pkt {p.type}" aria-current={i === steg && st.modus === "plan"} onclick={() => gaaTil(i)}>
-          <span class="nr">{i + 1}</span><span class="t">{kortTittel(p, kats)}</span>
+        <li><button type="button" data-i={i} class="pkt {p.type}" class:ark={p.skjult} class:hurtig={hurtigQ(p)} disabled={p.skjult} title={p.skjult ? "Berre på arket, ikkje på skjermen" : ""} aria-current={i === steg && st.modus === "plan"} onclick={() => gaaTil(i)}>
+          <span class="nr">{i + 1}</span><span class="t">{kortTittel(p, kats)}</span>{#if p.skjult}<span class="arkmerke">ark</span>{/if}
         </button></li>
       {/each}
     </ol>
@@ -75,12 +94,20 @@
       <span class="skilje"></span>
       <button class="btn primary" type="button" onclick={opneSkjerm}>Opne storskjermen</button>
     </div>
+    <div class="kontroll mobilrad">
+      <span class="dempa">Mobilane: {live.mobilar.length} kopla til</span>
+      <button class="btn liten" type="button" aria-pressed={!!live.no.jokerLaast} onclick={() => setNo({ jokerLaast: !live.no.jokerLaast })}>{live.no.jokerLaast ? "Jokerane er låste" : "Jokerane er opne"}</button>
+      <button class="btn liten" type="button" aria-pressed={!!live.no.resultat} onclick={sendRes}>{live.no.resultat ? "Resultatet er sendt (oppdater)" : "Send resultatet til mobilane"}</button>
+      {#if live.no.resultat}<button class="btn liten" type="button" onclick={() => setNo({ resultat: false })}>Skjul resultatet</button>{/if}
+    </div>
 
     <div class="status">
       <span class="pille">På skjermen: {modusNamn[st.modus] || st.modus}</span>
       {#if st.modus === "avsloring"}<span class="dempa">{Math.min(st.avslort || 0, antalLag)} av {antalLag} plassar viste</span>{/if}
       <span class="dempa">Piltastar eller presentasjonsklikkar: neste og førre. B: pause.</span>
     </div>
+
+    {#if it && (hurtigQ(it))}<HurtigStyring {it} k={kats.get(it.kat)} />{/if}
 
     <div class="forhand" aria-label="Førehandsvising av storskjermen">
       <Stage><Slide quiz={live.quiz} steg={steg} modus={st.modus} lag={live.lag} avslort={st.avslort} sist={st.sist} /></Stage>
@@ -90,7 +117,9 @@
   <aside class="info">
     <section class="kort hemmeleg">
       <h3>Berre for deg</h3>
-      {#if it?.type === "sporsmal"}
+      {#if hurtigQ(it)}
+        <p class="dempa">Fasit og svar står i hurtigboksen.</p>
+      {:else if it?.type === "sporsmal"}
         <div class="felt"><span class="lbl">Fasit</span><p class="fasitsvar">{it.svar || "Ingen fasit lagt inn"}</p></div>
       {:else if it?.type === "fasit"}
         {#each (Array.isArray(it.kat) ? it.kat : [it.kat]) as id}
@@ -120,6 +149,11 @@
   .pkt:hover{background:var(--p-flate-2)}
   .pkt[aria-current="true"]{background:var(--p-gran);color:#F7F1E3}
   .pkt[aria-current="true"] .nr{color:#E8B84A}
+  .pkt.ark{opacity:.55;cursor:default;font-style:italic;grid-template-columns:30px minmax(0,1fr) auto}
+  .pkt.ark:hover{background:transparent}
+  .arkmerke{font:700 10px var(--f-tekst);letter-spacing:.06em;text-transform:uppercase;background:var(--p-linje);border-radius:5px;padding:1px 5px;font-style:normal;align-self:center}
+  .pkt.hurtig .t::before{content:"";}
+  .mobilrad{gap:8px}
   .midt{display:flex;flex-direction:column;gap:12px;min-width:0}
   .kontroll{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .kontroll .stor{min-height:50px;padding:10px 26px;font-size:16px}

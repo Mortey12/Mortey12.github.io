@@ -60,3 +60,26 @@ h1.stor{margin:0;font-family:var(--f-tittel);font-weight:700;line-height:1;lette
 .vinnar .o{font-size:30px;letter-spacing:.25em;text-transform:uppercase;color:var(--gull-lys)}
 .vinnar .lag{font-family:var(--f-tittel);font-weight:700;font-size:110px;line-height:1}
 .vinnar .p{font-size:36px}
+/* Hurtigrundane */
+.h-status{display:flex;align-items:center;gap:22px}
+.h-tal{font-size:40px;color:var(--snø)}
+.h-ring text{font:700 34px var(--f-tekst);fill:var(--snø)}
+.h-ring.tom text{font-size:24px}
+.h-q{margin:6px 0 0;font-family:var(--f-tittel);font-weight:500;font-size:62px;line-height:1.18;text-wrap:balance}
+.h-q.lang{font-size:48px}
+.h-alt{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:20px;min-height:0;max-height:380px}
+.h-a{display:flex;align-items:center;gap:24px;background:rgba(23,62,49,.94);border:2px solid var(--gran-3);border-radius:24px;padding:0 30px;font-size:42px;font-weight:600;transition:opacity .4s,background .4s}
+.h-a b{display:grid;place-items:center;width:70px;height:70px;border-radius:50%;background:var(--gull);color:var(--gran);font-size:36px;flex:none}
+.h-a.rett{background:var(--gull);border-color:var(--gull);color:var(--gran)}.h-a.rett b{background:var(--gran);color:var(--gull)}
+.h-a.av{opacity:.3}
+.h-fasit{flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.h-fasit span{font-size:28px;letter-spacing:.2em;text-transform:uppercase;color:var(--gull)}
+.h-fasit b{font-family:var(--f-tittel);font-size:96px;line-height:1.05}
+.h-hint{flex:1;display:flex;align-items:center;font-size:34px;color:var(--dempa)}
+.h-botn{display:flex;flex-wrap:wrap;align-items:center;gap:14px 30px;font-size:28px;min-height:52px}
+.h-lbl{color:var(--dempa)}
+.h-rask b{color:var(--gull)}.h-rask em{font-style:normal;color:var(--dempa);font-size:22px;margin-left:4px}
+.h-vinn h1{font-size:130px;max-width:1400px}
+.h-lbl2{font-size:30px;color:var(--snø)}
+.h-neste{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 40px;font-size:30px;margin-top:20px}
+.h-neste b{color:var(--gull)}.h-neste em{font-style:normal;color:var(--dempa)}

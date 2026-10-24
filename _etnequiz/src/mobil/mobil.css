@@ -1,0 +1,16 @@
+/* Mobilsida for laga: mørk gran med snø, store trykkflater. */
+:root{
+  --gran:#0F2E24; --gran-2:#173E31; --gran-3:#24533F; --snø:#F7F1E3; --dempa:#B9CBBF;
+  --raud:#C8323A; --gull:#E8B84A; --ok:#7FD1A5; --feil:#F08A8A;
+  --f-tittel:"Fraunces", Georgia, "Times New Roman", serif;
+  --f-tekst:"Figtree", "Segoe UI", Roboto, sans-serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--gran)}
+body{margin:0;min-height:100dvh;background:var(--gran);color:var(--snø);font:17px/1.45 var(--f-tekst);
+  background-image:radial-gradient(rgba(247,241,227,.13) 1.2px,transparent 1.3px);background-size:36px 36px;
+  -webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gull);outline-offset:2px}
