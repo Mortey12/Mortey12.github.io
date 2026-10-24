@@ -7,7 +7,7 @@
 <title>Premiejakt Kvarteret-quizen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=EB+Garamond:wght@400;600&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
 /* Quizplakat med kort: mintgrøn toppstripe som quizbanneret, mørk statusstripe, kort for det som er i gang, lista og kartet under. Mobil: faner. */
@@ -165,6 +165,37 @@ textarea.letter{min-height:280px}
 .acrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;font-size:14px;padding:8px 0;border-bottom:1px solid var(--line)}
 .acrow .mono{font-family:var(--f-mono);font-size:13px;overflow-wrap:anywhere}
 .acrow .inp{min-height:36px;padding:4px 12px;font-size:13px}
+/* sidenavigasjon, oppfølging, logg, quizkveld */
+.vnav{display:flex;gap:4px;background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:3px;width:max-content;max-width:100%}
+.vnav button{border:0;background:transparent;font:700 15px var(--f-body);text-transform:uppercase;letter-spacing:.04em;padding:8px 20px;border-radius:999px;cursor:pointer;min-height:40px}
+.vnav button[aria-pressed="true"]{background:var(--ink);color:var(--on-dark)}
+.chip.folg .cnt{background:#B8650F}
+.flag{color:#9A5209;font-weight:700}
+.tag.warn{background:#F6D7A8}
+.logg{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.logg div{font-size:14px;background:var(--surface);border-radius:8px;padding:6px 10px}
+.logg b{font-family:var(--f-mono);font-size:12px;margin-right:6px}
+.logg .av{color:var(--muted);font-size:12px;margin-left:6px}
+.given{font-size:13px;color:var(--muted)}
+.kvhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.kvhead input[type=date]{font:inherit;background:var(--surface);border:2px solid var(--ink);border-radius:999px;padding:6px 14px;min-height:44px}
+.kvtable{background:var(--surface);border-radius:var(--r);padding:6px 12px}
+.kvrow{display:grid;grid-template-columns:150px minmax(0,1.3fr) minmax(0,1.4fr) 70px minmax(0,1fr) 36px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.kvrow:last-child{border-bottom:0}
+.kvrow.hd{font:700 12px var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding-bottom:4px}
+.kvrow input,.kvrow select{font-size:14px;background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0;width:100%}
+.kvrow input:focus,.kvrow select:focus{border-color:var(--ink);outline:none}
+.kvgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.kvgrid textarea{width:100%;min-height:120px;font:15px/1.5 "EB Garamond",Georgia,serif;border:1.5px solid var(--line);border-radius:8px;padding:10px;resize:vertical}
+.lagerrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lagerrow:last-child{border-bottom:0}
+.histrow{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:8px 0;cursor:pointer;font-size:14px}
+.histrow[aria-current="true"]{font-weight:700}
+@media (max-width:760px){
+  .kvrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  .kvrow.hd{display:none}
+  .kvrow > :nth-child(2),.kvrow > :nth-child(3){grid-column:span 2}
+}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 @media (max-width:900px){
@@ -245,6 +276,11 @@ textarea.letter{min-height:280px}
     <section id="adminPanel" class="card panel" hidden></section>
     <section class="card panel" id="stedit" hidden></section>
 
+    <nav class="vnav" aria-label="Del av appen"><button data-page="sponsor" aria-pressed="true">Sponsorar</button><button data-page="kveld" aria-pressed="false">Quizkveld</button></nav>
+
+    <section id="pgKveld" class="stack" hidden></section>
+
+    <div id="pgSponsor" class="stack">
     <section id="active" class="stack" style="gap:12px" hidden>
       <div class="rule"><h2>I gang no</h2><span id="activeSum" style="font-weight:600"></span></div>
       <div class="agrid" id="activeGrid"></div>
@@ -279,6 +315,7 @@ textarea.letter{min-height:280px}
         <div class="round" id="round"></div>
       </aside>
     </div>
+    </div>
   </main>
 </div>
 
@@ -286,7 +323,7 @@ textarea.letter{min-height:280px}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, onSnapshot, updateDoc, setDoc, deleteDoc, addDoc, getDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, doc, onSnapshot, updateDoc, setDoc, deleteDoc, addDoc, getDoc, writeBatch, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ===== Lim inn firebaseConfig frå Firebase-konsollen her ===== */
 const firebaseConfig = {
@@ -320,7 +357,14 @@ const dot = s => `<i class="sdot" style="background:${esc(stColor(s))}"></i>`;
 const KATS = ["Fleksible premiar","Daglegvare (gåvekort)","Aktivitetar","Kultur og arrangement","Kreativ teikning","Kreativ teikning (sensuell)","Mat og rundepremiar","Fantoft og studentbyane"];
 const HOME = {namn:"Kvarteret", lat:60.3896713, lon:5.3218932};
 
-const S = { items:new Map(), loaded:false, open:null, st:new Set(), omr:"", kat:"", q:"", route:[], email:"", role:"", canWrite:false, isAdmin:false, access:[], sort:"status" };
+const todayISO = () => new Date().toLocaleDateString("sv-SE");
+const daysSince = iso => iso ? Math.floor((Date.parse(todayISO()) - Date.parse(iso)) / 864e5) : null;
+const fmtDay = iso => iso ? new Date(iso + "T12:00").toLocaleDateString("nb-NO", {weekday:"short", day:"numeric", month:"numeric"}) : "";
+const nextTuesday = () => { const d = new Date(); d.setDate(d.getDate() + (2 - d.getDay() + 7) % 7); return d.toLocaleDateString("sv-SE"); };
+const FOLLOW_DAYS = 7;
+function needsFollow(a){ const st = a.status || STATUSES[0]; if (st === STATUSES[0] || st === "Ja" || st === "Nei") return false; const n = daysSince(a.sistKontakta); return n !== null && n >= FOLLOW_DAYS; }
+const SLOTS = ["1. plass","2. plass","3. plass","Rundepremie","Kreativ teikning","Sensuell teikning"];
+const S = { items:new Map(), loaded:false, folg:false, page:"sponsor", kveldar:new Map(), kvDate:"", kvDraft:null, open:null, st:new Set(), omr:"", kat:"", q:"", route:[], email:"", role:"", canWrite:false, isAdmin:false, access:[], sort:"status" };
 const SORTS = { status:"Sorter: status, Ikkje kontakta først", statusRev:"Sorter: status, Ja først", namn:"Sorter: namn A–Å", omrade:"Sorter: område", kategori:"Sorter: kategori", endra:"Sorter: sist endra først" };
 try { S.route = JSON.parse(ls.get("runde") || "[]"); } catch(_) {}
 const saveRoute = () => ls.set("runde", JSON.stringify(S.route));
@@ -366,6 +410,7 @@ onAuthStateChanged(auth, async user => {
   show("vApp");
   initMap();
   start();
+  setPage(ls.get("page") === "kveld" ? "kveld" : "sponsor");
 });
 
 function start(){
@@ -386,6 +431,10 @@ function start(){
     }
     renderSelects(); renderAll(); if (draft) renderEditor();
   }, e => setSave("err", "Mista kontakt med databasen: " + errText(e))));
+  unsubs.push(onSnapshot(collection(db, "config"), snap => {
+    const m = new Map(); snap.docs.forEach(d => { if (d.id.startsWith("kveld-")) m.set(d.id.slice(6), d.data()); });
+    S.kveldar = m; renderActive(); renderList(); if (S.page === "kveld") renderKveld();
+  }, () => {}));
   if (S.isAdmin) unsubs.push(onSnapshot(collection(db, "tilgang"), snap => { S.access = snap.docs.map(d => ({email:d.id, ...d.data()})); renderAdmin(); }, () => {}));
 }
 
@@ -407,13 +456,13 @@ function writeLater(id, field, value){
   setSave("", "Endra …");
 }
 function flush(id, field, value){ const k = id + ":" + field; if (timers[k]) { clearTimeout(timers[k]); delete timers[k]; write(id, {[field]: value}); } }
-addEventListener("beforeunload", e => { if (Object.keys(timers).length) { Object.keys(timers).forEach(k => { const [id, f] = k.split(":"); const a = S.items.get(id); clearTimeout(timers[k]); delete timers[k]; if (a) write(id, {[f]: a[f]}); }); e.preventDefault(); } });
+addEventListener("beforeunload", e => { if (kvPending) { kvFlush(); e.preventDefault(); } if (Object.keys(timers).length) { Object.keys(timers).forEach(k => { const [id, f] = k.split(":"); const a = S.items.get(id); clearTimeout(timers[k]); delete timers[k]; if (a) write(id, {[f]: a[f]}); }); e.preventDefault(); } });
 
 /* ---------- filter ---------- */
 function visible(){
   const q = S.q.trim().toLowerCase();
   return [...S.items.values()].filter(a =>
-    (!S.st.size || S.st.has(a.status || STATUSES[0])) &&
+    (!S.st.size || S.st.has(a.status || STATUSES[0])) && (!S.folg || needsFollow(a)) &&
     (!S.omr || a.omrade === S.omr) && (!S.kat || a.kategori === S.kat) &&
     (!q || [a.namn,a.notat,a.epost,a.omrade,a.premie].join(" ").toLowerCase().includes(q)));
 }
@@ -422,7 +471,7 @@ function renderBoard(){
   $("#board").innerHTML = STATUSES.map(s => {
     const n = all.filter(a => (a.status || STATUSES[0]) === s).length;
     return `<button class="chip" data-st="${esc(s)}" aria-pressed="${S.st.has(s)}"><span class="cnt" style="background:${esc(stColor(s))}">${n}</span>${esc(s)}</button>`;
-  }).join("") + (S.canWrite ? `<button class="chip edit" id="stEditBtn" aria-expanded="${!!draft}">${draft ? "Lukk" : "Endre statusar"}</button>` : "");
+  }).join("") + (() => { const n = all.filter(needsFollow).length; return n || S.folg ? `<button class="chip folg" id="folgBtn" aria-pressed="${S.folg}" title="Kontakta for minst ${FOLLOW_DAYS} dagar sidan utan svar"><span class="cnt">${n}</span>Følg opp</button>` : ""; })() + (S.canWrite ? `<button class="chip edit" id="stEditBtn" aria-expanded="${!!draft}">${draft ? "Lukk" : "Endre statusar"}</button>` : "");
   $("#legend").innerHTML = STATUSES.map(s => `<span>${dot(s)}${esc(s)}</span>`).join("") + `<span><i class="sdot" style="background:#1E1F21;border-radius:2px"></i>Kvarteret</span>`;
 }
 function renderSelects(){
@@ -522,6 +571,17 @@ function exportData(){
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `quizpremiar-${new Date().toISOString().slice(0,10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
+/* ---------- lager og utdelte premiar ---------- */
+function givenFor(id){
+  const out = []; S.kveldar.forEach((k, dato) => (k.rader || []).forEach(r => { if (r.aktor === id) out.push({dato, ...r}); }));
+  return out.sort((a,b) => b.dato.localeCompare(a.dato));
+}
+function stock(a){
+  const tot = Number(a.lager) || 0; if (!tot) return null;
+  const brukt = givenFor(a.id).reduce((s, r) => s + (Number(r.antal) || 0), 0);
+  return {tot, att: tot - brukt, ein: a.lagerEining || "stk"};
+}
+
 /* ---------- liste ---------- */
 const fmtTime = t => { const d = t && t.toDate ? t.toDate() : null; return d ? d.toLocaleString("nb-NO", {weekday:"short", day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}) : ""; };
 function rowHead(a){
@@ -530,7 +590,7 @@ function rowHead(a){
   return `<div class="row-head" data-open="${esc(a.id)}" role="button" tabindex="0" aria-expanded="${S.open===a.id}">
     <span class="stripe" style="background:${esc(stColor(st))}"></span>
     <div style="min-width:0"><p class="row-title">${esc(a.namn)}</p>
-      <div class="row-meta">${esc(meta)}${a.premie ? ` · <span class="prize">${esc(a.premie)}</span>` : ""}${a.mote ? ` · Møte ${esc(a.mote)}` : ""}</div></div>
+      <div class="row-meta">${esc(meta)}${a.premie ? ` · <span class="prize">${esc(a.premie)}</span>` : ""}${a.mote ? ` · Møte ${esc(a.mote)}` : ""}${needsFollow(a) ? ` · <span class="flag">Følg opp</span>` : ""}${(() => { const sk = stock(a); return sk ? ` · ${sk.att} av ${sk.tot} ${esc(sk.ein)} att` : ""; })()}</div></div>
     <div class="right"><span class="pill">${dot(st)}${esc(st)}</span>
       ${a.lat ? `<button class="rbtn${inR?" on":""}" data-route="${esc(a.id)}" aria-pressed="${inR}">${inR?"I runden":"+ Runde"}</button>` : ""}</div>
   </div>`;
@@ -546,6 +606,11 @@ function detailHTML(a){
       <div class="field"><label for="pr-${id}">Premie</label><input id="pr-${id}" data-f="premie" value="${esc(a.premie)}" placeholder="Kva de har fått"></div>
     </div>
     <div class="grid2">
+      <div class="field"><label for="sk-${id}">Sist kontakta</label><input type="date" id="sk-${id}" data-f="sistKontakta" value="${esc(a.sistKontakta)}"></div>
+      <div class="field"><label for="la-${id}">Premiar fått totalt</label><input type="number" min="0" id="la-${id}" data-f="lager" value="${esc(a.lager)}" placeholder="t.d. 18"></div>
+      <div class="field"><label for="le-${id}">Eining</label><input id="le-${id}" data-f="lagerEining" value="${esc(a.lagerEining)}" placeholder="t.d. billettar"></div>
+    </div>
+    <div class="grid2">
       <div class="field"><label for="ep-${id}">E-post</label><div class="inline"><input class="mono" id="ep-${id}" data-f="epost" value="${esc(a.epost)}"></div></div>
       <div class="field"><label for="tl-${id}">Telefon</label><div class="inline"><input class="mono" id="tl-${id}" data-f="telefon" value="${esc(a.telefon)}"></div></div>
     </div>
@@ -554,6 +619,11 @@ function detailHTML(a){
       <div class="field"><label for="ka-${id}">Kategori</label><select id="ka-${id}" data-f="kategori">${opt(KATS, a.kategori)}</select></div>
     </div>
     <div class="field"><label for="no-${id}">Notat</label><textarea id="no-${id}" data-f="notat" rows="2">${esc(a.notat)}</textarea></div>
+    <div class="field"><label for="lg-${id}">Logg</label>
+      <div class="logg">${(a.logg || []).slice().reverse().map(l => `<div><b>${esc(fmtDay((l.t || "").slice(0,10)))}</b>${esc(l.tekst)}<span class="av">${esc((l.av || "").split("@")[0])}</span></div>`).join("") || `<span class="row-meta">Ingenting logga enno.</span>`}</div>
+      <div class="inline"><input class="inp" id="lg-${id}" data-logfor="${id}" placeholder="Kva skjedde? t.d. Ringde, sa ja til 4 billettar"><button class="btn" type="button" data-logadd="${id}">Logg</button></div>
+    </div>
+    ${(() => { const g = givenFor(a.id); const sk = stock(a); return g.length || sk ? `<div class="given"><strong>Premiar delte ut:</strong> ${g.map(r => `${esc(fmtDay(r.dato))} ${esc(r.plass)}${r.antal ? ` (${esc(r.antal)})` : ""}`).join(", ") || "ingen enno"}${sk ? ` · ${sk.att} av ${sk.tot} ${esc(sk.ein)} att` : ""}</div>` : ""; })()}
     <div class="field"><label for="tx-${id}">Tekst til e-post</label><textarea class="letter" id="tx-${id}" data-f="tekst">${esc(a.tekst)}</textarea></div>
     </fieldset>
     <div class="actions">
@@ -675,6 +745,90 @@ function renderRound(){
 }
 function toggleRoute(id){ const i = S.route.indexOf(id); if (i >= 0) S.route.splice(i,1); else S.route.push(id); saveRoute(); map && map.closePopup(); renderAll(); }
 
+/* ---------- quizkveld ---------- */
+let kvTimer = null;
+let kvPending = null;
+async function kvFlush(){
+  clearTimeout(kvTimer); kvTimer = null; const p = kvPending; kvPending = null; if (!p) return;
+  setSave("", "Lagrar …");
+  try { await setDoc(doc(db, "config", "kveld-" + p.dato), {dato:p.dato, rader:p.rader, endraAv:S.email, endra:serverTimestamp()}); setSave("ok", "Lagra"); }
+  catch (e) { setSave("err", "Ikkje lagra: " + errText(e)); }
+}
+function kvLoad(dato){
+  if (kvPending) kvFlush();
+  S.kvDate = dato;
+  const k = S.kveldar.get(dato);
+  S.kvDraft = k && Array.isArray(k.rader) ? k.rader.map(r => ({...r})) : SLOTS.map(p => ({plass:p, aktor:"", premie:"", antal:"", lag:""}));
+}
+function kvSave(){
+  if (!S.canWrite) return; clearTimeout(kvTimer);
+  const dato = S.kvDate, rader = S.kvDraft.map(r => ({plass:r.plass || "", aktor:r.aktor || "", premie:r.premie || "", antal:r.antal === "" ? "" : Number(r.antal) || 0, lag:r.lag || ""}));
+  setSave("", "Endra …"); kvPending = {dato, rader};
+  kvTimer = setTimeout(kvFlush, 600);
+}
+function sheetText(){
+  const ids = [...new Set(S.kvDraft.map(r => r.aktor).filter(Boolean))];
+  const names = ids.map(id => (S.items.get(id) || {}).namn).filter(Boolean);
+  return "Takk til våre snille sponsorer!         Thank you to our kind sponsors!\n" + names.join(" · ");
+}
+function renderKveld(){
+  const host = $("#pgKveld");
+  if (!S.kvDate) kvLoad(nextTuesday());
+  const focusIn = host.contains(document.activeElement) && document.activeElement.closest(".kvtable");
+  if (!kvTimer && !focusIn) kvLoad(S.kvDate);
+  const all = [...S.items.values()].sort((a,b) => a.namn.localeCompare(b.namn, "nb"));
+  const ja = all.filter(a => a.status === "Ja"), rest = all.filter(a => a.status !== "Ja");
+  const opts = cur => `<option value="">Vel sponsor</option><optgroup label="Har sagt ja">${ja.map(a => `<option value="${esc(a.id)}"${a.id===cur?" selected":""}>${esc(a.namn)}</option>`).join("")}</optgroup><optgroup label="Andre">${rest.map(a => `<option value="${esc(a.id)}"${a.id===cur?" selected":""}>${esc(a.namn)}</option>`).join("")}</optgroup>`;
+  const rows = S.kvDraft.map((r,i) => { const a = S.items.get(r.aktor);
+    return `<div class="kvrow" data-kv="${i}">
+      <input data-kf="plass" value="${esc(r.plass)}" aria-label="Premieplass">
+      <select data-kf="aktor" aria-label="Sponsor">${opts(r.aktor)}</select>
+      <input data-kf="premie" value="${esc(r.premie)}" placeholder="${esc(a && a.premie || "Kva premie")}" aria-label="Premie">
+      <input data-kf="antal" type="number" min="0" value="${esc(r.antal)}" placeholder="Tal" aria-label="Tal på premiar">
+      <input data-kf="lag" value="${esc(r.lag)}" placeholder="Vinnarlag" aria-label="Vinnarlag">
+      <button class="ibtn" type="button" data-kvdel="${i}" aria-label="Fjern rada">✕</button></div>`; }).join("");
+  const stocks = all.map(a => [a, stock(a)]).filter(([,sk]) => sk).sort((x,y) => x[1].att - y[1].att);
+  const hist = [...S.kveldar.entries()].sort((a,b) => b[0].localeCompare(a[0])).slice(0, 12);
+  host.innerHTML = `
+    <div class="rule"><h2>Quizkveld</h2>
+      <div class="kvhead">
+        <button class="btn" type="button" data-kvweek="-7" aria-label="Førre veke">←</button>
+        <label class="sr" for="kvDate">Dato</label><input type="date" id="kvDate" value="${esc(S.kvDate)}">
+        <button class="btn" type="button" data-kvweek="7" aria-label="Neste veke">→</button>
+        <button class="btn ghost" type="button" id="kvNext">Neste tysdag</button>
+      </div></div>
+    <fieldset ${S.canWrite ? "" : "disabled"} style="display:flex;flex-direction:column;gap:10px">
+      <div class="kvtable">
+        <div class="kvrow hd"><span>Plass</span><span>Sponsor</span><span>Premie</span><span>Tal</span><span>Vinnarlag</span><span></span></div>
+        ${rows}
+      </div>
+      <div class="actions"><button class="btn" type="button" id="kvAdd">+ Legg til rad</button><span class="row-meta">Fyll ut før quizen for å planleggje, og skriv inn vinnarlaget etterpå. Tal blir trekt frå lageret til sponsoren.</span></div>
+    </fieldset>
+    <div class="kvgrid">
+      <section class="card">
+        <h2>Til svararket</h2>
+        <label class="sr" for="kvSheet">Tekst til svararket</label>
+        <textarea id="kvSheet" readonly>${esc(sheetText())}</textarea>
+        <div class="actions"><button class="btn primary" type="button" data-copy="kvSheet">Kopier</button><span class="copied" id="kvCopied"></span></div>
+        <span class="row-meta">Logoane legg du inn i Word som før.</span>
+      </section>
+      <section class="card">
+        <h2>Lager</h2>
+        ${stocks.length ? stocks.map(([a,sk]) => `<div class="lagerrow"><span>${esc(a.namn)}</span><span${sk.att <= 3 ? ' class="flag"' : ""}>${sk.att} av ${sk.tot} ${esc(sk.ein)} att${sk.att <= 3 ? " · spør om fleire" : ""}</span></div>`).join("") : `<span class="row-meta">Skriv inn «Premiar fått totalt» på ein sponsor, så kjem han her.</span>`}
+      </section>
+      <section class="card">
+        <h2>Tidlegare kveldar</h2>
+        ${hist.length ? hist.map(([d,k]) => `<button class="histrow" type="button" data-kvgo="${esc(d)}" aria-current="${d===S.kvDate}"><span>${esc(fmtDay(d))}</span><span>${(k.rader || []).filter(r => r.aktor).length} premiar</span></button>`).join("") : `<span class="row-meta">Ingen kveldar lagra enno.</span>`}
+      </section>
+    </div>`;
+}
+function setPage(p){
+  S.page = p; ls.set("page", p);
+  document.querySelectorAll("[data-page]").forEach(b => b.setAttribute("aria-pressed", b.dataset.page === p));
+  $("#pgSponsor").hidden = p !== "sponsor"; $("#pgKveld").hidden = p !== "kveld";
+  if (p === "kveld") renderKveld(); else if (map) setTimeout(() => map.invalidateSize(), 30);
+}
+
 /* ---------- hendingar ---------- */
 function renderActive(){
   const host = $("#active"); if (!S.loaded) { host.hidden = true; return; }
@@ -691,7 +845,8 @@ function renderActive(){
       <div class="body">
         <div class="tags">${a.kategori ? `<span class="tag">${esc(a.kategori)}</span>` : ""}<span class="omr">${esc(a.omrade || "")}</span></div>
         <button class="namn" data-goto="${esc(a.id)}">${esc(a.namn)}</button>
-        <span class="meta">${esc(meta.length > 90 ? meta.slice(0, 88) + " …" : meta)}</span>
+        ${needsFollow(a) ? `<span class="tag warn" style="align-self:flex-start">Følg opp · ${daysSince(a.sistKontakta)} dagar</span>` : ""}
+        <span class="meta">${esc(meta.length > 90 ? meta.slice(0, 88) + " …" : meta)}${(() => { const sk = stock(a); return sk ? `<br><strong style="color:var(--on-dark)">${sk.att} av ${sk.tot} ${esc(sk.ein)} att</strong>` : ""; })()}</span>
         ${a.lat ? `<button class="rb${inR ? " on" : ""}" data-route="${esc(a.id)}" aria-pressed="${inR}">${inR ? "I runden" : "+ Runde"}</button>` : ""}
       </div></article>`; }).join("");
 }
@@ -702,6 +857,14 @@ document.addEventListener("click", async e => {
   const t = e.target;
   const gm = t.closest("[data-gmail]"); if (gm) { gm.href = gmailUrl(gm.dataset.gmail); return; }
   if (t.closest("#stEditBtn")) { draft ? closeEditor() : openEditor(); return; }
+  if (t.closest("#folgBtn")) { S.folg = !S.folg; renderAll(); return; }
+  const pg = t.closest("[data-page]"); if (pg) { setPage(pg.dataset.page); return; }
+  const kw = t.closest("[data-kvweek]"); if (kw) { const d = new Date(S.kvDate + "T12:00"); d.setDate(d.getDate() + +kw.dataset.kvweek); kvLoad(d.toLocaleDateString("sv-SE")); renderKveld(); return; }
+  if (t.id === "kvNext") { kvLoad(nextTuesday()); renderKveld(); return; }
+  const kg = t.closest("[data-kvgo]"); if (kg) { kvLoad(kg.dataset.kvgo); renderKveld(); return; }
+  if (t.id === "kvAdd") { S.kvDraft.push({plass:"Rundepremie", aktor:"", premie:"", antal:"", lag:""}); kvSave(); renderKveld(); return; }
+  const kd = t.closest("[data-kvdel]"); if (kd) { S.kvDraft.splice(+kd.dataset.kvdel, 1); kvSave(); renderKveld(); return; }
+  const la = t.closest("[data-logadd]"); if (la) { addLog(la.dataset.logadd); return; }
   if (t.closest("#stedit")) {
     const row = t.closest("[data-i]"); const i = row ? +row.dataset.i : -1;
     const mv = t.closest("[data-smove]"); if (mv && i >= 0) { const j = i + +mv.dataset.smove; [draft[i], draft[j]] = [draft[j], draft[i]]; renderEditor(); return; }
@@ -722,7 +885,7 @@ document.addEventListener("click", async e => {
   const r = t.closest("[data-route]"); if (r) { e.stopPropagation(); toggleRoute(r.dataset.route); return; }
   const go = t.closest("[data-goto]"); if (go) { e.preventDefault(); const id = go.dataset.goto; S.open = id; setTab("liste"); S.st.clear(); S.omr = S.kat = S.q = ""; $("#q").value = ""; renderSelects(); map && map.closePopup(); renderAll();
     const row = document.querySelector(`[data-row="${CSS.escape(id)}"]`); row && row.scrollIntoView({block:"start", behavior:"smooth"}); return; }
-  const cp = t.closest("[data-copy]"); if (cp) { const el = document.getElementById(cp.dataset.copy); const done = cp.closest(".detail") && cp.closest(".detail").querySelector("[data-copied]");
+  const cp = t.closest("[data-copy]"); if (cp) { const el = document.getElementById(cp.dataset.copy); const done = (cp.closest(".detail") && cp.closest(".detail").querySelector("[data-copied]")) || (cp.dataset.copy === "kvSheet" && $("#kvCopied"));
     try { await navigator.clipboard.writeText(el.value); if (done) done.textContent = "Kopiert"; } catch (_) { el.removeAttribute("disabled"); el.focus(); el.select(); if (done) done.textContent = "Merka, trykk Ctrl+C"; }
     if (done) setTimeout(() => done.textContent = "", 2000); return; }
   const del = t.closest("[data-del]"); if (del) {
@@ -734,14 +897,26 @@ document.addEventListener("click", async e => {
   const tab = t.closest("[data-tab]"); if (tab && tab.closest("#tabs")) { setTab(tab.dataset.tab); return; }
   const h = t.closest("[data-open]"); if (h) { const id = h.dataset.open; S.open = S.open === id ? null : id; renderList(); }
 });
-document.addEventListener("keydown", e => { const h = e.target.closest && e.target.closest("[data-open]"); if (h && (e.key === "Enter" || e.key === " ") && e.target === h) { e.preventDefault(); h.click(); } });
+async function addLog(id){
+  const inp = document.getElementById("lg-" + id); const tekst = inp && inp.value.trim(); if (!tekst) return;
+  if (!S.canWrite) { setSave("err", "Ikkje lagra: du har berre lesetilgang"); return; }
+  inp.value = ""; inp.blur(); setSave("", "Lagrar …");
+  try { await updateDoc(doc(db, "aktorar", id), {logg: arrayUnion({t: new Date().toISOString(), av: S.email, tekst}), sistKontakta: todayISO(), endraAv: S.email, endra: serverTimestamp()}); setSave("ok", "Lagra"); }
+  catch (e) { setSave("err", "Ikkje lagra: " + errText(e)); inp.value = tekst; }
+}
+document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.dataset && e.target.dataset.logfor) { e.preventDefault(); addLog(e.target.dataset.logfor); return; } const h = e.target.closest && e.target.closest("[data-open]"); if (h && (e.key === "Enter" || e.key === " ") && e.target === h) { e.preventDefault(); h.click(); } });
 document.addEventListener("input", e => {
   const sf = e.target.dataset && e.target.dataset.sf; if (sf && draft) { const row = e.target.closest("[data-i]"); if (row) draft[+row.dataset.i][sf] = e.target.value; return; }
+  const kf = e.target.dataset && e.target.dataset.kf; if (kf) { const row = e.target.closest("[data-kv]"); if (row && kf !== "aktor") { S.kvDraft[+row.dataset.kv][kf] = e.target.value; kvSave(); } return; }
+  if (e.target.dataset && e.target.dataset.logfor) return;
   const f = e.target.dataset && e.target.dataset.f; const d = e.target.closest(".detail"); if (f && d && e.target.tagName !== "SELECT") writeLater(d.dataset.detail, f, e.target.value);
 });
 document.addEventListener("change", async e => {
   const f = e.target.dataset && e.target.dataset.f; const d = e.target.closest(".detail");
-  if (f && d) { if (e.target.tagName === "SELECT") write(d.dataset.detail, {[f]: e.target.value}); else flush(d.dataset.detail, f, e.target.value);
+  const kf = e.target.dataset && e.target.dataset.kf;
+  if (kf === "aktor") { const row = e.target.closest("[data-kv]"); const r = S.kvDraft[+row.dataset.kv]; r.aktor = e.target.value; if (r.aktor && r.antal === "") r.antal = 1; kvSave(); e.target.blur(); renderKveld(); return; }
+  if (e.target.id === "kvDate" && e.target.value) { kvLoad(e.target.value); renderKveld(); return; }
+  if (f && d) { if (e.target.tagName === "SELECT") { const patch = {[f]: e.target.value}; if (f === "status" && e.target.value !== STATUSES[0]) patch.sistKontakta = todayISO(); write(d.dataset.detail, patch); } else flush(d.dataset.detail, f, e.target.value);
     if (f === "status") { e.target.blur(); renderList(); } else refreshHead(d.dataset.detail); renderBoard(); renderActive(); drawMap(); renderRound(); return; }
   if (e.target.id === "fOmr") { S.omr = e.target.value; renderAll(); }
   if (e.target.id === "fKat") { S.kat = e.target.value; renderAll(); }
