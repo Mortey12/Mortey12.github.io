@@ -1,4 +1,5 @@
 rules_version = '2';
+// Reglar for både Premiejakt (quizpremiar) og Etnequizen. Lim inn heile fila under Firestore > Reglar.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -28,6 +29,27 @@ service cloud.firestore {
     match /tilgang/{e} {
       allow read: if harTilgang();
       allow write: if erAdmin();
+    }
+
+    // ---- Etnequizen (mstene.no/etnequiz) ----
+    // Eiga tilgangsliste: ein dokument per e-post i etneTilgang, lagt inn frå Firebase-konsollen
+    function etneAdmin() { return innlogga() && exists(/databases/$(database)/documents/etneTilgang/$(epost())); }
+
+    match /etneTilgang/{e} {
+      allow read: if innlogga() && e == epost();
+      allow write: if false;
+    }
+    // Quizen og kva storskjermen viser no
+    match /etne/{doc} {
+      allow read, write: if etneAdmin();
+    }
+    // Bilete til spørsmåla
+    match /etneBilete/{id} {
+      allow read, write: if etneAdmin();
+    }
+    // Laga og poenga deira
+    match /etneLag/{id} {
+      allow read, write: if etneAdmin();
     }
 
     // Alt anna er stengt
