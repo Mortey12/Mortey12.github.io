@@ -26,7 +26,12 @@ export function nummerer(quiz){
 export function fasitFor(quiz, plan, katId){
   const k = (quiz?.kategoriar || []).find(c => c.id === katId);
   if (k && k.fasitliste && k.fasitliste.length) return k.fasitliste;
-  return plan.filter(x => x.type === "sporsmal" && x.kat === katId && x.nummerert !== false).map(x => x.svar || "");
+  const alle = plan.filter(x => x.type === "sporsmal" && x.kat === katId);
+  const nummererte = alle.filter(x => x.nummerert !== false);
+  if (nummererte.length) return nummererte.map(x => x.svar || "");
+  // Berre unummererte spørsmål, som rebusen: eitt svar med fleire delar blir delt på « · »
+  const svar = alle.map(x => x.svar || "").filter(Boolean);
+  return svar.length === 1 ? svar[0].split(/\s+·\s+/) : svar;
 }
 
 export function sumLag(lag, quiz){
