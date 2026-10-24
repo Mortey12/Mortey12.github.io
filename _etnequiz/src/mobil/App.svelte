@@ -67,7 +67,8 @@
   });
   $effect(() => {
     unRes?.(); res = null;
-    if (no.resultat && status === "inne") unRes = onSnapshot(doc(db, "etneResultat", bord), s => { res = s.exists() ? s.data() : null; }, () => {});
+    // Etter quizen kan alle som har QR-koden til bordet, sjå resultatet, ikkje berre lagmobilen
+    if (no.resultat && bord && kode && status !== "lastar") unRes = onSnapshot(doc(db, "etneResultat", bord + "_" + kode), s => { res = s.exists() ? s.data() : null; }, () => {});
   });
 
   const fristen = $derived(no.id ? slutt(no, ms) : 0);
@@ -103,25 +104,6 @@
     <section class="midt"><p class="dempa">Koplar til …</p></section>
   {:else if status === "feil"}
     <section class="midt"><h1>Noko gjekk gale</h1><p class="dempa">{feil}</p><button class="knapp" type="button" onclick={() => location.reload()}>Prøv igjen</button></section>
-  {:else if status === "opptatt"}
-    <section class="midt"><h1>Bordet har alt ein mobil</h1><p class="dempa">Det er éin mobil per lag. Må de byte, spør quizmasteren om å frigjere bord {bord}, og skann koden på nytt.</p></section>
-  {:else if status === "feilKode"}
-    <section class="midt"><h1>Koden passar ikkje</h1><p class="dempa">Skann QR-koden på bordkortet på nytt. Hjelper ikkje det, spør quizmasteren.</p></section>
-  {:else if status === "frigjort"}
-    <section class="midt"><h1>Bordet er frigjort</h1><p class="dempa">Quizmasteren har sleppt ein ny mobil til. Skal denne mobilen vere med, skann koden på bordet på nytt.</p><button class="knapp" type="button" onclick={() => { status = "lastar"; start(); }}>Kople til på nytt</button></section>
-  {:else if status === "bli"}
-    <form class="stack" onsubmit={bliMed}>
-      <h1>Bli med i quizen</h1>
-      <label class="felt"><span>Lagnamn</span><input bind:value={namn} maxlength="40" autocomplete="off" required placeholder="Namnet blir vist på skjermen"></label>
-      {#if (no.kategoriar || []).length && !no.jokerLaast}
-        <fieldset class="felt"><legend>Vel jokeren dykkar</legend>
-          <p class="dempa liten">Den kategorien gir dobbel poeng. De kan endre fram til quizen startar.</p>
-          <div class="kat">{#each no.kategoriar as k}<button type="button" class="val" aria-pressed={joker === k.id} onclick={() => joker = joker === k.id ? "" : k.id}>{k.namn}</button>{/each}</div>
-        </fieldset>
-      {/if}
-      <button class="knapp gull" type="submit" disabled={sender || !namn.trim()}>{sender ? "Koplar til …" : "Bli med"}</button>
-      <p class="dempa liten">Denne mobilen blir mobilen til laget heile kvelden. Må de byte, spør quizmasteren.</p>
-    </form>
   {:else if no.resultat && res}
     <section class="stack">
       <h1>Takk for i kveld!</h1>
@@ -146,6 +128,25 @@
         </details>
       {/if}
     </section>
+  {:else if status === "opptatt"}
+    <section class="midt"><h1>Bordet har alt ein mobil</h1><p class="dempa">Det er éin mobil per lag. Må de byte, spør quizmasteren om å frigjere bord {bord}, og skann koden på nytt.</p></section>
+  {:else if status === "feilKode"}
+    <section class="midt"><h1>Koden passar ikkje</h1><p class="dempa">Skann QR-koden på bordkortet på nytt. Hjelper ikkje det, spør quizmasteren.</p></section>
+  {:else if status === "frigjort"}
+    <section class="midt"><h1>Bordet er frigjort</h1><p class="dempa">Quizmasteren har sleppt ein ny mobil til. Skal denne mobilen vere med, skann koden på bordet på nytt.</p><button class="knapp" type="button" onclick={() => { status = "lastar"; start(); }}>Kople til på nytt</button></section>
+  {:else if status === "bli"}
+    <form class="stack" onsubmit={bliMed}>
+      <h1>Bli med i quizen</h1>
+      <label class="felt"><span>Lagnamn</span><input bind:value={namn} maxlength="40" autocomplete="off" required placeholder="Namnet blir vist på skjermen"></label>
+      {#if (no.kategoriar || []).length && !no.jokerLaast}
+        <fieldset class="felt"><legend>Vel jokeren dykkar</legend>
+          <p class="dempa liten">Den kategorien gir dobbel poeng. De kan endre fram til quizen startar.</p>
+          <div class="kat">{#each no.kategoriar as k}<button type="button" class="val" aria-pressed={joker === k.id} onclick={() => joker = joker === k.id ? "" : k.id}>{k.namn}</button>{/each}</div>
+        </fieldset>
+      {/if}
+      <button class="knapp gull" type="submit" disabled={sender || !namn.trim()}>{sender ? "Koplar til …" : "Bli med"}</button>
+      <p class="dempa liten">Denne mobilen blir mobilen til laget heile kvelden. Må de byte, spør quizmasteren.</p>
+    </form>
   {:else if no.id}
     <section class="stack q">
       <div class="qtopp"><span class="pille">⚡ {no.kat}{no.nr ? ` · ${no.nr} av ${no.tot}` : ""}</span>{#if open}<span class="klokke" class:lite={att <= 5}>{att} s</span>{/if}</div>

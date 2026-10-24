@@ -59,7 +59,7 @@
         </div>
         <div class="bk-tekst">
           <p class="stor">Skann med kameraet for å bli med i hurtigrundane</p>
-          <p>Éin mobil per lag: den første som skannar, blir mobilen til laget. Skriv «Bord {t.bord ?? t.id}» på svararka òg.</p>
+          <p>Éin mobil per lag: den første som skannar, blir mobilen til laget. Skriv «Bord {t.bord ?? t.id}» på svararka òg. Etter quizen kan alle på bordet skanne koden og sjå resultatet.</p>
           {#if q.wifi}<p class="wifi">Wi-Fi: <b>{q.wifi}</b>{#if q.wifiPassord}&nbsp;· Passord: <b>{q.wifiPassord}</b>{/if}</p>{/if}
         </div>
       </article>
