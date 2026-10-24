@@ -21,9 +21,22 @@
     const n = plan.filter(x => x.type === "sporsmal" && x.kat === it.kat && x.nummerert !== false).length;
     return [n ? `${n} spørsmål` : "", k?.maks ? `opptil ${fmt(k.maks)} poeng` : ""].filter(Boolean).join(" · ");
   });
-  const fasitIds = $derived(it?.type === "fasit" ? (Array.isArray(it.kat) ? it.kat : [it.kat]) : []);
+  const fasitIds = $derived.by(() => {
+    if (it?.type !== "fasit") return [];
+    const rek = (quiz?.kategoriar || []).map(c => c.id), pos = id => { const i = rek.indexOf(id); return i < 0 ? 999 : i; };
+    return [...(Array.isArray(it.kat) ? it.kat : [it.kat])].filter(Boolean).sort((a, b) => pos(a) - pos(b));
+  });
   // Same tekststorleik i alle kolonnane på ein fasit
-  const fasitTett = $derived(fasitIds.some(id => { const l = fasitFor(quiz, plan, id); return l.length > 7 || l.some(s => (s || "").length > 40); }));
+  const fasitTittel = $derived.by(() => {
+    const c = fasitIds.map(id => kats.get(id)).filter(Boolean);
+    if (c.length > 1 && c.every(x => x.nr)) return "Kategori " + c.map(x => x.nr).sort((a, b) => a - b).join(" og ");
+    return c.map(x => x.namn).join(" og ") || "Fasit";
+  });
+  // Reknar ut om svara får plass i stor skrift: tel kor mange linjer den lengste kolonnen treng
+  const fasitTett = $derived.by(() => {
+    const perLinje = [0, 70, 34, 21][Math.min(fasitIds.length, 3)] || 21;
+    return fasitIds.some(id => fasitFor(quiz, plan, id).reduce((n, s) => n + Math.max(1, Math.ceil((s || "").length / perLinje)), 0) > 11);
+  });
 
   // tavle og avsløring
   const n = $derived(rangert.length);
@@ -91,7 +104,7 @@
 {:else if it.type === "fasit"}
   <div class="slide">
     <div class="top">
-      <div style="display:flex;align-items:center;gap:16px"><span class="pill gull">Fasit</span><span class="katnamn">{fasitIds.map(id => { const c = kats.get(id); return c ? (c.nr ? (fasitIds.length > 1 ? c.nr : c.namn) : c.namn) : id; }).join(" og ").replace(/^(\d)/, "Kategori $1")}</span></div>
+      <div style="display:flex;align-items:center;gap:16px"><span class="pill gull">Fasit</span><span class="katnamn">{fasitTittel}</span></div>
       <span class="meta">Byt ark med nabobordet og rett</span>
     </div>
     <div class="f-grid" style="grid-template-columns:repeat({Math.min(fasitIds.length, 3)},minmax(0,1fr))">
