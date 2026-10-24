@@ -100,10 +100,11 @@ service cloud.firestore {
         && request.time < get(liveDoc()).data.opna + duration.value(get(liveDoc()).data.tid + 2, 's');
       allow update, delete: if etneAdmin();
     }
-    // Oppsummeringa etter quizen: berre mobilen til bordet kan lese ho
-    match /etneResultat/{bord} {
-      allow read: if etneAdmin() || eigBord(bord);
-      allow write: if etneAdmin();
+    // Oppsummeringa etter quizen. Dokument-id-en er «bord_kode», så berre dei som har
+    // skanna QR-koden på bordet, kan opne ho, og berre etter at quizmasteren har opna resultatet.
+    match /etneResultat/{id} {
+      allow get: if etneAdmin() || (request.auth != null && exists(liveDoc()) && get(liveDoc()).data.get('resultat', false) == true);
+      allow list, write: if etneAdmin();
     }
 
     // Alt anna er stengt

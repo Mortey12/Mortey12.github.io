@@ -55,7 +55,7 @@
     else if (["b", "B", "."].includes(e.key)) { e.preventDefault(); veksle("pause"); }
   }
   async function sendRes(){
-    try { const n = await sendResultat(); await setNo({ resultat: true, resultatT: Date.now() }); melding(`Resultatet er sendt til ${n} mobilar`); }
+    try { const n = await sendResultat(); await setNo({ resultat: true, resultatT: Date.now() }); melding(`Resultatet er klart for ${n} bord. Alle som skannar QR-koden på bordet, ser det no.`); }
     catch (e) { melding("Resultatet vart ikkje sendt: " + (e.message || e), true); }
   }
   const opneSkjerm = () => window.open("skjerm.html", "etneskjerm", "popup,width=1280,height=720");
@@ -97,7 +97,7 @@
     <div class="kontroll mobilrad">
       <span class="dempa">Mobilane: {live.mobilar.length} kopla til</span>
       <button class="btn liten" type="button" aria-pressed={!!live.no.jokerLaast} onclick={() => setNo({ jokerLaast: !live.no.jokerLaast })}>{live.no.jokerLaast ? "Jokerane er låste" : "Jokerane er opne"}</button>
-      <button class="btn liten" type="button" aria-pressed={!!live.no.resultat} onclick={sendRes}>{live.no.resultat ? "Resultatet er sendt (oppdater)" : "Send resultatet til mobilane"}</button>
+      <button class="btn liten" type="button" aria-pressed={!!live.no.resultat} onclick={sendRes}>{live.no.resultat ? "Resultatet er ope (oppdater)" : "Opne resultatet for alle"}</button>
       {#if live.no.resultat}<button class="btn liten" type="button" onclick={() => setNo({ resultat: false })}>Skjul resultatet</button>{/if}
     </div>
 
