@@ -860,9 +860,13 @@ function pDoc(){ return S.poeng.get(S.kvDate) || {}; }
 function pRounds(){ const r = pDoc().rundar; return Array.isArray(r) && r.length ? r : DEF_RUNDAR; }
 function pTeams(){
   const lag = pDoc().lag || {}, R = pRounds();
+  const set = v => v !== undefined && v !== null && String(v).trim() !== "";
   const list = Object.entries(lag).map(([id, t]) => { const p = t.p || {}, m = t.m || {};
-    const tot = R.reduce((s, r) => s + pnum(p[r.id]) - pnum(m[r.id]), 0);
-    return {id, namn: t.namn || "", nr: t.nr || 0, p, m, tot}; }).sort((a,b) => a.nr - b.nr);
+    // «For mange» held fram til neste runde til laget seier frå om noko anna
+    let carry = 0; const eff = {};
+    R.forEach(r => { carry = set(m[r.id]) ? pnum(m[r.id]) : carry; eff[r.id] = carry; });
+    const tot = R.reduce((s, r) => s + pnum(p[r.id]) - eff[r.id], 0);
+    return {id, namn: t.namn || "", nr: t.nr || 0, p, m, eff, tot}; }).sort((a,b) => a.nr - b.nr);
   const sorted = [...list].sort((a,b) => b.tot - a.tot);
   list.forEach(t => { t.rank = sorted.filter(x => x.tot > t.tot).length + 1; });
   return {list, sorted};
@@ -898,7 +902,8 @@ function pastTeamNames(){
 function pSums(){
   const {list, sorted} = pTeams();
   list.forEach(t => { const tr = document.querySelector(`[data-team="${t.id}"]`); if (!tr) return;
-    tr.querySelector(".sum").textContent = pfmt(t.tot); tr.querySelector(".rank").textContent = t.namn ? t.rank + ". plass" : ""; });
+    tr.querySelector(".sum").textContent = pfmt(t.tot);
+    tr.querySelectorAll("td.m input").forEach(inp => { const rid = inp.dataset.pf.split(".").pop(); inp.placeholder = pfmt(t.eff[rid]); }); tr.querySelector(".rank").textContent = t.namn ? t.rank + ". plass" : ""; });
   const lb = $("#pLeader"); if (lb) lb.innerHTML = leaderHTML(sorted);
   $("#pCount") && ($("#pCount").textContent = `${list.length} lag`);
 }
@@ -924,13 +929,13 @@ function renderPoeng(){
           <thead><tr><th>#</th><th>Lag</th>${R.map((r,i) => `<th colspan="2"><label class="sr" for="rn-${i}">Namn på runde</label><input id="rn-${i}" data-rname="${i}" value="${esc(r.namn)}"><br><span class="sub2">poeng · for mange</span></th>`).join("")}<th style="text-align:right">Sum</th><th>Plass</th><th></th></tr></thead>
           <tbody>${list.map((t,i) => `<tr data-team="${t.id}"><td>${i+1}</td>
             <td><input data-pf="lag.${t.id}.namn" value="${esc(t.namn)}" list="pNames" aria-label="Lagnamn"></td>
-            ${R.map(r => `<td class="n"><input inputmode="decimal" data-pf="lag.${t.id}.p.${r.id}" value="${esc(t.p[r.id] ?? "")}" aria-label="${esc(r.namn)}, poeng for ${esc(t.namn)}"></td><td class="m"><input inputmode="decimal" data-pf="lag.${t.id}.m.${r.id}" value="${esc(t.m[r.id] ?? "")}" aria-label="${esc(r.namn)}, for mange svar for ${esc(t.namn)}"></td>`).join("")}
+            ${R.map(r => `<td class="n"><input inputmode="decimal" data-pf="lag.${t.id}.p.${r.id}" value="${esc(t.p[r.id] ?? "")}" aria-label="${esc(r.namn)}, poeng for ${esc(t.namn)}"></td><td class="m"><input inputmode="decimal" data-pf="lag.${t.id}.m.${r.id}" value="${esc(t.m[r.id] ?? "")}" placeholder="${pfmt(t.eff[r.id])}" aria-label="${esc(r.namn)}, for mange svar for ${esc(t.namn)}"></td>`).join("")}
             <td class="sum">${pfmt(t.tot)}</td><td class="rank">${t.namn ? t.rank + ". plass" : ""}</td>
             <td><button class="ibtn" type="button" data-pdel="${t.id}" aria-label="Fjern laget">✕</button></td></tr>`).join("")}</tbody>
         </table></div>
         <form class="inline" id="pAdd"><label class="sr" for="pNew">Nytt lag</label><input class="inp" id="pNew" list="pNames" placeholder="Nytt lag, trykk Enter" style="flex:1"><button class="btn primary" type="submit">Legg til lag</button></form>
         <datalist id="pNames">${pastTeamNames().map(n => `<option value="${esc(n)}">`).join("")}</datalist>
-        <div class="actions"><button class="btn" type="button" id="pRound">+ Runde</button><span class="row-meta" id="pCount">${list.length} lag</span><span class="row-meta">«For mange» blir trekt frå berre i den runden han står i.</span></div>
+        <div class="actions"><button class="btn" type="button" id="pRound">+ Runde</button><span class="row-meta" id="pCount">${list.length} lag</span><span class="row-meta">«For mange» held fram i dei neste rundane. Grå tal er arva frå runden før. Skriv 0 når laget seier frå at dei er færre.</span></div>
       </fieldset>
       <aside class="card" style="gap:10px">
         <h2>Toppen no</h2>
