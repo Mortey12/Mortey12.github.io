@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Skiftliste · prototype</title>
+  <style>
+    [x-cloak] { display: none !important; }
+    body { margin: 0; background: #FFF7E4; color: #111827; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .drag-ghost { opacity: .35; }
+    .drag-chosen { box-shadow: 0 4px 14px rgba(127, 46, 46, .25); }
+    .js-drag { cursor: grab; touch-action: manipulation; }
+    .scroll-thin { scrollbar-width: thin; }
+    #loading { padding: 40px 16px; text-align: center; color: #4B5563; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.13/dist/index.global.js"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-paper: #FFF7E4;
+      --color-card: #FFFAF2;
+      --color-line: #E5D7C3;
+      --color-line-strong: #D9C7AE;
+      --color-wine: #7F2E2E;
+      --color-brand: #F54B4B;
+      --color-ink: #111827;
+      --color-mute: #4B5563;
+      --color-ok: #2F5E3D;
+      --color-warn: #9A3412;
+    }
+    @layer components {
+      .chip { @apply inline-flex items-center rounded-full border px-3 py-1 text-sm transition-colors; }
+      .chip-on { @apply bg-wine text-white border-wine; }
+      .chip-off { @apply bg-card text-ink border-line-strong hover:border-wine; }
+      .seg { @apply flex-1 rounded-lg px-2 py-1.5 text-sm font-medium; }
+      .seg-on { @apply bg-white text-ink shadow-sm; }
+      .seg-off { @apply text-mute; }
+      .btn { @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold transition-colors; }
+      .btn-main { @apply bg-wine text-white hover:bg-[#6a2525]; }
+      .btn-line { @apply border border-line-strong bg-white text-ink hover:border-wine; }
+      .badge { @apply inline-block rounded-full px-2 py-0.5 text-[11px] font-medium; }
+      .panel { @apply rounded-2xl border border-line bg-card; }
+      .kicker { @apply text-[11px] font-semibold uppercase tracking-wide text-mute; }
+    }
+  </style>
+  <script src="logic.js"></script>
+  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+</head>
+<body>
+<div id="loading" x-data x-show="false">Laster prototypen …</div>
+<div x-data="skiftliste" x-cloak class="mx-auto max-w-[1500px] px-4 pb-16">
+
+  <!-- header -->
+  <header class="flex flex-wrap items-center gap-3 py-4">
+    <div class="mr-auto">
+      <h1 class="text-xl font-bold">Skiftliste</h1>
+      <p class="text-sm text-mute">Skjenke og samfunnettjeneste, i internbevis-appen og Personal for ledere.</p>
+    </div>
+    <span class="badge bg-[#FDEBD8] text-warn !text-xs">Prototype med oppdikta data</span>
+    <button type="button" class="btn btn-line" @click="reset()">Tilbakestill</button>
+  </header>
+
+  <div class="mb-4 flex rounded-xl bg-[#F3E2CC] p-1 lg:hidden" role="tablist" aria-label="Visning">
+    <button type="button" class="seg" :class="view === 'app' ? 'seg-on' : 'seg-off'" @click="view = 'app'" :aria-pressed="view === 'app'">Appen</button>
+    <button type="button" class="seg" :class="view === 'leder' ? 'seg-on' : 'seg-off'" @click="view = 'leder'" :aria-pressed="view === 'leder'">For ledere</button>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-[390px_minmax(0,1fr)]">
+
+    <!-- ======================= APPEN ======================= -->
+    <section :class="view === 'app' ? 'block' : 'hidden lg:block'" aria-label="Appen">
+      <div class="mb-3">
+        <div class="kicker mb-1">Appen · logget inn som</div>
+        <select x-model="me" class="w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-sm">
+          <template x-for="g in personaGroups()" :key="g.label">
+            <optgroup :label="g.label">
+              <template x-for="p in g.people" :key="p.id">
+                <option :value="p.id" :selected="p.id === me" x-text="personaLabel(p)"></option>
+              </template>
+            </optgroup>
+          </template>
+        </select>
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          <template x-for="q in quick" :key="q.id">
+            <button type="button" class="chip !px-2.5 !py-0.5 !text-xs" :class="me === q.id ? 'chip-on' : 'chip-off'" @click="me = q.id" x-text="q.label"></button>
+          </template>
+        </div>
+      </div>
+
+      <!-- phone -->
+      <div class="relative mx-auto w-full max-w-[390px] overflow-hidden rounded-[34px] border-[6px] border-ink bg-paper shadow-xl">
+        <div class="scroll-thin h-[760px] overflow-y-auto px-4 pb-24 pt-5">
+
+          <div class="mb-4 flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-sm font-bold text-white" x-text="initials(meP)"></div>
+            <div>
+              <div class="text-lg font-bold" x-text="'Hei, ' + meP.first"></div>
+              <div class="text-xs text-mute" x-text="groupText(meP)"></div>
+            </div>
+          </div>
+
+          <!-- detail view -->
+          <template x-for="d in (detail ? [detailData()] : [])" :key="'detail'">
+            <div>
+              <button type="button" class="mb-3 text-sm font-semibold text-wine" @click="detail = null">← Tilbake</button>
+              <div class="rounded-[14px] bg-white p-4 shadow-sm">
+                <div class="kicker" x-text="dayLong(d.sh.date)"></div>
+                <h2 class="mt-1 text-xl font-bold" x-text="d.role"></h2>
+                <div class="text-sm text-mute" x-text="d.sh.title + ' · ' + d.sh.venue + ' · ' + d.sh.time"></div>
+                <p class="mt-3 text-sm" x-text="d.info"></p>
+                <template x-if="d.sh.note"><p class="mt-2 rounded-lg bg-[#FFF4E7] px-3 py-2 text-sm" x-text="'Merknad: ' + d.sh.note"></p></template>
+                <div class="mt-3 text-sm"><span class="font-semibold">Oppmøte: </span><span x-text="d.meet"></span></div>
+                <div class="mt-3 text-sm"><span class="font-semibold">På skiftet: </span><span x-text="d.who"></span></div>
+              </div>
+              <div class="mt-3 rounded-[14px] bg-white p-4 shadow-sm">
+                <div class="kicker mb-2">Krav</div>
+                <ul class="space-y-2">
+                  <template x-for="(r, i) in d.reqs" :key="i">
+                    <li class="flex items-start gap-2 text-sm">
+                      <span class="mt-0.5 font-bold" :class="r.kind === 'ok' ? 'text-ok' : (r.kind === 'warn' ? 'text-warn' : 'text-[#AA0000]')" x-text="r.kind === 'ok' ? '✓' : (r.kind === 'warn' ? '!' : '×')" aria-hidden="true"></span>
+                      <span class="flex-1" x-text="r.text"></span>
+                      <template x-if="r.leave"><button type="button" class="text-xs font-semibold text-wine underline" @click="enroll(r.leave, null)">Meld av</button></template>
+                    </li>
+                  </template>
+                </ul>
+              </div>
+              <div class="mt-4 space-y-2">
+                <template x-if="d.canClaim"><button type="button" class="btn btn-main w-full !py-3" @click="claim()">Ta skiftet</button></template>
+                <template x-if="d.canCombo"><button type="button" class="btn btn-main w-full !py-3" @click="claim(d.enrolls)" x-text="d.comboLabel"></button></template>
+                <template x-if="d.blocked"><div class="rounded-lg bg-[#F3EFE7] px-3 py-3 text-center text-sm text-mute" x-text="'Du kan ikke ta denne: ' + d.block.toLowerCase()"></div></template>
+              </div>
+            </div>
+          </template>
+
+          <!-- main view -->
+          <template x-if="!detail">
+            <div>
+              <template x-for="c in [card()]" :key="'card'">
+              <div class="rounded-[14px] bg-white p-4 shadow-sm">
+                <div class="kicker" x-text="c.kicker"></div>
+                <div class="mt-1 text-lg font-bold" x-text="c.title"></div>
+                <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#F3E2CC]"><div class="h-full rounded-full bg-brand" :style="'width:' + c.pct + '%'"></div></div>
+                <p class="mt-2 text-sm text-mute" x-text="c.note"></p>
+              </div>
+              </template>
+
+              <div class="mt-3 rounded-[14px] bg-white p-4 shadow-sm">
+                <div class="kicker mb-2">Kurs</div>
+                <template x-for="row in courseRows()" :key="row.kind">
+                  <div class="border-t border-[#F3E2CC] py-2 first:border-0 first:pt-0">
+                    <div class="flex items-start gap-2">
+                      <div class="flex-1">
+                        <div class="text-sm font-semibold" x-text="row.name"></div>
+                        <div class="text-xs" :class="row.ok ? 'text-ok' : 'text-warn'" x-text="row.status"></div>
+                      </div>
+                      <template x-if="row.action === 'pick'"><button type="button" class="btn btn-line !px-2 !py-1 !text-xs" @click="coursePick = coursePick === row.kind ? '' : row.kind" x-text="coursePick === row.kind ? 'Lukk' : 'Velg dato'"></button></template>
+                      <template x-if="row.action === 'leave'"><button type="button" class="btn btn-line !px-2 !py-1 !text-xs" @click="enroll(row.kind, null)">Meld av</button></template>
+                    </div>
+                    <template x-if="coursePick === row.kind">
+                      <div class="mt-2 space-y-1.5">
+                        <template x-for="o in row.options" :key="o.id">
+                          <button type="button" class="block w-full rounded-lg border border-line px-3 py-2 text-left text-sm hover:border-wine" @click="enroll(row.kind, o.id)">
+                            <span x-text="o.label"></span> <span class="text-xs text-mute" x-text="'· ' + o.spots + ' ledige plasser'"></span>
+                          </button>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+              </div>
+
+              <div class="mt-4 flex rounded-xl bg-[#F3E2CC] p-1" role="tablist">
+                <template x-for="t in phoneTabs()" :key="t[0]">
+                  <button type="button" class="seg !text-[13px]" :class="tab === t[0] ? 'seg-on' : 'seg-off'" @click="pickTab(t[0])" :aria-pressed="tab === t[0]" x-text="t[1]"></button>
+                </template>
+              </div>
+
+              <!-- wishes -->
+              <template x-if="tab === 'onsker'">
+                <div class="mt-3 space-y-3">
+                  <div class="rounded-[14px] bg-white p-4 shadow-sm">
+                    <div class="text-sm font-bold">Faste dager</div>
+                    <p class="mb-2 text-xs text-mute">Gjelder hele semesteret. "Kan aldri" krysser ut alle de dagene, men du kan åpne enkeltdager under.</p>
+                    <template x-for="d in ruleDays()" :key="d">
+                      <label class="flex items-center justify-between gap-2 py-1 text-sm">
+                        <span x-text="SL.WD_FULL[d]"></span>
+                        <select class="w-44 rounded-lg border px-2 py-1 text-sm" :class="WISH[rule(d)].cls" @change="setRule(d, $event.target.value)">
+                          <template x-for="v in ['', 'vil', 'kan', 'nei']" :key="v"><option :value="v" :selected="rule(d) === v" x-text="RULE_LABEL[v]"></option></template>
+                        </select>
+                      </label>
+                    </template>
+                  </div>
+                  <div class="rounded-[14px] bg-white p-4 shadow-sm">
+                    <div class="flex items-center justify-between"><div class="text-sm font-bold">Oktober og november</div><span class="badge bg-[#E6F1E9] text-[#1F4029]">Fordelt</span></div>
+                    <p class="mt-1 text-xs text-mute">Se skiftene dine under Mine, og be om bytte der om noe ikke passer.</p>
+                  </div>
+                  <template x-for="ps in [periodStatus(meP.sub)]" :key="'ps'">
+                  <div class="rounded-[14px] bg-white p-4 shadow-sm"><template x-for="wd in [wishDays()]" :key="'wd'"><div>
+                    <div class="flex items-center justify-between"><div class="text-sm font-bold">Desember</div><span class="badge" :class="ps.done ? 'bg-[#E6F1E9] text-[#1F4029]' : 'bg-[#EEF2F7] text-[#1F2937]'" x-text="ps.label"></span></div>
+                    <p class="mt-1 text-xs text-mute" x-text="ps.note"></p>
+                    <p class="mt-1 text-xs font-medium" x-text="wd.counts.vil + ' vil · ' + wd.counts.kan + ' kan · ' + wd.counts.nei + ' nei'"></p>
+                    <div class="mt-2 space-y-2">
+                      <template x-for="day in wd.days" :key="day.date">
+                        <div>
+                          <div class="text-xs font-semibold" :class="day.allNo ? 'text-mute line-through' : ''" x-text="dayShort(day.date)"></div>
+                          <div class="mt-1 flex flex-wrap gap-1.5">
+                            <template x-for="x in day.shifts" :key="x.sh.id">
+                              <button type="button" class="rounded-lg border px-2 py-1 text-left text-xs" :class="[WISH[x.v].cls, x.fromRule ? 'border-dashed' : 'border-solid']" :disabled="ps.done" @click="cycleWish(x.sh)" :aria-label="x.sh.title + ' ' + dayLong(x.sh.date) + ': ' + WISH[x.v].label + '. Trykk for å endre.'">
+                                <span class="block font-medium" x-text="x.sh.title + ' ' + x.sh.time"></span>
+                                <span x-text="WISH[x.v].label + (x.fromRule && x.v ? ' · fast' : '')"></span>
+                              </button>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                    <template x-if="wd.more"><button type="button" class="mt-3 text-sm font-semibold text-wine" @click="wishMore = true">Vis flere datoer</button></template>
+                  </div></template></div>
+                  </template>
+                </div>
+              </template>
+
+              <!-- open shifts -->
+              <template x-if="tab === 'egne' || tab === 'andre' || tab === 'ledige'">
+                <template x-for="L2 in [ledige()]" :key="'ledige'"><div class="mt-3">
+                  <template x-if="tab === 'egne'"><p class="mb-2 text-xs text-mute">Ledige plasser etter fordelingen. Her gjelder først til mølla.</p></template>
+                  <template x-if="L2.total === 0"><p class="rounded-[14px] bg-white p-4 text-sm text-mute shadow-sm">Ingen ledige skift for deg akkurat nå.</p></template>
+                  <template x-for="m in L2.months" :key="m.key">
+                    <div class="mb-3">
+                      <div class="kicker mb-1.5" x-text="m.label"></div>
+                      <div class="space-y-2">
+                        <template x-for="x in m.shifts" :key="x.sh.id">
+                          <div class="rounded-[14px] bg-white p-3 shadow-sm">
+                            <div class="text-xs text-mute" x-text="dayLong(x.sh.date) + ' · ' + x.sh.time"></div>
+                            <div class="font-semibold" x-text="x.sh.title + ' · ' + x.sh.venue"></div>
+                            <div class="mt-2 space-y-1.5">
+                              <template x-for="s in x.slots" :key="s.sl.key">
+                                <button type="button" class="flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-left" :class="s.tone === 'off' ? 'bg-[#F7F4EE]' : 'bg-white hover:border-wine'" @click="openDetail(x.sh, s.sl)">
+                                  <span class="flex-1">
+                                    <span class="block text-sm font-medium" x-text="roleName(s.sl) + ' · ' + (s.free === 1 ? '1 ledig' : s.free + ' ledige')"></span>
+                                    <span class="block text-xs" :class="{ 'text-ok': s.tone === 'ok', 'text-warn': s.tone === 'warn', 'text-mute': s.tone === 'off', 'text-[#1E3A8A]': s.tone === 'info' }" x-text="s.status"></span>
+                                  </span>
+                                  <span class="text-mute" aria-hidden="true">›</span>
+                                </button>
+                              </template>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="L2.hidden > 0"><button type="button" class="btn btn-line w-full" @click="showMore = true" x-text="'Vis flere datoer (' + L2.hidden + ' skift til)'"></button></template>
+                </div></template>
+              </template>
+
+              <!-- mine -->
+              <template x-if="tab === 'mine'">
+                <div class="mt-3 space-y-2">
+                  <template x-if="mine().length === 0"><p class="rounded-[14px] bg-white p-4 text-sm text-mute shadow-sm">Du har ingen skift ennå.</p></template>
+                  <template x-for="m in mine()" :key="m.sh.id + m.sl.key">
+                    <div class="rounded-[14px] bg-white p-3 shadow-sm">
+                      <div class="text-xs text-mute" x-text="dayLong(m.sh.date) + ' · ' + m.sh.time"></div>
+                      <div class="font-semibold" x-text="roleName(m.sl) + ' · ' + m.sh.title + ', ' + m.sh.venue"></div>
+                      <template x-if="m.tag"><span class="badge mt-1 bg-[#E6F1E9] text-[#1F4029]" x-text="m.tag"></span></template>
+                      <template x-if="m.sh.note"><p class="mt-1 text-xs text-mute" x-text="'Merknad: ' + m.sh.note"></p></template>
+                      <div class="mt-2">
+                        <template x-if="!m.swapping"><button type="button" class="text-sm font-semibold text-wine" @click="swap(m.sh, m.sl, true)">Be om bytte</button></template>
+                        <template x-if="m.swapping"><div class="flex items-center gap-3 text-sm"><span class="text-warn">Du har bedt om bytte</span><button type="button" class="font-semibold text-wine" @click="swap(m.sh, m.sl, false)">Angre</button></div></template>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+        <div x-show="toast" x-transition class="absolute inset-x-4 bottom-4 rounded-xl bg-ink px-4 py-3 text-sm text-white shadow-lg" role="status" x-text="toast"></div>
+      </div>
+    </section>
+
+    <!-- ======================= FOR LEDERE ======================= -->
+    <section :class="view === 'leder' ? 'block' : 'hidden lg:block'" aria-label="Personal for ledere" class="min-w-0">
+      <div class="panel p-4">
+        <div class="kicker mb-1">Personal for ledere · logget inn som</div>
+        <div class="flex flex-wrap gap-1.5">
+          <template x-for="l in SL.LEADERS" :key="l.id">
+            <button type="button" class="chip !py-0.5 !text-[13px]" :class="leader === l.id ? 'chip-on' : 'chip-off'" @click="switchLeader(l.id)" x-text="l.label"></button>
+          </template>
+        </div>
+        <p class="mt-2 text-sm text-mute" x-text="L.text"></p>
+
+        <div class="mt-4 flex max-w-md rounded-xl bg-[#F3E2CC] p-1">
+          <button type="button" class="seg" :class="boardTab === 'plan' ? 'seg-on' : 'seg-off'" @click="boardTab = 'plan'">Skiftplan</button>
+          <template x-if="L.alloc"><button type="button" class="seg" :class="boardTab === 'alloc' ? 'seg-on' : 'seg-off'" @click="boardTab = 'alloc'">Fordeling</button></template>
+          <button type="button" class="seg" :class="boardTab === 'progress' ? 'seg-on' : 'seg-off'" @click="boardTab = 'progress'">Framdrift</button>
+        </div>
+      </div>
+
+      <!-- ---------- Skiftplan ---------- -->
+      <template x-if="boardTab === 'plan' || (boardTab === 'alloc' && !L.alloc)">
+        <div class="mt-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1">
+              <button type="button" class="btn btn-line !px-2.5" @click="stepWeek(-1)" aria-label="Forrige uke">←</button>
+              <select x-model="week" class="rounded-lg border border-line-strong bg-white px-2 py-2 text-sm font-semibold">
+                <template x-for="m in weeks()" :key="m"><option :value="m" :selected="m === week" x-text="weekLabel(m)"></option></template>
+              </select>
+              <button type="button" class="btn btn-line !px-2.5" @click="stepWeek(1)" aria-label="Neste uke">→</button>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <template x-for="f in filters()" :key="f[0]">
+                <button type="button" class="chip !py-0.5 !text-[13px]" :class="ef === f[0] ? 'chip-on' : 'chip-off'" @click="filter = f[0]" x-text="f[1]"></button>
+              </template>
+            </div>
+            <div class="ml-auto flex gap-3 text-sm">
+              <span x-text="weekStats().open"></span><span :class="weekStats().hasSwaps ? 'font-semibold text-warn' : 'text-mute'" x-text="weekStats().swaps"></span>
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-start gap-3 rounded-xl border px-3 py-2 text-sm" :class="active ? 'border-[#E9C79A] bg-[#FFF4E7]' : 'border-line bg-card'" role="status">
+            <span class="flex-1" x-text="feedback"></span>
+            <template x-if="selected"><button type="button" class="font-semibold text-wine" @click="cancelSelect()">Avbryt</button></template>
+          </div>
+
+          <div class="mt-3 grid gap-4 md:grid-cols-[270px_minmax(0,1fr)]">
+            <!-- pool -->
+            <aside class="panel self-start p-3 md:sticky md:top-3">
+              <div class="flex items-baseline justify-between"><div class="text-sm font-bold">Frivillige</div><div class="text-xs text-mute" x-text="pool().length + ' personer'"></div></div>
+              <input type="search" x-model="query" placeholder="Søk på navn eller gruppe" class="mt-2 w-full rounded-lg border border-line-strong bg-white px-3 py-1.5 text-sm" aria-label="Søk i frivillige">
+              <div class="mt-2 flex flex-wrap gap-1">
+                <template x-for="f in poolFilters()" :key="f[0]">
+                  <button type="button" class="chip !px-2 !py-0 !text-xs" :class="poolFilter === f[0] ? 'chip-on' : 'chip-off'" @click="poolFilter = f[0]" x-text="f[1]"></button>
+                </template>
+              </div>
+              <p class="mt-2 text-xs text-mute" x-text="(drag && drag.fromShift) || (selected && selected.fromShift) ? 'Slipp eller trykk her for å ta personen av skiftet.' : 'Dra noen hit fra et skift for å ta dem av.'"></p>
+              <div class="scroll-thin mt-2 max-h-[45vh] md:max-h-[70vh] space-y-1.5 overflow-y-auto rounded-lg p-0.5" :class="(drag && drag.fromShift) ? 'bg-[#F7F1E8] outline-2 outline-dashed outline-wine' : ''" data-pool="1" x-init="mountList($el)" @click.self="poolClick()">
+                <template x-for="p in pool()" :key="p.id">
+                  <div class="js-drag rounded-lg border bg-white px-2.5 py-2" :class="sameSrc(selected, { pid: p.id, fromShift: null, fromSlot: null }) ? 'border-2 border-wine' : 'border-line'" :data-pid="p.id" data-from-shift="" data-from-slot="" @click="selected && selected.fromShift ? poolClick() : select({ pid: p.id, fromShift: null, fromSlot: null })" role="button" tabindex="0" @keydown.enter="select({ pid: p.id, fromShift: null, fromSlot: null })">
+                    <div class="text-sm font-semibold" x-text="p.name"></div>
+                    <div class="text-xs text-mute" x-text="groupText(p) + ' · ' + countText(p)"></div>
+                    <div class="mt-1 flex flex-wrap gap-1">
+                      <template x-for="b in badges(p)" :key="b.text"><span class="badge" :class="b.cls" x-text="b.text"></span></template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </aside>
+
+            <!-- board -->
+            <div class="min-w-0 space-y-4">
+              <template x-if="boardDays().length === 0"><p class="panel p-4 text-sm text-mute">Ingen skift denne uka med dette filteret.</p></template>
+              <template x-for="day in boardDays()" :key="day.date">
+                <div>
+                  <h3 class="mb-2 text-sm font-bold" x-text="dayLong(day.date)"></h3>
+                  <div class="grid gap-3 xl:grid-cols-2">
+                    <template x-for="v in day.venues" :key="v.key">
+                      <div class="panel overflow-hidden" :class="v.drift ? '' : 'border-[#D9CBEA]'">
+                        <div class="flex flex-wrap items-center gap-2 border-b border-line bg-white px-3 py-2">
+                          <span class="font-bold" x-text="v.venue"></span>
+                          <span class="badge" :class="v.drift ? 'bg-[#FCE8E8] text-[#8A1C1C]' : 'bg-[#EFE8F8] text-[#4C1D95]'" x-text="v.tag"></span>
+                          <template x-if="v.unpublished"><span class="badge bg-[#EEF2F7] text-[#1F2937]">Ikke publisert</span></template>
+                        </div>
+                        <template x-for="sh in v.shifts" :key="sh.id">
+                          <div class="border-t border-line px-3 py-2 first:border-0" :class="sh.closed ? 'bg-[#F3EFE7]' : ''">
+                            <div class="flex items-start gap-2">
+                              <div class="flex-1">
+                                <span class="font-semibold" x-text="sh.title"></span>
+                                <span class="text-sm text-mute" x-text="' · ' + sh.time"></span>
+                                <template x-if="sh.closed"><span class="badge ml-1 bg-ink text-white">Stengt</span></template>
+                              </div>
+                              <template x-if="canEdit(sh) || L.samf"><button type="button" class="text-xs font-semibold text-wine underline" @click="openEdit(sh)" :aria-label="'Rediger ' + sh.title + ', ' + dayLong(sh.date)">Rediger</button></template>
+                            </div>
+                            <template x-if="sh.note"><div class="mt-1 rounded-md bg-[#FFF4E7] px-2 py-1 text-xs" x-text="sh.note"></div></template>
+                            <template x-if="!sh.closed">
+                              <div class="mt-2 space-y-2">
+                                <template x-for="sl in sh.slots" :key="sl.key">
+                                  <div>
+                                    <div class="flex items-center gap-2 text-xs">
+                                      <span class="font-semibold" x-text="roleName(sl)"></span>
+                                      <span class="text-mute" x-text="sl.people.length + '/' + sl.count"></span>
+                                      <span class="badge" :class="slotTag(sh, sl).cls" x-text="slotTag(sh, sl).text"></span>
+                                    </div>
+                                    <div class="mt-1 flex min-h-[38px] flex-wrap gap-1.5" :data-shift="sh.id" :data-slot="sl.key" x-init="mountList($el)">
+                                      <template x-for="c in sl.people.map((pid) => placed(sh, sl, pid))" :key="c.p.id">
+                                        <div class="rounded-lg border px-2 py-1 text-sm" :class="[c.can ? 'js-drag' : '', c.sel ? 'border-2 border-wine' : (c.swap ? 'border-[#E9C79A]' : 'border-[#EADFCF]'), c.swap ? 'bg-[#FFF4E7]' : 'bg-[#F7F1E8]']" :data-pid="c.p.id" :data-from-shift="sh.id" :data-from-slot="sl.key" @click="c.can && select({ pid: c.p.id, fromShift: sh.id, fromSlot: sl.key })">
+                                          <div class="flex items-center gap-1.5">
+                                            <span class="font-medium" x-text="c.p.name"></span>
+                                            <span class="text-[11px] text-mute" x-text="c.group"></span>
+                                            <template x-if="c.can"><button type="button" class="ml-1 text-mute hover:text-wine" @click.stop="unassign({ pid: c.p.id, fromShift: sh.id, fromSlot: sl.key })" :aria-label="'Fjern ' + c.p.name + ' fra ' + roleName(sl).toLowerCase()">×</button></template>
+                                          </div>
+                                          <template x-if="c.note"><div class="text-[11px] text-[#1E3A8A]" x-text="c.note"></div></template>
+                                          <template x-if="c.swap"><div class="text-[11px] font-semibold text-warn">Ønsker bytte</div></template>
+                                          <template x-if="c.warn"><div class="text-[11px] text-warn" x-text="c.warn"></div></template>
+                                        </div>
+                                      </template>
+                                      <template x-for="e in empties(sh, sl)" :key="e.i">
+                                        <button type="button" class="rounded-lg border border-dashed px-2.5 py-1 text-left text-xs" :class="{ 'border-line-strong bg-white text-mute': e.tone === 'idle', 'border-[#E2D8C8] bg-[#F3EFE7] text-mute cursor-not-allowed': e.tone === 'off', 'border-solid border-ok bg-[#EAF3EC] text-[#1F4029]': e.tone === 'go' }" @click="place(sh.id, sl.key)" x-text="e.label"></button>
+                                      </template>
+                                    </div>
+                                  </div>
+                                </template>
+                              </div>
+                            </template>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ---------- Fordeling ---------- -->
+      <template x-if="boardTab === 'alloc' && L.alloc">
+        <template x-for="h in [allocHead()]" :key="'head'"><div class="mt-4 space-y-3">
+          <div class="panel p-4">
+            <div class="flex flex-wrap items-center gap-2">
+              <template x-for="s in allocSubs()" :key="s">
+                <button type="button" class="chip !py-0.5 !text-[13px]" :class="aSub === s ? 'chip-on' : 'chip-off'" @click="allocSub = s; openCell = ''" x-text="s"></button>
+              </template>
+            </div>
+            <h2 class="mt-3 text-lg font-bold" x-text="aSub + ' · desember'"></h2>
+            <p class="text-sm text-mute"><span x-text="h.answered"></span>. Ønsker leveres i appen. Planen lages 15.–20. november og publiseres til alle samtidig.</p>
+            <p class="mt-2 text-sm" :class="h.short ? 'text-warn' : 'text-ok'" x-text="h.cap"></p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button type="button" class="btn btn-main" @click="suggestDec()" x-text="h.status === 'open' ? 'Foreslå plan' : 'Foreslå på nytt'"></button>
+              <template x-if="h.status === 'suggested'"><button type="button" class="btn btn-line" @click="publishDec()">Publiser desember</button></template>
+              <template x-if="h.status === 'published'"><span class="badge self-center bg-[#E6F1E9] !text-sm text-[#1F4029]">Publisert</span></template>
+            </div>
+            <p class="mt-2 text-xs text-mute">Forslaget følger ønskene: skiftleder først, så "vil" før "kan", maks ett skift i uka (pensjonister ett i måneden), og opplæring kommer i tillegg der det står en utlært.</p>
+          </div>
+          <template x-if="allocWarnings().length">
+            <div class="panel border-[#E9C79A] bg-[#FFF4E7] p-4">
+              <div class="kicker mb-1">Å se på</div>
+              <ul class="list-disc space-y-1 pl-5 text-sm"><template x-for="(t, i) in allocWarnings()" :key="i"><li x-text="t"></li></template></ul>
+            </div>
+          </template>
+          <div class="space-y-2">
+            <template x-for="d in allocDays()" :key="d.date">
+              <div class="panel grid gap-2 p-3 md:grid-cols-[120px_minmax(0,1fr)]">
+                <div class="text-sm font-bold" x-text="dayShort(d.date)"></div>
+                <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <template x-for="sh in d.shifts" :key="sh.id">
+                    <div class="rounded-lg border bg-white p-2" :class="cellGaps(sh) && h.status !== 'open' ? 'border-[#E9C79A] bg-[#FDF1E7]' : 'border-line'">
+                      <div class="text-xs font-semibold" x-text="sh.title + ' ' + sh.time"></div>
+                      <div class="mt-1 space-y-0.5">
+                        <template x-for="x in cellPeople(sh)" :key="x.p.id">
+                          <div class="flex items-center gap-1 text-sm">
+                            <span class="flex-1"><span x-text="x.p.first + ' ' + x.p.name.split(' ')[1] + x.suffix"></span> <span class="text-[11px] text-mute" x-text="'· ' + x.wish"></span></span>
+                            <button type="button" class="text-mute hover:text-wine" @click="allocRemove(sh, x.sl, x.p.id)" :aria-label="'Fjern ' + x.p.name">×</button>
+                          </div>
+                        </template>
+                      </div>
+                      <template x-if="cellGaps(sh) && h.status !== 'open'"><div class="mt-1 text-[11px] font-semibold text-warn" x-text="cellGaps(sh)"></div></template>
+                      <button type="button" class="mt-1 text-xs font-semibold text-wine" @click="openCell = openCell === sh.id ? '' : sh.id" x-text="openCell === sh.id ? 'Lukk' : 'Legg til'"></button>
+                      <template x-if="openCell === sh.id">
+                        <div class="mt-1 space-y-1">
+                          <template x-for="c in candidates(sh)" :key="c.p.id">
+                            <button type="button" class="block w-full rounded-md border border-line px-2 py-1 text-left text-xs hover:border-wine" @click="allocAdd(sh, c)" x-text="c.p.name + ' · ' + c.v + ' · ' + roleName(c.sl).toLowerCase() + ' · ' + c.n + ' denne uka'"></button>
+                          </template>
+                          <template x-if="candidates(sh).length === 0"><div class="text-xs text-mute">Ingen flere som kan denne dagen.</div></template>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div></template>
+      </template>
+
+      <!-- ---------- Framdrift ---------- -->
+      <template x-if="boardTab === 'progress'">
+        <div class="mt-4 space-y-4">
+          <template x-if="progressSubs().length">
+            <div class="panel p-4">
+              <h2 class="text-lg font-bold">Skjenke · november</h2>
+              <p class="text-sm text-mute">Kontrakten er ett skift i uka, men aldri flere enn det finnes skift til. Pensjonister har ett i måneden.</p>
+              <div class="mt-3 grid gap-3 md:grid-cols-2">
+                <template x-for="sub in progressSubs()" :key="sub">
+                  <div class="rounded-xl border border-line bg-white p-3"><template x-for="g in [subProgress(sub)]" :key="'g'"><div>
+                    <div class="flex items-baseline justify-between"><span class="font-semibold" x-text="sub"></span><span class="text-sm" x-text="g.ok + ' av ' + g.members + ' i mål'"></span></div>
+                    <div class="text-xs text-mute" x-text="g.targetText"></div>
+                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#F3E2CC]"><div class="h-full bg-ok" :style="'width:' + g.pct + '%'"></div></div>
+                    <details class="mt-2 text-sm">
+                      <summary class="cursor-pointer text-wine" x-text="g.lacking.length + ' mangler skift'"></summary>
+                      <ul class="mt-1 space-y-0.5">
+                        <template x-for="r in g.lacking" :key="r.p.id"><li class="flex justify-between gap-2"><span x-text="r.p.name + (r.p.contract === 'pensjonist' ? ' (pensjonist)' : '')"></span><span class="text-warn" x-text="r.n + ' av ' + r.target"></span></li></template>
+                      </ul>
+                    </details>
+                  </div></template></div>
+                </template>
+              </div>
+            </div>
+          </template>
+          <template x-if="L.samf">
+            <div class="panel p-4">
+              <h2 class="text-lg font-bold">Samfunnettjeneste per gruppe</h2>
+              <p class="text-sm text-mute">Alle frivillige tar 1–2 skift i semesteret. Grønt er gjennomført, lyst er planlagt.</p>
+              <div class="mt-3 space-y-2">
+                <template x-for="g in groupProgress()" :key="g.name">
+                  <div class="grid grid-cols-[110px_minmax(0,1fr)_110px] items-center gap-3 text-sm">
+                    <span class="font-semibold" x-text="g.name + (g.borg ? ' (BORG)' : '')"></span>
+                    <div class="flex h-3 overflow-hidden rounded-full bg-[#F3E2CC]"><div class="bg-ok" :style="'width:' + g.donePct + '%'"></div><div class="bg-[#9CC5A6]" :style="'width:' + g.planPct + '%'"></div></div>
+                    <span class="text-right text-xs" :class="g.status === 'I mål' ? 'text-ok' : 'text-mute'" x-text="g.status"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+    </section>
+  </div>
+
+  <!-- ---------- edit panel ---------- -->
+  <template x-if="edit && editShift">
+    <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-0 sm:items-center sm:p-4" @click.self="edit = null" @keydown.escape.window="edit = null">
+      <div class="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:rounded-2xl" role="dialog" aria-modal="true" aria-label="Rediger skift">
+        <div class="kicker" x-text="dayLong(editShift.date)"></div>
+        <h2 class="text-lg font-bold" x-text="editShift.title + ' · ' + editShift.venue"></h2>
+        <template x-if="!canEdit(editShift)">
+          <p class="mt-2 rounded-lg bg-[#EEF2F7] px-3 py-2 text-sm">Som Hovedstyret kan du endre hvilke plasser som er åpne for samfunnettjeneste og legge til merknader. Tid og bemanning på Skjenke-skift endres av Skjenke.</p>
+        </template>
+        <template x-if="canEdit(editShift)">
+          <div class="mt-3 space-y-3">
+            <div class="flex items-end gap-3">
+              <label class="text-sm">Start<input type="time" x-model="edit.start" class="mt-1 block rounded-lg border border-line-strong bg-white px-2 py-1"></label>
+              <label class="text-sm">Slutt<input type="time" x-model="edit.end" class="mt-1 block rounded-lg border border-line-strong bg-white px-2 py-1"></label>
+              <label class="flex items-center gap-2 pb-1.5 text-sm"><input type="checkbox" x-model="edit.closed"> Stengt</label>
+            </div>
+            <div>
+              <div class="kicker mb-1">Bemanning</div>
+              <template x-for="sl in editShift.slots" :key="sl.key">
+                <div class="flex items-center gap-2 py-0.5 text-sm">
+                  <span class="flex-1" x-text="roleName(sl) + ' (' + sl.people.length + ' satt opp nå)'"></span>
+                  <button type="button" class="btn btn-line !px-2 !py-0.5" @click="bump(sl.key, -1)" :aria-label="'Færre ' + roleName(sl).toLowerCase()">−</button>
+                  <span class="w-5 text-center font-semibold" x-text="edit.crew[sl.key]"></span>
+                  <button type="button" class="btn btn-line !px-2 !py-0.5" @click="bump(sl.key, 1)" :aria-label="'Flere ' + roleName(sl).toLowerCase()">+</button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+        <template x-if="L.samf">
+          <div class="mt-3">
+            <div class="kicker mb-1">Åpen for samfunnettjeneste</div>
+            <template x-for="sl in editShift.slots.filter((s) => !SL.ROLES[s.role].only)" :key="sl.key">
+              <label class="flex items-center gap-2 py-0.5 text-sm"><input type="checkbox" x-model="edit.open[sl.key]"><span x-text="roleName(sl)"></span></label>
+            </template>
+            <template x-if="editShift.slots.filter((s) => !SL.ROLES[s.role].only).length === 0"><p class="text-sm text-mute">Ingen plasser her kan åpnes for samfunnettjeneste.</p></template>
+          </div>
+        </template>
+        <label class="mt-3 block text-sm">Merknad<textarea x-model="edit.note" rows="2" class="mt-1 block w-full rounded-lg border border-line-strong bg-white px-2 py-1" placeholder="For eksempel: Reservert bord 22 fra 18"></textarea></label>
+        <template x-if="editShift.tpl && canEdit(editShift)">
+          <fieldset class="mt-3 space-y-1 text-sm">
+            <legend class="kicker mb-1">Gjelder</legend>
+            <label class="flex items-center gap-2"><input type="radio" value="one" x-model="edit.scope"> Bare dette skiftet</label>
+            <label class="flex items-start gap-2"><input type="radio" value="series" x-model="edit.scope" class="mt-1"><span x-text="'Alle ' + SL.WD_FULL[SL.wd(editShift.date)].toLowerCase() + 'er på ' + editShift.venue + ' med samme skift fra denne datoen, også i malen framover'"></span></label>
+          </fieldset>
+        </template>
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" class="btn btn-line" @click="edit = null">Avbryt</button>
+          <button type="button" class="btn btn-main" @click="saveEdit()">Lagre</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <footer class="mt-10 text-center text-xs text-mute">
+    Prototype. Alle navn og skift er oppdiktet. Endringer lagres bare i denne nettleseren.
+  </footer>
+</div>
+</body>
+</html>
