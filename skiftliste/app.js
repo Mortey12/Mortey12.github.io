@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   const SL = window.SL;
-  const KEY = 'skiftliste-proto-v1';
+  const KEY = 'skiftliste-proto-v2';
   const SEED = 2026;
   const DEFAULT_FB = 'Dra en frivillig fra lista til en ledig plass, eller trykk på en person og så på en grønn plass.';
   const WISH = {
@@ -175,7 +175,7 @@
 
         visibleSlot(me, sh, sl) {
           const r = SL.ROLES[sl.role];
-          if (sl.people.length >= sl.count) return false;
+          if (SL.room(sh, sl) <= 0) return false;
           if (r.only === 'skiftleder' && !(SL.isSk(me) && me.level === 'skiftleder' && me.sub === sh.sub)) return false;
           if (r.only === 'kokk' && !me.chef) return false;
           if (r.only === 'opplaering' && !(SL.isTrainee(me) && me.sub === sh.sub)) return false;
@@ -195,7 +195,7 @@
             if (sh.slots.some((s) => s.people.indexOf(me.id) >= 0)) return;
             const slots = sh.slots.filter((sl) => this.visibleSlot(me, sh, sl)).map((sl) => {
               const c = SL.check(this.w, me, sh, sl);
-              const free = sl.count - sl.people.length;
+              const free = SL.room(sh, sl);
               let status = 'Du kan ta denne'; let tone = 'ok';
               if (c.block && c.hard) { status = c.block; tone = 'off'; }
               else if (c.block) {
@@ -231,7 +231,7 @@
           if (r.only === 'skiftleder') req(me.level === 'skiftleder' ? 'Skiftleder i ' + me.sub : 'Kun for skiftledere', me.level === 'skiftleder' ? 'ok' : 'block');
           if (r.only === 'kokk') req('Kokk på kjøkkenet', me.chef ? 'ok' : 'block');
           if (sh.venue === 'Halvtimen') { const age = SL.ageOn(me.birth, sh.date); req(age >= 20 ? '20 år eller eldre' : 'Halvtimen krever 20 år. Du er ' + age + '.', age >= 20 ? 'ok' : 'block'); }
-          if (sl.role === 'opplaering') req((me.level === 'sl-opplaering' ? 'Skiftlederopplæring ' : 'Opplæringsskift ') + (me.training + 1) + ' av 3. Du er med i tillegg til det vanlige skiftet.', 'ok');
+          if (sl.role === 'opplaering') req((me.level === 'sl-opplaering' ? 'Skiftlederopplæring ' : 'Opplæringsskift ') + (me.training + 1) + ' av 3. ' + (SL.trainReplaces(sh) ? 'Du tar en av plassene på skiftet, sammen med en utlært.' : 'Du er med i tillegg til det vanlige skiftet.'), 'ok');
           SL.courseKinds(sl, me).forEach((kind) => {
             const name = SL.COURSES[kind].name; const lower = name.toLowerCase();
             const cs = SL.courseState(me, kind);
@@ -337,11 +337,11 @@
         canEdit(sh) { const L = this.L; if (L.scope === 'all') return true; if (L.scope === 'samf') return sh.kind === 'arrangement'; return sh.sub === L.scope; },
         canAssign(sh, sl) { const L = this.L; if (L.scope === 'all') return true; if (L.scope === 'samf') return SL.slotOpen(sh, sl); return sh.sub === L.scope; },
         filters() {
-          const all = [['alle', 'Alle'], ['Stjerne', 'Stjernesalen'], ['Grøndahls', 'Grøndahls'], ['Halvtimen', 'Halvtimen'], ['arr', 'Arrangementer'], ['samf', 'Åpne for samf.']];
+          const all = [['alle', 'Alle'], ['Stjerne', 'Stjernesalen og kjøkken'], ['Grøndahls', 'Grøndahls'], ['Halvtimen', 'Halvtimen'], ['arr', 'Arrangementer'], ['samf', 'Åpne for samf.']];
           const L = this.L;
           if (L.scope === 'all') return all;
           if (L.scope === 'samf') return [['alle', 'Alle'], ['arr', 'Arrangementer'], ['samf', 'Åpne for samf.']];
-          return [[L.scope, L.scope === 'Kjøkken' || L.scope === 'Stjerne' ? 'Stjernesalen' : L.scope]];
+          return [[L.scope, L.scope === 'Kjøkken' || L.scope === 'Stjerne' ? 'Stjernesalen og kjøkken' : L.scope]];
         },
         get ef() { const f = this.filters(); return f.some((x) => x[0] === this.filter) ? this.filter : f[0][0]; },
         weeks() {
@@ -372,7 +372,7 @@
             let v = d.venues.find((x) => x.key === key);
             if (!v) {
               const internal = sh.kind !== 'drift' && !sh.slots.some((sl) => SL.slotOpen(sh, sl));
-              v = { key: key, venue: sh.venue, drift: sh.kind === 'drift', rank: sh.kind === 'drift' ? vOrder.indexOf(sh.venue) : 9, tag: sh.kind === 'drift' ? 'Skjenke' : 'Arrangement · ' + sh.organizer + (internal ? ' · internt' : ''), unpublished: !SL.isPublished(this.w, sh), shifts: [] };
+              v = { key: key, venue: sh.kind === 'drift' && sh.venue === 'Stjernesalen' ? 'Stjernesalen og kjøkken' : sh.venue, drift: sh.kind === 'drift', rank: sh.kind === 'drift' ? vOrder.indexOf(sh.venue) : 9, tag: sh.kind === 'drift' ? 'Skjenke' : 'Arrangement · ' + sh.organizer + (internal ? ' · internt' : ''), unpublished: !SL.isPublished(this.w, sh), shifts: [] };
               d.venues.push(v);
             }
             v.shifts.push(sh);
@@ -382,7 +382,7 @@
         },
         weekStats() {
           let open = 0; let swaps = 0;
-          this.boardShifts().forEach((sh) => { if (sh.closed) return; sh.slots.forEach((sl) => { if (sl.role !== 'opplaering') open += Math.max(0, sl.count - sl.people.length); swaps += sl.swaps.length; }); });
+          this.boardShifts().forEach((sh) => { if (sh.closed) return; sh.slots.forEach((sl) => { if (sl.role !== 'opplaering') open += SL.room(sh, sl); swaps += sl.swaps.length; }); });
           return { open: open === 1 ? '1 ledig plass' : open + ' ledige plasser', swaps: swaps === 1 ? '1 ønsker bytte' : swaps + ' ønsker bytte', hasSwaps: swaps > 0 };
         },
         slotTag(sh, sl) {
@@ -390,7 +390,7 @@
           if (!r.only && !SL.slotOpen(sh, sl)) return { text: sh.kind === 'drift' ? 'Kun Skjenke' : 'Kun ' + sh.organizer, cls: 'bg-[#EFE8F8] text-[#4C1D95]' };
           if (r.only === 'skiftleder') return { text: 'Kun skiftledere', cls: 'bg-[#FCE8E8] text-[#8A1C1C]' };
           if (r.only === 'kokk') return { text: 'Kun kokker', cls: 'bg-[#E8EEF9] text-[#1E3A8A]' };
-          if (r.only === 'opplaering') return { text: 'I tillegg', cls: 'bg-[#E8EEF9] text-[#1E3A8A]' };
+          if (r.only === 'opplaering') return { text: SL.trainReplaces(sh) ? 'Tar en ' + this.roleName(SL.crewSlotOf(sh)).toLowerCase() + 'plass' : 'I tillegg', cls: 'bg-[#E8EEF9] text-[#1E3A8A]' };
           if (r.only === 'arrangor') return { text: 'Arrangør', cls: 'bg-[#EFE8F8] text-[#4C1D95]' };
           return { text: 'Åpen for samf.', cls: 'bg-[#E6F1E9] text-[#1F4029]' };
         },
@@ -408,8 +408,13 @@
             sel: this.sameSrc(this.selected, src), can: this.canAssign(sh, sl)
           };
         },
+        fillText(sh, sl) {
+          const crew = SL.crewSlotOf(sh);
+          const used = crew && crew.key === sl.key ? SL.usedByTraining(sh) : 0;
+          return (sl.people.length + used) + '/' + sl.count + (used ? ' (' + used + ' opplæring)' : '');
+        },
         empties(sh, sl) {
-          const n = Math.max(0, sl.count - sl.people.length);
+          const n = SL.room(sh, sl);
           const a = this.active; const ap = a ? this.person(a.pid) : null;
           let label = 'Ledig'; let tone = 'idle';
           if (sh.closed) { label = 'Stengt'; tone = 'off'; }
@@ -420,6 +425,9 @@
             else { label = 'Sett opp ' + ap.first + ' her' + (c.warn.length ? ' · ' + c.warn.map((x) => x.t).join(', ') : ''); tone = 'go'; }
           }
           const out = []; for (let i = 0; i < n; i += 1) out.push({ i: i, label: label, tone: tone });
+          const crew = SL.crewSlotOf(sh);
+          if (!sh.closed && crew && crew.key === sl.key) for (let i = 0; i < SL.usedByTraining(sh); i += 1) out.push({ i: 'o' + i, label: 'Brukt til opplæring', tone: 'train' });
+          if (!sh.closed && sl.role === 'opplaering' && n === 0 && sl.people.length < sl.count) out.push({ i: 'x', label: 'Ingen plass: ta av en ' + this.roleName(crew).toLowerCase() + ' eller sett opplæring i tillegg', tone: 'off' });
           return out;
         },
         pool() {
@@ -528,7 +536,7 @@
           const crew = {}; const open = {};
           sh.slots.forEach((sl) => { crew[sl.key] = sl.count; open[sl.key] = SL.slotOpen(sh, sl); });
           this.selected = null;
-          this.edit = { shId: sh.id, start: m[1] || '', end: m[2] || '', fromOnly: /^Fra/.test(sh.time), note: sh.note || '', closed: !!sh.closed, crew: crew, open: open, scope: 'one' };
+          this.edit = { shId: sh.id, start: m[1] || '', end: m[2] || '', fromOnly: /^Fra/.test(sh.time), note: sh.note || '', closed: !!sh.closed, crew: crew, open: open, scope: 'one', trainMode: sh.trainMode === 'tillegg' ? 'tillegg' : 'erstatter' };
         },
         get editShift() { return this.edit ? this.st.shifts.find((x) => x.id === this.edit.shId) : null; },
         sameSeries(a, b) { return !!a.tpl && a.venue === b.venue && a.tpl === b.tpl && SL.wd(a.date) === SL.wd(b.date); },
@@ -541,18 +549,21 @@
           const targets = series ? this.st.shifts.filter((x) => this.sameSeries(x, base) && x.date >= base.date) : [base];
           const time = e.end ? e.start + '–' + e.end : (e.fromOnly ? base.time : 'Fra ' + e.start);
           const byRole = {}; base.slots.forEach((sl) => { byRole[sl.role] = e.crew[sl.key]; });
-          let clamped = false;
+          let clamped = false; let tight = 0;
           targets.forEach((sh) => {
             if (canE) {
               sh.time = time; sh.closed = e.closed;
+              if (SL.trainSlotOf(sh)) sh.trainMode = e.trainMode;
               sh.slots.forEach((sl) => { const want = byRole[sl.role]; if (want === undefined) return; if (want < sl.people.length) clamped = true; sl.count = Math.max(want, sl.people.length); });
             }
             if (L.samf) sh.slots.forEach((sl) => { const o = base.slots.find((b) => b.role === sl.role); if (o && e.open[o.key] !== undefined && !SL.ROLES[sl.role].only) sl.open = e.open[o.key]; });
+            const c = SL.crewSlotOf(sh); const t = SL.trainSlotOf(sh);
+            if (SL.trainReplaces(sh) && c.people.length + t.people.length > c.count) tight += 1;
           });
           if (canE || L.samf) base.note = e.note.trim();
           this.persist();
           const wdName = SL.WD_FULL[SL.wd(base.date)].toLowerCase();
-          this.feedback = (series ? 'Endret alle ' + wdName + 'er på ' + base.venue + ' fra ' + SL.fmtShort(base.date) + ' (' + targets.length + ' skift). Malen for kommende måneder er også endret.' : 'Endret ' + base.title.toLowerCase() + ', ' + SL.dayLong(base.date).toLowerCase() + '.') + (clamped ? ' Noen plasser ble ikke fjernet fordi folk allerede står der.' : '');
+          this.feedback = (series ? 'Endret alle ' + wdName + 'er på ' + base.venue + ' fra ' + SL.fmtShort(base.date) + ' (' + targets.length + ' skift). Malen for kommende måneder er også endret.' : 'Endret ' + base.title.toLowerCase() + ', ' + SL.dayLong(base.date).toLowerCase() + '.') + (clamped ? ' Noen plasser ble ikke fjernet fordi folk allerede står der.' : '') + (tight ? ' ' + (tight === 1 ? 'Ett skift har' : tight + ' skift har') + ' nå én for mye med opplæringen. Ta av en person eller sett opplæring i tillegg.' : '');
           this.edit = null;
         },
 
@@ -609,13 +620,16 @@
         cellGaps(sh) {
           if (sh.closed) return 'Stengt';
           const g = [];
-          sh.slots.forEach((sl) => { const miss = sl.count - sl.people.length; if (miss > 0 && sl.role === 'skiftleder') g.push('Mangler skiftleder'); else if (miss > 0 && SL.ROLES[sl.role].crew) g.push('Mangler ' + miss + ' ' + this.roleName(sl).toLowerCase()); });
+          sh.slots.forEach((sl) => { const miss = sl.role === 'skiftleder' ? sl.count - sl.people.length : SL.room(sh, sl); if (miss > 0 && sl.role === 'skiftleder') g.push('Mangler skiftleder'); else if (miss > 0 && SL.ROLES[sl.role].crew) g.push('Mangler ' + miss + ' ' + this.roleName(sl).toLowerCase()); });
           return g.join(' · ');
         },
         targetSlot(p, sh) {
-          if (p.level === 'opplaering' || (p.level === 'sl-opplaering' && sh.slots.some((s) => s.role === 'opplaering' && s.people.length < s.count) && !sh.slots.some((s) => SL.ROLES[s.role].crew && s.people.length < s.count))) return sh.slots.find((s) => s.role === 'opplaering' && s.people.length < s.count);
-          if (p.level === 'skiftleder') { const s = sh.slots.find((x) => x.role === 'skiftleder' && x.people.length < x.count); if (s) return s; }
-          return sh.slots.find((s) => SL.ROLES[s.role].crew && s.people.length < s.count);
+          const free = (s) => SL.room(sh, s) > 0;
+          const tr = SL.trainSlotOf(sh); const crew = SL.crewSlotOf(sh);
+          if (p.level === 'opplaering') return tr && free(tr) ? tr : null;
+          if (p.level === 'sl-opplaering' && tr && free(tr) && !(crew && free(crew))) return tr;
+          if (p.level === 'skiftleder') { const s = sh.slots.find((x) => x.role === 'skiftleder' && free(x)); if (s) return s; }
+          return crew && free(crew) ? crew : null;
         },
         candidates(sh) {
           const wk = SL.isoWeek(sh.date);

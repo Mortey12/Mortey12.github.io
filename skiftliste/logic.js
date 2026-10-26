@@ -81,7 +81,7 @@
     'skjenker|pub': 'Selge øl, andre drikkevarer og snacks, samle glass, hente is, telle varer og ta oppvasken.',
     'bartender': 'Lage og servere cocktails, ta bestillinger og holde orden i baren. Før åpning fyller dere opp varer og kutter sitrus.',
     'kokk': 'Lage maten som serveres i Stjernesalen.',
-    'opplaering': 'Du er med i tillegg til det vanlige skiftet og lærer rutinene. Etter 3 skift er du utlært.',
+    'opplaering': 'Du lærer rutinene sammen med en utlært. Etter 3 skift er du utlært.',
     'villavakt': 'Passe på at Villaens regler følges og være kontaktpunkt for vektere. Dere er alltid to, og dere blir til siste gjest har gått.',
     'bar': 'Åpne og stenge baren, bemanne kassen, selge drikke og snacks og holde det ryddig.',
     'billett': 'Skanne billetter og medlemsbevis i døra og ha ansvar for innslippet.',
@@ -246,7 +246,7 @@
     const samf = people.filter((p) => p.group !== 'Skjenke');
     shifts.filter((sh) => sh.date < DEC_FROM).forEach((sh) => {
       sh.slots.forEach((sl) => {
-        if (!slotOpen(sh, sl) || sl.people.length >= sl.count || r() > 0.35) return;
+        if (!slotOpen(sh, sl) || room(sh, sl) <= 0 || r() > 0.35) return;
         const cand = samf.filter((p) => !check(world, p, sh, sl).block);
         if (cand.length) { const p = cand[Math.floor(r() * cand.length)]; if (placementsOf(world, p).samf < 2) sl.people.push(p.id); }
       });
@@ -292,6 +292,22 @@
   const nextCourse = (kind, before) => COURSES[kind].dates.find((d) => d.date > TODAY && (!before || d.date < before)) || null;
   const courseKinds = (sl, p) => { const k = ['brann']; if (ROLES[sl.role].bar && !isSk(p)) k.push('bar'); return k; };
 
+  /* Opplæring takes one of the regular places on the shift (default, since there is little room
+     behind the bar), or comes on top when the leader sets the shift to "i tillegg". */
+  const crewSlotOf = (sh) => sh.slots.find((s) => ROLES[s.role].crew) || null;
+  const trainSlotOf = (sh) => sh.slots.find((s) => s.role === 'opplaering') || null;
+  const trainReplaces = (sh) => sh.kind === 'drift' && sh.trainMode !== 'tillegg' && !!crewSlotOf(sh) && !!trainSlotOf(sh);
+  function room(sh, sl, src) {
+    const ex = (s) => s.people.filter((x) => !(src && src.fromShift === sh.id && src.fromSlot === s.key && x === src.pid)).length;
+    let free = sl.count - ex(sl);
+    if (trainReplaces(sh)) {
+      const crew = crewSlotOf(sh); const tr = trainSlotOf(sh);
+      if (sl.key === crew.key || sl.key === tr.key) free = Math.min(free, crew.count - ex(crew) - ex(tr));
+    }
+    return Math.max(0, free);
+  }
+  const usedByTraining = (sh) => (trainReplaces(sh) ? Math.min(crewSlotOf(sh).count, trainSlotOf(sh).people.length) : 0);
+
   function check(world, p, sh, sl, src, enr) {
     const r = ROLES[sl.role]; let hard = ''; const warn = []; const missing = [];
     const own = (s) => src && src.fromShift === sh.id && src.fromSlot === s.key;
@@ -309,7 +325,10 @@
     else if (sh.venue === 'Halvtimen' && age < 20) hard = 'Halvtimen krever 20 år';
     else if (sh.closed) hard = 'Skiftet er stengt';
     else if (onShift) hard = 'Er allerede på skiftet';
-    else if (occupied >= sl.count) hard = 'Fullt';
+    else if (room(sh, sl, src) <= 0) {
+      if (occupied >= sl.count) hard = 'Fullt';
+      else hard = sl.role === 'opplaering' ? 'Ingen plass: alle plassene er tatt' : 'Fullt: en plass brukes til opplæring';
+    }
     let courseBlock = '';
     courseKinds(sl, p).forEach((kind) => {
       if (hasCourse(p, kind, sh.date)) return;
@@ -367,11 +386,11 @@
       dayUsed[p.id + '|' + sh.date] = true;
     };
     const fill = (pool, slotOf) => {
-      const open = shifts.filter((sh) => { const sl = slotOf(sh); return sl && sl.people.length < sl.count; });
+      const open = shifts.filter((sh) => { const sl = slotOf(sh); return sl && room(sh, sl) > 0; });
       open.sort((a, b) => pool.filter((p) => ok(p, a)).length - pool.filter((p) => ok(p, b)).length);
       open.forEach((sh) => {
         const sl = slotOf(sh);
-        if (!sl || sl.people.length >= sl.count) return;
+        if (!sl || room(sh, sl) <= 0) return;
         const cands = pool.map((p) => ({ p: p, a: ok(p, sh) })).filter((x) => x.a);
         if (!cands.length) return;
         cands.sort((x, y) => (wk(x.p, sh) - wk(y.p, sh)) || ((x.a === 'vil' ? 0 : 1) - (y.a === 'vil' ? 0 : 1)) || ((x.p.level === 'skiftleder' ? 1 : 0) - (y.p.level === 'skiftleder' ? 1 : 0)) || (mo(x.p, sh) - mo(y.p, sh)) || (x.p.name < y.p.name ? -1 : 1));
@@ -380,9 +399,10 @@
       });
     };
     const trained = members.filter((p) => p.level !== 'opplaering');
+    // Skiftleder first, then opplæring (it may take one of the regular places), then the rest of the crew.
     fill(trained.filter((p) => p.level === 'skiftleder'), (sh) => sh.slots.find((s) => s.role === 'skiftleder'));
-    for (let i = 0; i < 2; i += 1) fill(trained, (sh) => sh.slots.find((s) => ROLES[s.role].crew));
-    fill(members.filter(isTrainee), (sh) => (sh.slots.some((s) => s.role !== 'opplaering' && s.people.length) ? sh.slots.find((s) => s.role === 'opplaering') : null));
+    fill(members.filter(isTrainee), (sh) => (sh.slots.some((s) => s.role === 'skiftleder' && s.people.length) || !sh.slots.some((s) => s.role === 'skiftleder') ? trainSlotOf(sh) : null));
+    for (let i = 0; i < 2; i += 1) fill(trained, (sh) => crewSlotOf(sh));
     return shifts.length;
   }
 
@@ -393,7 +413,7 @@
     let noSl = 0; let noCrew = 0;
     shifts.forEach((sh) => sh.slots.forEach((sl) => {
       if (sl.role === 'skiftleder' && sl.people.length < sl.count) noSl += 1;
-      if (ROLES[sl.role].crew && sl.people.length < sl.count) noCrew += sl.count - sl.people.length;
+      if (ROLES[sl.role].crew) noCrew += room(sh, sl);
     }));
     if (noSl) out.push(noSl + ' skift mangler skiftleder.');
     if (noCrew) out.push(noCrew === 1 ? '1 plass står åpen. Etter publisering blir den et ledig skift i appen.' : noCrew + ' plasser står åpne. Etter publisering blir de ledige skift i appen.');
@@ -417,7 +437,7 @@
     FIRST_DAY, LAST_DAY, DEC_FROM,
     addDays, wd, range, dayShort, dayLong, fmt, fmtShort, monthLabel, isoWeek, mondayOf, ageOn, expiry, startOf,
     buildWorld, personOf, isSk, subOf, slotOpen, isInternal, levelText, isTrainee, isPublished, placementsOf, countsSamf,
-    hasCourse, courseState, enrolledIn, nextCourse, courseKinds, check, avail, suggest, fordelingWarnings
+    hasCourse, courseState, enrolledIn, nextCourse, courseKinds, crewSlotOf, trainSlotOf, trainReplaces, room, usedByTraining, check, avail, suggest, fordelingWarnings
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SL = api;

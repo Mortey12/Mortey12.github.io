@@ -227,6 +227,7 @@
                 <template x-for="L2 in [ledige()]" :key="'ledige'"><div class="mt-3">
                   <template x-if="tab === 'egne'"><p class="mb-2 text-xs text-mute">Ledige plasser etter fordelingen. Her gjelder først til mølla.</p></template>
                   <template x-if="L2.total === 0"><p class="rounded-[14px] bg-white p-4 text-sm text-mute shadow-sm">Ingen ledige skift for deg akkurat nå.</p></template>
+                  <template x-if="L2.total > 0 && L2.months.length === 0"><p class="mb-2 rounded-[14px] bg-white p-4 text-sm text-mute shadow-sm">Ingen ledige plasser de neste to ukene.</p></template>
                   <template x-for="m in L2.months" :key="m.key">
                     <div class="mb-3">
                       <div class="kicker mb-1.5" x-text="m.label"></div>
@@ -379,7 +380,7 @@
                                   <div>
                                     <div class="flex items-center gap-2 text-xs">
                                       <span class="font-semibold" x-text="roleName(sl)"></span>
-                                      <span class="text-mute" x-text="sl.people.length + '/' + sl.count"></span>
+                                      <span class="text-mute" x-text="fillText(sh, sl)"></span>
                                       <span class="badge" :class="slotTag(sh, sl).cls" x-text="slotTag(sh, sl).text"></span>
                                     </div>
                                     <div class="mt-1 flex min-h-[38px] flex-wrap gap-1.5" :data-shift="sh.id" :data-slot="sl.key" x-init="mountList($el)">
@@ -396,7 +397,7 @@
                                         </div>
                                       </template>
                                       <template x-for="e in empties(sh, sl)" :key="e.i">
-                                        <button type="button" class="rounded-lg border border-dashed px-2.5 py-1 text-left text-xs" :class="{ 'border-line-strong bg-white text-mute': e.tone === 'idle', 'border-[#E2D8C8] bg-[#F3EFE7] text-mute cursor-not-allowed': e.tone === 'off', 'border-solid border-ok bg-[#EAF3EC] text-[#1F4029]': e.tone === 'go' }" @click="place(sh.id, sl.key)" x-text="e.label"></button>
+                                        <button type="button" class="rounded-lg border border-dashed px-2.5 py-1 text-left text-xs" :class="{ 'border-line-strong bg-white text-mute': e.tone === 'idle', 'border-[#E2D8C8] bg-[#F3EFE7] text-mute cursor-not-allowed': e.tone === 'off', 'border-solid border-ok bg-[#EAF3EC] text-[#1F4029]': e.tone === 'go', 'border-solid border-[#C7D2E8] bg-[#E8EEF9] text-[#1E3A8A] cursor-default': e.tone === 'train' }" @click="place(sh.id, sl.key)" x-text="e.label"></button>
                                       </template>
                                     </div>
                                   </div>
@@ -432,7 +433,7 @@
               <template x-if="h.status === 'suggested'"><button type="button" class="btn btn-line" @click="publishDec()">Publiser desember</button></template>
               <template x-if="h.status === 'published'"><span class="badge self-center bg-[#E6F1E9] !text-sm text-[#1F4029]">Publisert</span></template>
             </div>
-            <p class="mt-2 text-xs text-mute">Forslaget følger ønskene: skiftleder først, så "vil" før "kan", maks ett skift i uka (pensjonister ett i måneden), og opplæring kommer i tillegg der det står en utlært.</p>
+            <p class="mt-2 text-xs text-mute">Forslaget følger ønskene: skiftleder først, så "vil" før "kan", maks ett skift i uka (pensjonister ett i måneden), og opplæring settes opp der det står en utlært. Opplæringen tar en av plassene på skiftet, med mindre skiftet er satt til "i tillegg".</p>
           </div>
           <template x-if="allocWarnings().length">
             <div class="panel border-[#E9C79A] bg-[#FFF4E7] p-4">
@@ -546,6 +547,13 @@
                 </div>
               </template>
             </div>
+            <template x-if="SL.trainSlotOf(editShift) && SL.crewSlotOf(editShift)">
+              <fieldset class="space-y-1 text-sm">
+                <legend class="kicker mb-1">Opplæring</legend>
+                <label class="flex items-start gap-2"><input type="radio" value="erstatter" x-model="edit.trainMode" class="mt-1"><span x-text="'Tar en av ' + roleName(SL.crewSlotOf(editShift)).toLowerCase() + 'plassene (lite plass i baren)'"></span></label>
+                <label class="flex items-start gap-2"><input type="radio" value="tillegg" x-model="edit.trainMode" class="mt-1"><span>Kommer i tillegg til de vanlige plassene</span></label>
+              </fieldset>
+            </template>
           </div>
         </template>
         <template x-if="L.samf">
