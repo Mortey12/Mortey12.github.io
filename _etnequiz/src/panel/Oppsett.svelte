@@ -37,7 +37,7 @@
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `etnequiz-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
   async function nullstillPoeng(){
-    const b = writeBatch(db); live.lag.forEach(t => b.update(doc(db, "etneLag", t.id), { poeng: {}, joker: "" }));
+    const b = writeBatch(db); live.lag.forEach(t => b.update(doc(db, "etneLag", t.id), { poeng: {}, joker: "", rett: {} }));
     try { await b.commit(); melding("Poenga er nullstilte"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
   }
   async function nullstillHurtig(){
