@@ -15,6 +15,38 @@
   function flyttKat(i, d){ const j = i + d; if (j < 0 || j >= q.kategoriar.length) return; [q.kategoriar[i], q.kategoriar[j]] = [q.kategoriar[j], q.kategoriar[i]]; endra(); }
   function slettKat(i){ const k = q.kategoriar[i]; if (iBruk(k.id)) { melding(`«${k.namn}» er i bruk i køyreplanen. Fjern eller flytt spørsmåla først.`, true); return; } arm("kat" + k.id, () => { q.kategoriar.splice(i, 1); endra(); }); }
 
+  // Legg til spørsmål og lag frå ei fil utan å erstatte noko. Kategoriar blir funne på namn,
+  // spørsmål som alt finst i same kategori blir hoppa over, og lag blir sette på bordnummeret sitt.
+  // Fila: { kategoriar: [{ namn, maks }], sporsmal: [{ kategori, tekst, svar, berrePaaArket }], lag: [{ bord, namn }] }
+  async function leggTilFraFil(fil){
+    if (!fil) return; impMelding = "Les fila …";
+    try {
+      const data = JSON.parse(await fil.text());
+      const n = s => String(s || "").trim().toLowerCase();
+      let nyeKat = 0, nyeSp = 0, lag = 0;
+      for (const k of data.kategoriar || []) {
+        if (!n(k.namn) || q.kategoriar.some(x => n(x.namn) === n(k.namn))) continue;
+        q.kategoriar.push({ id: nyId("k"), namn: String(k.namn).trim(), maks: k.maks ?? 6, ...(k.utanNummer ? { utanNummer: true } : {}) }); nyeKat++;
+      }
+      for (const it of data.sporsmal || []) {
+        const kid = q.kategoriar.find(x => n(x.namn) === n(it.kategori))?.id;
+        if (!kid || !n(it.tekst)) continue;
+        if (q.plan.some(p => p.type === "sporsmal" && p.kat === kid && n(p.tekst) === n(it.tekst))) continue;
+        const ny = { type: "sporsmal", kat: kid, tekst: String(it.tekst).trim(), svar: String(it.svar || "").trim() };
+        if (it.berrePaaArket) ny.skjult = true;
+        let pos = -1; q.plan.forEach((p, i) => { if (p.kat === kid) pos = i; });
+        q.plan.splice(pos >= 0 ? pos + 1 : q.plan.length, 0, ny); nyeSp++;
+      }
+      if (nyeKat || nyeSp) await lagre();
+      const b = writeBatch(db);
+      for (const l of data.lag || []) {
+        const bord = Math.round(num(l.bord)); if (!bord || !n(l.namn)) continue;
+        b.set(doc(db, "etneLag", String(bord)), { bord, namn: String(l.namn).trim().slice(0, 60) }, { merge: true }); lag++;
+      }
+      if (lag) await b.commit();
+      impMelding = `La til ${nyeSp} spørsmål, ${nyeKat} kategoriar og ${lag} lag.`;
+    } catch (e) { impMelding = "Feila: " + feiltekst(e); }
+  }
   async function importer(fil){
     if (!fil) return; impMelding = "Les fila …";
     try {
@@ -84,9 +116,10 @@
 
   <div class="kort stack">
     <h2>Import og eksport</h2>
-    <p class="dempa" style="margin:0">Importer ein heil quiz frå fil, til dømes ein som er laga frå PowerPoint. Importen erstattar køyreplanen og kategoriane, men ikkje laga.</p>
+    <p class="dempa" style="margin:0">«Legg til frå fil» legg til spørsmål og lag utan å fjerne noko, og hoppar over spørsmål som alt finst. «Erstatt heile quizen» byter ut køyreplanen og kategoriane, men ikkje laga.</p>
     <div class="rad">
-      <label class="btn primary">Importer frå fil<input class="sr" type="file" accept="application/json,.json" onchange={e => { importer(e.target.files[0]); e.target.value = ""; }}></label>
+      <label class="btn primary">Legg til frå fil<input class="sr" type="file" accept="application/json,.json" onchange={e => { leggTilFraFil(e.target.files[0]); e.target.value = ""; }}></label>
+      <label class="btn">Erstatt heile quizen frå fil<input class="sr" type="file" accept="application/json,.json" onchange={e => { importer(e.target.files[0]); e.target.value = ""; }}></label>
       <button class="btn" type="button" onclick={eksporter}>Last ned kopi</button>
       <span class="dempa">{impMelding}</span>
     </div>

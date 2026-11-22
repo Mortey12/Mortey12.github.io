@@ -69,7 +69,9 @@
   $effect(() => { for (const it of rebus) if (it.bilete && !(it.bilete in bilete)) { bilete[it.bilete] = null; hentBilete(it.bilete).then(d => bilete[it.bilete] = d); } });
   // Rebusar utan spørsmål i køyreplanen (berre på papir) får seks tomme svarliner
   const rebusRuter = $derived(rebus.length ? rebus : Array.from({ length: 6 }, () => ({})));
-  const kolonnar = $derived(rebusRuter.length <= 6 ? 3 : 4);
+  // Lange rebusspørsmål (tekst) får eiga A4-side, éi oppgåve per rad, så dei kan skrivast ut på baksida
+  const langRebus = $derived(rebus.some(it => (it.tekst || "").length > 140));
+  const kolonnar = $derived(langRebus ? 1 : rebusRuter.length <= 6 ? 3 : 4);
 </script>
 
 <svelte:window onkeydown={e => { if (e.key === "Escape") lukk(); }} />
@@ -80,7 +82,7 @@
     <label class="rad"><span class="dempa">Rebus på arket:</span>
       <select class="inp" style="width:auto" bind:value={rebusKat}><option value="">Ingen</option>{#each kategoriar as k}<option value={k.id}>{k.namn}</option>{/each}</select>
     </label>
-    <span class="dempa">{rebusK ? "Eitt A4 per bord: kortet øvst, rebusen nedst." : "To kort per A4-ark. Klipp på midten, eller legg dei flate på borda."}</span>
+    <span class="dempa">{rebusK ? "Eitt A4 per bord: kortet på framsida, rebusen på baksida. Skriv ut tosidig." : "To kort per A4-ark. Klipp på midten, eller legg dei flate på borda."}</span>
     <span style="flex:1"></span>
     <button class="btn" type="button" onclick={() => armert ? (armert = false, lagKodar(true)) : (armert = true, setTimeout(() => armert = false, 3000))}>{armert ? "Trykk igjen: gamle kort sluttar å verke" : "Lag nye kodar"}</button>
     <button class="btn primary" type="button" onclick={skrivUt}>Skriv ut</button>
@@ -92,7 +94,7 @@
   <div class="bk-ark">
     {#each lag as t (t.id)}
       <div class="bk-side" class:medrebus={!!rebusK}>
-      <article class="bk-kort">
+      <article class="bk-kort" class:heil={!!rebusK}>
         <header><span class="m">★ {q.undertittel || "Etnequizen"}</span><span>{q.tittel || ""}</span></header>
         <div class="bk-midt">
           <div class="bk-venstre">
@@ -110,7 +112,7 @@
         {/if}
       </article>
       {#if rebusK}
-        <section class="bk-rebus">
+        <section class="bk-rebus" class:lang={langRebus}>
           <header><span class="rt">{rebusK.namn}</span><span>Bord {t.bord ?? t.id} · Lag: ______________________</span></header>
           <ol class="ruter" style="grid-template-columns:repeat({kolonnar},1fr)" class:mange={kolonnar > 3}>
             {#each rebusRuter as it, i}
@@ -155,6 +157,24 @@
   .barqr :global(svg){width:100%;height:100%}
   .bar p{margin:0;font-size:10pt;line-height:1.3}
   .wifi{margin:0;font-size:10pt;line-height:1.4;background:#F5F1E8;border-radius:4px;padding:1.5mm 3mm}
+  .bk-kort.heil{height:auto;min-height:250mm;padding:12mm 14mm 10mm;gap:6mm}
+  .bk-kort.heil header{font-size:15pt}
+  .bk-kort.heil .bk-midt{grid-template-columns:1fr;justify-items:center;text-align:center;gap:5mm;flex:1;align-content:center}
+  .bk-kort.heil .bk-bord{align-items:center}
+  .bk-kort.heil .bk-bord span{font-size:26pt}
+  .bk-kort.heil .bk-bord b{font-size:130pt}
+  .bk-kort.heil .bk-qr{width:80mm;height:80mm;order:2}
+  .bk-kort.heil .bk-venstre{align-items:center;display:contents}
+  .bk-kort.heil .bk-venstre .stor{font-size:20pt;order:3;margin:0}
+  .bk-kort.heil .bk-venstre p:not(.stor){font-size:13pt;max-width:140mm;order:4}
+  .bk-kort.heil .bk-botn{padding-top:5mm}
+  .bk-kort.heil .barqr{width:28mm;height:28mm}
+  .bk-kort.heil .bar p,.bk-kort.heil .wifi{font-size:12pt}
+  .bk-rebus{min-height:250mm}
+  .bk-rebus:not(.lang) .ruter{flex:1;grid-auto-rows:1fr}
+  .bk-rebus:not(.lang) .rinn img{max-height:62mm}
+  .bk-rebus:not(.lang) .ruter.mange .rinn img{max-height:40mm}
+  .bk-rebus:not(.lang) .rinn p{font-size:14pt}
   .bk-side{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
   .bk-rebus{width:min(190mm,100%);background:#fff;color:#0F2E24;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.12);padding:7mm 9mm;box-sizing:border-box;font-family:var(--f-tekst);display:flex;flex-direction:column;gap:4mm}
   .bk-rebus header{font-size:11pt;font-weight:600}
@@ -169,6 +189,13 @@
   .ruter.mange .rinn img{max-height:24mm}
   .rinn p{margin:0;font-size:11pt;text-align:center;line-height:1.3}
   .linje{border-bottom:1px solid #0F2E24;height:7mm}
+  .bk-rebus.lang .ruter{gap:2.5mm}
+  .bk-rebus.lang .ruter li{min-height:0;display:grid;grid-template-columns:8mm minmax(0,1fr);grid-template-rows:auto auto;column-gap:2mm;row-gap:1.5mm;padding:2.5mm 3mm}
+  .bk-rebus.lang .rinn{display:block}
+  .bk-rebus.lang .rinn p{text-align:left;font-size:10.5pt;line-height:1.4;white-space:pre-line}
+  .bk-rebus.lang .ruter li{padding:3.5mm 4mm}
+  .bk-rebus.lang .linje{height:8mm}
+  .bk-rebus.lang .linje{grid-column:2;height:6mm}
   @media (max-width:600px){.bk-kort{height:auto}.bk-midt{grid-template-columns:1fr}.bk-bord b{font-size:72pt}.bk-qr{width:50mm;height:50mm}.bk-botn{flex-wrap:wrap}}
   @media print{
     :global(header.band), :global(main > :not(.bk-lag)){display:none!important}
@@ -180,6 +207,8 @@
     .bk-side{display:block}
     .bk-side:not(.medrebus):nth-child(2n){break-after:page;page-break-after:always}
     .bk-side.medrebus{break-after:page;page-break-after:always}
+    .bk-rebus{break-before:page;page-break-before:always;min-height:275mm;border:0}
+    .bk-kort.heil{height:275mm;border:0;border-top:7mm solid #C8323A;overflow:hidden}
     .bk-rebus{width:190mm;margin:0 auto;box-shadow:none;border:1px solid #ddd;break-inside:avoid;page-break-inside:avoid}
     @page{size:A4 portrait;margin:8mm}
   }
