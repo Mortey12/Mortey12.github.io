@@ -38,23 +38,12 @@
   }
   async function nullstillPoeng(){
     const b = writeBatch(db); live.lag.forEach(t => b.update(doc(db, "etneLag", t.id), { poeng: {}, joker: "", rett: {} }));
-    try { await b.commit(); melding("Poenga er nullstilte"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
-  }
-  async function nullstillHurtig(){
-    try {
-      const b = writeBatch(db); live.svar.forEach(x => b.delete(doc(db, "etneSvar", x.id))); await b.commit();
-      await setDoc(doc(db, "etne", "state"), { opningar: {}, fasitar: {} }, { merge: true });
-      live.state.opningar = {}; live.state.fasitar = {};
-      await setNo({ id: null, open: false, vent: false, fasitVist: false, resultat: false });
-      melding("Hurtigrundane er nullstilte");
-    } catch (e) { melding("Feila: " + feiltekst(e), true); }
-  }
-  async function frigjerAlle(){
-    const b = writeBatch(db); live.mobilar.forEach(m => b.delete(doc(db, "etneMobil", m.id)));
-    try { await b.commit(); await setNo({ jokerLaast: false, resultat: false }); melding("Alle mobilar er frigjorde"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
+    try { await b.commit(); await setNo({ resultat: false }); melding("Poenga er nullstilte"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
   }
   async function slettLag(){
-    const b = writeBatch(db); live.lag.forEach(t => b.delete(doc(db, "etneLag", t.id)));
+    // Lag, kodar og resultat høyrer saman, så alt blir sletta
+    const b = writeBatch(db);
+    live.lag.forEach(t => { b.delete(doc(db, "etneLag", t.id)); b.delete(doc(db, "etneKode", t.id)); });
     try { await b.commit(); melding("Alle lag er sletta"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
   }
 </script>
@@ -69,25 +58,21 @@
       <div class="felt"><label for="pa">Tekst på pauseskjermen</label><input id="pa" bind:value={q.pausetekst} oninput={endra} placeholder="Pause"></div>
       <div class="felt"><label for="wf">Wi-Fi-namn (står på bordkorta)</label><input id="wf" bind:value={q.wifi} oninput={endra} placeholder="Etne-gjest"></div>
       <div class="felt"><label for="wp">Wi-Fi-passord</label><input id="wp" bind:value={q.wifiPassord} oninput={endra}></div>
+      <div class="felt"><label for="bm">Lenkje til barmenyen (på mobilane og som QR på bordkorta)</label><input id="bm" type="url" bind:value={q.barmeny} oninput={endra} placeholder="https://…"></div>
     </div>
   </div>
 
   <div class="kort stack">
     <div class="rad"><h2>Kategoriar</h2><span style="flex:1"></span><button class="btn" type="button" onclick={nyKat}>+ Ny kategori</button></div>
-    <p class="dempa" style="margin:0">Rekkjefølgja her gir nummera på skjermen. Ekstrakategoriar, som rebus, kan stå utan nummer. Fasitliste brukar du når fasiten ikkje kjem frå spørsmåla, til dømes i musikkrunden eller eit rebusark som berre finst på papir: éi linje per svar. Ei hurtigrunde blir svart på mobilen, har eiga stilling og eigen premie, og tel ikkje med i hovudpoenga.</p>
+    <p class="dempa" style="margin:0">Rekkjefølgja her gir nummera på skjermen. Ekstrakategoriar, som rebus, kan stå utan nummer. Fasitliste brukar du når fasiten ikkje kjem frå spørsmåla, til dømes i musikkrunden eller eit rebusark som berre finst på papir: éi linje per svar.</p>
     {#each q.kategoriar as k, i (k.id)}
       <div class="katrad">
         <div class="felt"><label for="kn{i}">Namn</label><input id="kn{i}" bind:value={k.namn} oninput={endra}></div>
         <div class="felt smal"><label for="km{i}">Maks poeng</label><input id="km{i}" inputmode="decimal" value={k.maks ?? ""} oninput={e => { k.maks = num(e.target.value); endra(); }}></div>
         <div class="sjekkar">
-          <label class="sjekk"><input type="checkbox" checked={!!k.utanNummer} disabled={!!k.hurtig} onchange={e => { k.utanNummer = e.target.checked || undefined; endra(); }}> Utan nummer</label>
-          <label class="sjekk"><input type="checkbox" checked={!!k.hurtig} onchange={e => { k.hurtig = e.target.checked || undefined; endra(); }}> ⚡ Hurtigrunde</label>
+          <label class="sjekk"><input type="checkbox" checked={!!k.utanNummer} onchange={e => { k.utanNummer = e.target.checked || undefined; endra(); }}> Utan nummer</label>
         </div>
-        {#if k.hurtig}
-        <div class="felt brei"><label for="kp{i}">Premie for hurtigrunda</label><input id="kp{i}" bind:value={k.premie} oninput={endra} placeholder="Gåvekort frå …"></div>
-        {:else}
         <div class="felt brei"><label for="kf{i}">Fasitliste (valfri)</label><textarea id="kf{i}" rows="2" value={(k.fasitliste || []).join("\n")} oninput={e => { const l = e.target.value.split("\n").map(s => s.trim()).filter(Boolean); k.fasitliste = l.length ? l : undefined; endra(); }}></textarea></div>
-        {/if}
         <div class="verkty">
           <button class="ibtn" type="button" aria-label="Flytt opp" disabled={i === 0} onclick={() => flyttKat(i, -1)}>↑</button>
           <button class="ibtn" type="button" aria-label="Flytt ned" disabled={i === q.kategoriar.length - 1} onclick={() => flyttKat(i, 1)}>↓</button>
@@ -112,8 +97,6 @@
     <div class="rad">
       <button class="btn" type="button" onclick={() => setState({ steg: 0, modus: "plan", avslort: 0, sist: 0 })}>Storskjermen til start</button>
       <button class="btn fare" type="button" onclick={() => arm("poeng", nullstillPoeng)}>{armert === "poeng" ? "Trykk igjen for å nullstille" : "Nullstill poeng og joker"}</button>
-      <button class="btn fare" type="button" onclick={() => arm("hurtig", nullstillHurtig)}>{armert === "hurtig" ? "Trykk igjen: alle mobilsvar blir sletta" : "Nullstill hurtigrundane"}</button>
-      <button class="btn fare" type="button" onclick={() => arm("mob", frigjerAlle)}>{armert === "mob" ? "Trykk igjen for å frigjere" : "Frigjer alle mobilar"}</button>
       <button class="btn fare" type="button" onclick={() => arm("lag", slettLag)}>{armert === "lag" ? "Trykk igjen for å slette" : "Slett alle lag"}</button>
     </div>
   </div>

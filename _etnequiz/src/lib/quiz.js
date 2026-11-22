@@ -1,13 +1,13 @@
 // Reine hjelpefunksjonar for køyreplan, poeng og avsløring.
 export const num = v => { const n = parseFloat(String(v ?? "").replace(",", ".")); return isNaN(n) ? 0 : n; };
-export const fmt = n => (Math.round((Number(n) || 0) * 10) / 10).toLocaleString("nb-NO");
+export const fmt = n => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString("nb-NO");
 export const nyId = (p = "") => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 export const TOM_QUIZ = { tittel: "Julequiz", undertittel: "Etnequizen", premietekst: "", pausetekst: "Pause", kategoriar: [], plan: [] };
 
 export function katInfo(quiz){
-  const k = new Map(); let n = 0, h = 0;
-  (quiz?.kategoriar || []).forEach(c => k.set(c.id, { ...c, nr: c.utanNummer || c.hurtig ? null : ++n, hnr: c.hurtig ? ++h : null }));
+  const k = new Map(); let n = 0;
+  (quiz?.kategoriar || []).forEach(c => k.set(c.id, { ...c, nr: c.utanNummer ? null : ++n }));
   return k;
 }
 
@@ -36,8 +36,7 @@ export function fasitFor(quiz, plan, katId){
 
 export function sumLag(lag, quiz){
   const p = lag.poeng || {};
-  // Hurtigrundane har eiga stilling og tel ikkje med i hovudpoenga
-  return (quiz?.kategoriar || []).filter(c => !c.hurtig).reduce((s, c) => s + num(p[c.id]) * (lag.joker === c.id ? 2 : 1), 0);
+  return (quiz?.kategoriar || []).reduce((s, c) => s + num(p[c.id]) * (lag.joker === c.id ? 2 : 1), 0);
 }
 
 // Lag med likt tal poeng får same plass
@@ -62,9 +61,27 @@ export function kortTittel(it, kats){
     case "pause": return "Pause" + (it.tittel ? ": " + it.tittel : "");
     case "poengtavle": return "Poengtavle";
     case "kategori": return k ? (k.nr ? `Kategori ${k.nr} · ${k.namn}` : k.namn) : "Kategori (vel)";
-    case "hurtigresultat": return "Vinnar av " + (k?.namn || "hurtigrunda");
     case "fasit": return "Fasit · " + (Array.isArray(it.kat) ? it.kat : [it.kat]).map(id => { const c = kats.get(id); return c ? (c.nr || c.namn) : "?"; }).join(" og ");
-    case "sporsmal": return (k?.hurtig ? `⚡${k.hnr}.${it.qNr ?? ""} ` : it.qNr ? `${k?.nr ?? ""}.${it.qNr} ` : "") + (it.tekst || "(tomt spørsmål)");
+    case "sporsmal": return (it.qNr ? `${k?.nr ?? ""}.${it.qNr} ` : "") + (it.tekst || "(tomt spørsmål)");
     default: return it.type;
   }
+}
+
+// Spørsmåla i ein kategori slik dei blir retta og vist i resultatet: fasitlista om ho finst,
+// elles dei nummererte spørsmåla, elles fasiten frå unummererte spørsmål, elles seks tomme.
+export function spmListe(quiz, plan, katId){
+  const k = (quiz?.kategoriar || []).find(c => c.id === katId);
+  if (k?.fasitliste?.length) return k.fasitliste.map(s => ({ tekst: "", svar: s }));
+  const l = plan.filter(it => it.type === "sporsmal" && it.kat === katId && it.nummerert !== false);
+  if (l.length) return l.map(it => ({ tekst: it.tekst || "", svar: it.svar || "" }));
+  const f = fasitFor(quiz, plan, katId);
+  if (f.length) return f.map(s => ({ tekst: "", svar: s }));
+  return Array.from({ length: 6 }, () => ({ tekst: "", svar: "" }));
+}
+
+// Berre vanlege nettlenkjer; manglar https:// blir det lagt til
+export function lenkje(u){
+  u = String(u || "").trim(); if (!u) return "";
+  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : ""; } catch (_) { return ""; }
 }

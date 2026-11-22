@@ -5,6 +5,7 @@
   import { db, feiltekst } from "../lib/firebase.js";
   import { doc, writeBatch } from "firebase/firestore";
   import { melding } from "./red.svelte.js";
+  import { lenkje } from "../lib/quiz.js";
   let { lag, lukk } = $props();
 
   const TEIKN = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -17,7 +18,7 @@
     arbeider = true;
     const b = writeBatch(db); let n = 0;
     for (const t of lag) if (alle || !live.kodar[t.id]) { b.set(doc(db, "etneKode", t.id), { kode: nyKode() }); n++; }
-    try { if (n) await b.commit(); if (alle) melding("Nye kodar er laga. Skriv ut korta på nytt; dei gamle verkar ikkje for nye mobilar."); }
+    try { if (n) await b.commit(); if (alle) melding("Nye kodar er laga. Skriv ut korta på nytt; dei gamle viser ikkje resultatet lenger."); }
     catch (e) { melding("Kodane vart ikkje lagra: " + feiltekst(e), true); }
     arbeider = false;
   }
@@ -33,6 +34,12 @@
     }
   });
   const skrivUt = () => window.print();
+  // Ekstra QR-kode til barmenyen, same på alle korta
+  let barSvg = $state("");
+  $effect(() => {
+    const u = lenkje(live.quiz?.barmeny); if (!u) { barSvg = ""; return; }
+    QRCode.toString(u, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: "#0F2E24", light: "#FFFFFF" } }).then(s => barSvg = s);
+  });
   const q = $derived(live.quiz || {});
 </script>
 
@@ -54,14 +61,19 @@
       <article class="bk-kort">
         <header><span class="m">★ {q.undertittel || "Etnequizen"}</span><span>{q.tittel || ""}</span></header>
         <div class="bk-midt">
-          <div class="bk-bord"><span>Bord</span><b>{t.bord ?? t.id}</b></div>
+          <div class="bk-venstre">
+            <div class="bk-bord"><span>Bord</span><b>{t.bord ?? t.id}</b></div>
+            <p class="stor">Skann for lagsida dykkar</p>
+            <p>Barmenyen no, og plassen, poenga og kva de hadde rett på etter quizen. Skriv «Bord {t.bord ?? t.id}» og jokeren på svararket.</p>
+          </div>
           <div class="bk-qr">{#if svg[t.id]}{@html svg[t.id].s}{:else}<span class="dempa">Lagar kode …</span>{/if}</div>
         </div>
-        <div class="bk-tekst">
-          <p class="stor">Skann med kameraet for å bli med i hurtigrundane</p>
-          <p>Éin mobil per lag: den første som skannar, blir mobilen til laget. Skriv «Bord {t.bord ?? t.id}» på svararka òg. Etter quizen kan alle på bordet skanne koden og sjå resultatet.</p>
-          {#if q.wifi}<p class="wifi">Wi-Fi: <b>{q.wifi}</b>{#if q.wifiPassord}&nbsp;· Passord: <b>{q.wifiPassord}</b>{/if}</p>{/if}
-        </div>
+        {#if barSvg || q.wifi}
+          <div class="bk-botn">
+            {#if barSvg}<div class="bar"><div class="barqr">{@html barSvg}</div><p><b>Barmenyen</b><br>Skann for å sjå kva baren har</p></div>{/if}
+            {#if q.wifi}<p class="wifi">Wi-Fi: <b>{q.wifi}</b>{#if q.wifiPassord}<br>Passord: <b>{q.wifiPassord}</b>{/if}</p>{/if}
+          </div>
+        {/if}
       </article>
     {/each}
   </div>
@@ -75,16 +87,22 @@
   .bk-kort{width:min(190mm,100%);height:128mm;background:#fff;color:#0F2E24;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.12);padding:9mm 11mm;box-sizing:border-box;display:flex;flex-direction:column;gap:5mm;border-top:5mm solid #C8323A;font-family:var(--f-tekst)}
   header{display:flex;justify-content:space-between;font-weight:700;font-size:12pt}
   header .m{color:#9A6B0E;letter-spacing:.12em;text-transform:uppercase}
-  .bk-midt{flex:1;display:grid;grid-template-columns:1fr auto;align-items:center;gap:8mm;min-height:0}
+  .bk-midt{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8mm}
+  .bk-venstre{display:flex;flex-direction:column;gap:2mm;min-width:0}
+  .bk-venstre p{margin:0;font-size:10.5pt;line-height:1.35}
+  .bk-venstre .stor{font-size:14pt;font-weight:700;margin-top:2mm}
   .bk-bord{display:flex;flex-direction:column;line-height:.9}
-  .bk-bord span{font-size:20pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#C8323A}
-  .bk-bord b{font-family:var(--f-tittel);font-size:120pt;font-weight:700}
-  .bk-qr{width:62mm;height:62mm;display:grid;place-items:center}
+  .bk-bord span{font-size:18pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#C8323A}
+  .bk-bord b{font-family:var(--f-tittel);font-size:96pt;font-weight:700}
+  .bk-qr{width:56mm;height:56mm;display:grid;place-items:center}
   .bk-qr :global(svg){width:100%;height:100%}
-  .bk-tekst p{margin:0 0 2mm;font-size:10.5pt;line-height:1.35}
-  .bk-tekst .stor{font-size:14pt;font-weight:700}
-  .wifi{background:#F5F1E8;border-radius:4px;padding:1.5mm 3mm;display:inline-block}
-  @media (max-width:600px){.bk-kort{height:auto}.bk-midt{grid-template-columns:1fr}.bk-bord b{font-size:80pt}.bk-qr{width:50mm;height:50mm}}
+  .bk-botn{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:6mm;border-top:1px solid #E3DCCB;padding-top:3mm}
+  .bar{display:flex;align-items:center;gap:4mm}
+  .barqr{width:20mm;height:20mm;flex:none}
+  .barqr :global(svg){width:100%;height:100%}
+  .bar p{margin:0;font-size:10pt;line-height:1.3}
+  .wifi{margin:0;font-size:10pt;line-height:1.4;background:#F5F1E8;border-radius:4px;padding:1.5mm 3mm}
+  @media (max-width:600px){.bk-kort{height:auto}.bk-midt{grid-template-columns:1fr}.bk-bord b{font-size:72pt}.bk-qr{width:50mm;height:50mm}.bk-botn{flex-wrap:wrap}}
   @media print{
     :global(header.band), :global(main > :not(.bk-lag)){display:none!important}
     :global(main){padding:0!important;max-width:none!important}

@@ -7,7 +7,7 @@
   import { live } from "../lib/data.svelte.js";
   import { db, auth, feiltekst } from "../lib/firebase.js";
   import { doc, updateDoc, setDoc, onSnapshot } from "firebase/firestore";
-  import { num, nummerer, rangering, sumLag } from "../lib/quiz.js";
+  import { num, nummerer, rangering, sumLag, spmListe } from "../lib/quiz.js";
   import { melding } from "./red.svelte.js";
 
   // demo: førehandsvising utan innlogging. Alt blir halde i minnet, ingenting går til Firebase.
@@ -18,7 +18,7 @@
   const meg = () => demo ? "deg@demo" : (auth.currentUser?.email || "").toLowerCase();
   const kortNamn = e => (e || "").split("@")[0];
 
-  const kat = $derived((live.quiz?.kategoriar || []).filter(k => !k.hurtig));
+  const kat = $derived(live.quiz?.kategoriar || []);
   const plan = $derived(nummerer(live.quiz));
   let katId = $state(""), lagId = $state(""), sok = $state(""), treff = $state(0), aktiv = $state(0);
   let marks = $state([]), visPoeng = $state(false), visListe = $state(false), toast = $state(""), cfgDoc = $state({});
@@ -28,10 +28,7 @@
   const k = $derived(kat.find(x => x.id === katId));
 
   // Spørsmåla i kategorien (med fasit). Utan spørsmål i planen får ein seks tomme rader.
-  function spmFor(kid){
-    const l = plan.filter(it => it.type === "sporsmal" && it.kat === kid && it.nummerert !== false);
-    return l.length ? l.map(it => ({ tekst: it.tekst || "", svar: it.svar || "" })) : Array.from({ length: 6 }, () => ({ tekst: "", svar: "" }));
-  }
+  const spmFor = kid => spmListe(live.quiz, plan, kid);
   function cfgFor(kobj, n){
     const lagra = cfgDoc[kobj?.id] || [];
     const std = kobj?.maks ? num(kobj.maks) / n : 1;
@@ -102,6 +99,14 @@
       nyttLag();
     } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
     lagrar = false;
+  }
+
+  // Jokeren står på svararket: trykk for å setje han på denne runda, trykk igjen for å ta han bort
+  async function jokar(){
+    if (!lag) return;
+    const ny = lag.joker === katId ? "" : katId;
+    if (demo) { lag.joker = ny; return; }
+    try { await updateDoc(doc(db, "etneLag", lag.id), { joker: ny }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
   }
 
   async function skrivCfg(i, felt, v){
@@ -196,7 +201,7 @@
       {#if lag}
         <div class="rad valt">
           <strong>{lag.namn}</strong><span class="dempa">bord {lag.bord}{#if lag.rett?.[katId]} · retta frå før av {kortNamn(lag.rett[katId].by)}, du endrar{:else if delvis(lag, katId)} · har {f2(lag.poeng[katId])} p frå før (skrive inn for hand){/if}</span>
-          {#if lag.joker === katId}<span class="joker">Joker: tel dobbelt</span>{/if}
+          <button class="jokerknapp" type="button" aria-pressed={lag.joker === katId} onclick={jokar} title="Jokeren står på svararket">{lag.joker === katId ? "★ Joker her (dobbel)" : lag.joker ? "Joker i " + (kat.find(x => x.id === lag.joker)?.namn || "anna runde") : "Joker her?"}</button>
           <span style="flex:1"></span><button class="lenke" type="button" onclick={() => nyttLag()}>Bytt lag</button>
         </div>
       {:else}
@@ -330,7 +335,8 @@
   .chip.topp{border-color:var(--p-gran);box-shadow:inset 0 0 0 1.5px var(--p-gran)}
   .chip.topp::after{content:"Enter";margin-left:8px;font:700 11px var(--f-tekst);color:var(--p-gran)}
   .valt{gap:10px}.valt strong{font-size:19px}
-  .joker{background:#FFF4D6;border:1px solid var(--p-gull);border-radius:8px;padding:2px 8px;font-size:13px;font-weight:700}
+  .jokerknapp{border:1.5px solid var(--p-linje);background:var(--p-flate);border-radius:999px;min-height:38px;padding:0 14px;font-weight:700;font-size:13px;cursor:pointer}
+  .jokerknapp[aria-pressed="true"]{background:#FFF4D6;border-color:var(--p-gull);color:#7A5410}
   .lenke{border:0;background:none;color:var(--p-gran);font-weight:700;text-decoration:underline;cursor:pointer;min-height:40px;padding:0 6px}
   .cfgboks{margin:10px 0;padding:10px;border:1.5px dashed var(--p-linje);border-radius:10px}
   .cfg{display:grid;grid-template-columns:56px 1fr 1fr;gap:6px 8px;align-items:center;font-size:14px}

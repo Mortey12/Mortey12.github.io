@@ -3,6 +3,16 @@ Etnequizen: overview of the whole app (draft)
 
 The source is in `_etnequiz` (Svelte 5, Vite, Firebase). `npm run build` writes the finished site to `etnequiz/`, which GitHub Pages serves as mstene.no/etnequiz.
 
+**Decided and built on the branch (November 2026):**
+
+- Quick rounds are cut: no answering on phones, speed points, automatic marking or winner slide.
+- The QR code on each table opens the team's own page. During the quiz it shows the table, team name and a button to the bar menu. After the quiz, when the result is opened, the same page shows place, points per round and every question with the correct answer and whether the team had it right, partly right or wrong (from Retting).
+- Phones no longer claim a table, choose a team name or choose a joker. Quizmasters type the names in Lag og poeng and tick the joker in Retting (it is written on the answer sheet).
+- Oppsett has a link to the bar menu. It shows as a button on the team page and as a second, smaller QR code on the table cards.
+- Points show with two decimals everywhere.
+
+The tables below describe the app before these changes.
+
 This document lists everything the app does today, so we can agree on what we need, what is broken and what can go. The **Works?** column is for us to fill in after a test run. Where I suspect a problem from reading the code, it says so in **Notes**. Only the QR join is confirmed broken so far.
 
 1. The pieces

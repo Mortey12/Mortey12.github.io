@@ -27,7 +27,7 @@ export async function setState(patch){
   catch (e) { melding("Skjermen vart ikkje oppdatert: " + feiltekst(e), true); }
 }
 
-// Kva mobilane ser: hurtigspørsmål, joker-lås og resultat
+// Kva mobilane ser: om resultatet er ope
 export async function setNo(patch){
   try { await setDoc(doc(db, "etneLive", "no"), patch, { merge: true }); }
   catch (e) { melding("Mobilane vart ikkje oppdaterte: " + feiltekst(e), true); }

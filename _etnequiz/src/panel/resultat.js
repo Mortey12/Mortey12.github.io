@@ -1,40 +1,35 @@
-// Lagar oppsummeringa kvar mobil får etter quizen: plass, poeng per kategori, hurtigrundane og fasiten.
+// Lagar oppsummeringa kvart bord får på mobilen etter quizen: plass, poeng per kategori
+// og kvart spørsmål med fasit og om laget hadde rett (frå «Retting»).
 import { db } from "../lib/firebase.js";
 import { doc, writeBatch } from "firebase/firestore";
-import { live, namnFor } from "../lib/data.svelte.js";
-import { katInfo, nummerer, rangering, sumLag, num, fasitFor } from "../lib/quiz.js";
-import { rundeSvar, hurtigStilling } from "../lib/hurtig.js";
+import { live } from "../lib/data.svelte.js";
+import { nummerer, rangering, sumLag, num, spmListe } from "../lib/quiz.js";
 
 export async function sendResultat(){
-  const quiz = live.quiz, plan = nummerer(quiz), kats = katInfo(quiz);
-  const vanlege = quiz.kategoriar.filter(k => !k.hurtig), hurtige = quiz.kategoriar.filter(k => k.hurtig);
+  const quiz = live.quiz, plan = nummerer(quiz), kats = quiz.kategoriar || [];
   const rang = rangering(live.lag, quiz);
-  const fasit = vanlege.map(k => ({ namn: k.namn, svar: fasitFor(quiz, plan, k.id) })).filter(f => f.svar.length);
-  const runder = hurtige.map(k => ({
-    k, stilling: hurtigStilling(plan, k.id, live.state.opningar, live.svar, namnFor),
-    sp: rundeSvar(plan, k.id, live.state.opningar, live.svar)
-  }));
+  const spm = Object.fromEntries(kats.map(k => [k.id, spmListe(quiz, plan, k.id)]));
 
-  // Eitt resultat per bord som har bordkort. Dokument-id-en inneheld den hemmelege koden,
+  // Eitt resultat per bord som har lagnamn og QR-kode. Dokument-id-en inneheld den hemmelege koden,
   // så berre dei som har skanna QR-koden på bordet, kan opne det.
   const b = writeBatch(db); let n = 0;
-  const bordListe = [...new Set([...live.lag.map(x => x.id), ...live.mobilar.map(m => m.id)])].filter(id => live.kodar[id]);
-  for (const bord of bordListe) {
-    const lag = live.lag.find(x => String(x.bord) === bord || x.id === bord) || { poeng: {}, joker: "" };
-    if (!(lag.namn || "").trim() && !live.mobilar.some(m => m.id === bord)) continue;
+  for (const lag of live.lag) {
+    const kode = live.kodar[lag.id];
+    if (!kode || !(lag.namn || "").trim()) continue;
     const r = rang.find(x => x.id === lag.id);
-    b.set(doc(db, "etneResultat", bord + "_" + live.kodar[bord]), {
-      bord, namn: namnFor(bord), plass: r ? r.rank : null, av: rang.length, sum: sumLag(lag, quiz),
-      joker: kats.get(lag.joker)?.namn || "",
-      kat: vanlege.map(k => ({ namn: k.namn, p: num(lag.poeng?.[k.id]) * (lag.joker === k.id ? 2 : 1), maks: num(k.maks) * (lag.joker === k.id ? 2 : 1), joker: lag.joker === k.id })),
-      hurtig: runder.map(({ k, stilling, sp }) => {
-        const t = stilling.find(x => String(x.bord) === bord);
+    b.set(doc(db, "etneResultat", lag.id + "_" + kode), {
+      bord: lag.id, namn: lag.namn, tittel: quiz.tittel || "", plass: r ? r.rank : null, av: rang.length, sum: sumLag(lag, quiz),
+      joker: kats.find(k => k.id === lag.joker)?.namn || "",
+      kat: kats.map(k => {
+        const j = lag.joker === k.id ? 2 : 1, rett = lag.rett?.[k.id];
+        const p = lag.poeng?.[k.id];
         return {
-          namn: k.namn, plass: t ? t.rank : null, av: stilling.length, p: t ? t.p : 0,
-          svar: sp.map(({ q, liste }) => { const s = liste.find(x => String(x.bord) === bord); return { q: (q.tekst || "").slice(0, 90), status: s ? s.status : "ikkje", p: s ? s.poeng : 0 }; })
+          namn: k.namn, joker: j === 2, maks: num(k.maks) * j,
+          p: p === undefined || p === "" ? null : num(p) * j,
+          // m: "full" | "annet" | "halv" | "eigen" | "" (feil) | null (ikkje retta per spørsmål)
+          spm: spm[k.id].map((s, i) => ({ svar: s.svar, m: rett ? (rett.marks?.[i]?.m ?? "") : null, p: rett ? (rett.vals?.[i] ?? 0) : null }))
         };
-      }),
-      fasit
+      })
     });
     n++;
   }

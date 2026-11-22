@@ -3,10 +3,8 @@
   import { onAuthStateChanged } from "firebase/auth";
   import { auth, loggInn, loggUt, harTilgang, feiltekst } from "../lib/firebase.js";
   import { live, startLive, stoppLive } from "../lib/data.svelte.js";
-  import { red, lagre, endra, setNo } from "./red.svelte.js";
-  import { db } from "../lib/firebase.js";
-  import { doc, setDoc, updateDoc } from "firebase/firestore";
-  import { nyId, num } from "../lib/quiz.js";
+  import { red, lagre, setNo } from "./red.svelte.js";
+  import { lenkje } from "../lib/quiz.js";
   import Koyr from "./Koyr.svelte";
   import Poeng from "./Poeng.svelte";
   import Rett from "./Rett.svelte";
@@ -32,40 +30,12 @@
     if (q && !red.ventar) red.quiz = structuredClone($state.snapshot(q));
   });
 
-  // Hurtigspørsmål treng ein fast id, så svara kan knytast til rett spørsmål
+  // Det mobilane får sjå: tittel, barmeny og lagnamna (dei står på storskjermen uansett)
   $effect(() => {
-    const q = red.quiz; if (!q) return;
-    const hurtig = new Set(q.kategoriar.filter(k => k.hurtig).map(k => k.id));
-    let n = 0;
-    for (const p of q.plan) if (p.type === "sporsmal" && hurtig.has(p.kat) && !p.id) { p.id = nyId("q"); n++; }
-    if (n) endra();
-  });
-
-  // Mobilane får vite kva kategoriar dei kan velje joker i
-  $effect(() => {
-    if (status !== "inne" || !live.noKlar || !live.quiz) return;
-    const kl = live.quiz.kategoriar.filter(k => !k.hurtig).map(k => ({ id: k.id, namn: k.namn }));
-    if (JSON.stringify(live.no.kategoriar || []) !== JSON.stringify(kl) || live.no.tittel !== live.quiz.tittel) setNo({ kategoriar: kl, tittel: live.quiz.tittel || "" });
-  });
-
-  // Lagnamn og joker frå mobilane går inn i poengtabellen. Namnet berre om det er tomt,
-  // jokeren berre medan jokerane er opne og berre når mobilen har endra han.
-  const sett = new Map();
-  $effect(() => {
-    if (status !== "inne" || !live.klar || !live.noKlar) return;
-    for (const m of live.mobilar) {
-      const lag = live.lag.find(x => x.id === m.id);
-      const mj = m.joker || "", mn = (m.namn || "").trim();
-      if (!lag) {
-        if (sett.get(m.id + "|ny")) continue; sett.set(m.id + "|ny", true); sett.set(m.id + "|j", mj);
-        setDoc(doc(db, "etneLag", m.id), { bord: num(m.id), namn: mn, joker: live.no.jokerLaast ? "" : mj, poeng: {} }, { merge: true }).catch(() => {});
-        continue;
-      }
-      const patch = {};
-      if (!(lag.namn || "").trim() && mn) patch.namn = mn;
-      if (!live.no.jokerLaast && sett.get(m.id + "|j") !== mj) { sett.set(m.id + "|j", mj); if ((lag.joker || "") !== mj) patch.joker = mj; }
-      if (Object.keys(patch).length) updateDoc(doc(db, "etneLag", m.id), patch).catch(() => {});
-    }
+    if (status !== "inne" || !live.klar || !live.quiz) return;
+    const vil = { tittel: live.quiz.tittel || "", barmeny: lenkje(live.quiz.barmeny), lagnamn: Object.fromEntries(live.lag.filter(l => (l.namn || "").trim()).map(l => [l.id, l.namn.trim()])) };
+    const no = { tittel: live.no.tittel || "", barmeny: live.no.barmeny || "", lagnamn: live.no.lagnamn || {} };
+    if (JSON.stringify(vil) !== JSON.stringify(no)) setNo(vil);
   });
 
   const logg = () => { loginFeil = ""; loggInn().catch(e => loginFeil = "Klarte ikkje logge inn: " + feiltekst(e)); };
