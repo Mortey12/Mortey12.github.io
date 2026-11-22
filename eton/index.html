@@ -26,6 +26,9 @@
   code { background:#eef1f5; padding:1px 6px; border-radius:4px; font-size:.95em; }
   .msg pre { background:#f3f4f6; color:var(--ink); white-space:pre-wrap; word-break:normal; font-family: inherit; font-size:16px; }
   b.k { white-space: nowrap; }
+  table { border-collapse:collapse; width:100%; font-size:16px; margin:6px 0 10px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { background:#eef1f5; }
   .fields { display:grid; gap:10px; margin: 6px 0 12px; }
   .fields label { display:flex; flex-direction:column; font-weight:600; font-size:16px; gap:4px; }
   .fields input { font: inherit; font-weight:400; padding:10px 12px; border:1px solid var(--line); border-radius:8px; }
@@ -59,6 +62,11 @@
     </ol>
     <div class="cmd"><pre>ipconfig | findstr /i "IPv4 mask gateway"</pre><button class="copy">Kopier</button></div>
     <ol start="3">
+      <li>Sjekk at den nye adressa til boksen er ledig:</li>
+    </ol>
+    <div class="cmd"><pre>ping -n 2 192.168.50.250</pre><button class="copy">Kopier</button></div>
+    <p><b>«Tidsavbrudd»</b> = ledig, bra. Svarar noko, bruk <code>192.168.50.249</code> i staden og sjekk den på same måte.</p>
+    <ol start="4">
       <li><b class="k">Innstillingar → Nettverk og Internett → Wi-Fi → nettet på hytta</b> → IP-tilordning → <b>Rediger</b> → <b>Manuell</b> → slå på IPv4:
         <ul>
           <li>IP-adresse: <code>192.168.42.10</code></li>
@@ -90,13 +98,41 @@
       <li>Opna <b>Edge</b>. Skriv <code>http://</code> + adressa, til dømes <code>http://192.168.42.30/</code></li>
       <li>Logg inn med brukarnamn og passord frå etiketten under boksen.</li>
       <li>Trykk <b>Network Settings</b>. Står det <code>https://</code> i adresselinja, endra til <code>http://</code>.</li>
-      <li><b>Ta skjermbilete av heile sida. Ikkje endra noko enno.</b></li>
+      <li>Ta skjermbilete av sida slik ho er no, i tilfelle du må tilbake.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Fyll inn og lagra</h2>
+    <table>
+      <tr><th>Felt</th><th>Verdi</th></tr>
+      <tr><td>IP-oppsett (DHCP / Static)</td><td><b>Static</b></td></tr>
+      <tr><td>IP address</td><td><code>192.168.50.250</code> (eller .249 frå steg 2)</td></tr>
+      <tr><td>Subnet mask</td><td><code>255.255.255.0</code></td></tr>
+      <tr><td>Default gateway</td><td><code>192.168.50.1</code> (eller det ipconfig viste)</td></tr>
+      <tr><td>DNS (om feltet finst)</td><td>same som gateway</td></tr>
+    </table>
+    <p>Alt anna lèt du stå. Trykk <b>Save</b> eller <b>Apply</b>.</p>
+    <p>Ser sida annleis ut enn dette? Bruk reserven nedst på sida.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">6</span>Etter at du har lagra</h2>
+    <ol>
+      <li>Sida forsvinn. Det er <b>normalt</b>: boksen har fått den nye adressa.</li>
+      <li>Set PC-en tilbake til <b>Automatisk (DHCP)</b> som i steg 3.</li>
+      <li>Kopier denne inn i cmd (byt til .249 om du brukte den). Svarar boksen, er alt klart:</li>
+    </ol>
+    <div class="cmd"><pre>ping -n 2 192.168.50.250</pre><button class="copy">Kopier</button></div>
+    <ol start="4">
+      <li>Opna <code>http://192.168.50.250/</code> i Edge for å sjekka at du kjem inn.</li>
+      <li>Skriv adressa i feltet «Actual IP Address» på etiketten under boksen.</li>
     </ol>
   </section>
 
   <section class="msg">
-    <h2><span class="n">5</span>Spør KI-en</h2>
-    <p>Fyll inn felta. Meldinga under blir oppdatert, og du sender ho til Claude saman med skjermbiletet av Network Settings.</p>
+    <h2>Reserve: spør KI-en</h2>
+    <p>Berre om sida ser annleis ut enn i steg 5. Fyll inn felta. Meldinga under blir oppdatert, og du sender ho til Claude saman med skjermbiletet av Network Settings.</p>
     <div class="fields">
       <label>Adressa boksen svarte på<input id="f-box" placeholder="192.168.42.30"></label>
       <label>Standard gateway (frå steg 2)<input id="f-gw" placeholder="192.168.50.1"></label>
@@ -105,16 +141,6 @@
     </div>
     <div class="cmd"><pre id="ai"></pre><button class="copy">Kopier</button></div>
     <p>Gjer det KI-en seier, og ta nytt skjermbilete før du trykkjer <b>Save</b>.</p>
-  </section>
-
-  <section>
-    <h2><span class="n">6</span>Etter at du har lagra</h2>
-    <ol>
-      <li>Sida forsvinn. Det er <b>normalt</b>: boksen har fått ny adresse.</li>
-      <li>Set PC-en tilbake til <b>Automatisk (DHCP)</b> som i steg 3.</li>
-      <li>Køyr leitekommandoen frå steg 3 for å finna den nye adressa.</li>
-      <li>Skriv adressa i feltet «Actual IP Address» på etiketten under boksen.</li>
-    </ol>
   </section>
 
   <div class="box"><b>Til slutt:</b> sjekk at PC-en står på <b>Automatisk (DHCP)</b>, elles har han ikkje internett.</div>
@@ -128,7 +154,7 @@
       'Boksen svarar no på ' + v('f-box') + '. Heimenettet har gateway ' + v('f-gw') + ' og nettmaske ' + v('f-mask') + ' (Altibox-ruter, eg kjem ikkje inn i ruteroppsettet). ' +
       'Ein Raspberry Pi på same nett skal nå boksen via xcomfortd-go (port 7153).\n\n' +
       (note ? 'Anna: ' + note + '\n\n' : '') +
-      'Sei nøyaktig kva eg skal skriva i kvart felt for å gi boksen ei fast adresse i dette nettet som ikkje kolliderer med DHCP-poolen, og om noko på sida ikkje skal endrast.' +
+      'Planen er fast adresse 192.168.50.250 (sjekka ledig med ping). Sida ser annleis ut enn venta: sei nøyaktig kva eg skal skriva i kvart felt for å få til det, og om noko på sida ikkje skal endrast.' +
       '\n\nKort og teknisk.';
   }
   document.querySelectorAll('.fields input').forEach(function (i) { i.addEventListener('input', build); i.addEventListener('change', build); });
