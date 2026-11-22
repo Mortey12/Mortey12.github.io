@@ -26,6 +26,10 @@
   code { background:#eef1f5; padding:1px 6px; border-radius:4px; font-size:.95em; }
   .msg pre { background:#f3f4f6; color:var(--ink); white-space:pre-wrap; word-break:normal; font-family: inherit; font-size:16px; }
   b.k { white-space: nowrap; }
+  .fields { display:grid; gap:10px; margin: 6px 0 12px; }
+  .fields label { display:flex; flex-direction:column; font-weight:600; font-size:16px; gap:4px; }
+  .fields input { font: inherit; font-weight:400; padding:10px 12px; border:1px solid var(--line); border-radius:8px; }
+  .fields input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -49,6 +53,10 @@
     <ol>
       <li>På PC-en: <b class="k">Innstillingar → Nettverk og Internett → Wi-Fi → Stene</b> → IP-tilordning → <b>Rediger</b> → <b>Automatisk (DHCP)</b> → Lagre.</li>
       <li>Trykk Windows-tasten, skriv <code>cmd</code>, trykk Enter.</li>
+      <li>Kopier denne og noter <b>Standard gateway</b> og <b>nettmaske</b>. Du skriv dei inn i steg 5:</li>
+    </ol>
+    <div class="cmd"><pre>ipconfig | findstr /i "IPv4 mask gateway"</pre><button class="copy">Kopier</button></div>
+    <ol start="4">
       <li>Kopier denne, lim inn, trykk Enter. Vent om lag eitt minutt:</li>
     </ol>
     <div class="cmd"><pre>(for /L %i in (1,1,254) do @ping -n 1 -w 100 192.168.50.%i &gt;nul) &amp; arp -a | findstr 00-40-9d</pre><button class="copy">Kopier</button></div>
@@ -87,20 +95,15 @@
 
   <section class="msg">
     <h2><span class="n">5</span>Spør KI-en</h2>
-    <p>Send denne meldinga til Claude saman med skjermbiletet. Ta nytt bilete før du trykkjer Save.</p>
-    <div class="cmd"><pre id="ai">Hei! Eg treng hjelp med nettverksinnstillingane på eit Eaton xComfort ECI-LAN (CCIA-02/01, firmware 01.04, MAC 00:40:9d:78:9d:ab). Skjermbilete av «Network Settings» er vedlagt.
-
-- Boksen stod frå fabrikken på 192.168.42.30.
-- Heimenettet brukar 192.168.50.x. Ruteren er frå Altibox, og eg kjem ikkje inn i innstillingane på han.
-- Boksen slutta å svara på 192.168.42.30 etter om lag 20 minutt oppetid, og dukka ikkje opp på 192.168.50.x i ARP-skann.
-- Ein Raspberry Pi på same nett skal snakka med boksen via xcomfortd-go (ECI-klientsocket, port 7153).
-
-1. Kva skal stå i kvart felt for at boksen får ei fast adresse på 192.168.50.x utan å kollidera med DHCP-poolen? Eller er DHCP med reservasjon betre her?
-2. Er det innstillingar her som påverkar port 7153 eller tilgang frå andre einingar?
-3. Er det noko som kan gjera at eg mistar kontakten med boksen for godt?
-4. Kva kan forklara at han slutta å svara, og bør firmware 01.04 oppdaterast?
-
-Svar kort og teknisk.</pre><button class="copy">Kopier</button></div>
+    <p>Fyll inn felta. Meldinga under blir oppdatert, og du sender ho til Claude saman med skjermbiletet av Network Settings.</p>
+    <div class="fields">
+      <label>Adressa boksen svarte på<input id="f-box" placeholder="192.168.42.30"></label>
+      <label>Standard gateway (frå steg 2)<input id="f-gw" placeholder="192.168.50.1"></label>
+      <label>Nettmaske (frå steg 2)<input id="f-mask" placeholder="255.255.255.0"></label>
+      <label>Anna (valfritt)<input id="f-note" placeholder="t.d. kva som står i felta på sida"></label>
+    </div>
+    <div class="cmd"><pre id="ai"></pre><button class="copy">Kopier</button></div>
+    <p>Gjer det KI-en seier, og ta nytt skjermbilete før du trykkjer <b>Save</b>.</p>
   </section>
 
   <section>
@@ -116,6 +119,18 @@ Svar kort og teknisk.</pre><button class="copy">Kopier</button></div>
   <div class="box"><b>Til slutt:</b> sjekk at PC-en står på <b>Automatisk (DHCP)</b>, elles har han ikkje internett.</div>
 </main>
 <script>
+  function v(id) { var el = document.getElementById(id); return el.value.trim() || el.placeholder; }
+  function build() {
+    var note = document.getElementById('f-note').value.trim();
+    document.getElementById('ai').textContent =
+      'Eg er inne på «Network Settings» på eit Eaton xComfort ECI-LAN (CCIA-02/01, firmware 01.04). Skjermbilete er vedlagt.\n\n' +
+      'Boksen svarar no på ' + v('f-box') + '. Heimenettet har gateway ' + v('f-gw') + ' og nettmaske ' + v('f-mask') + ' (Altibox-ruter, eg kjem ikkje inn i ruteroppsettet). ' +
+      'Ein Raspberry Pi på same nett skal nå boksen via xcomfortd-go (port 7153).\n\n' +
+      (note ? 'Anna: ' + note + '\n\n' : '') +
+      'Sei nøyaktig kva eg skal skriva i kvart felt for å gi boksen ei fast adresse i dette nettet som ikkje kolliderer med DHCP-poolen, og om noko på sida ikkje skal endrast. Kort og teknisk.';
+  }
+  document.querySelectorAll('.fields input').forEach(function (i) { i.addEventListener('input', build); });
+  build();
   document.querySelectorAll('button.copy').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var text = btn.previousElementSibling.textContent;
