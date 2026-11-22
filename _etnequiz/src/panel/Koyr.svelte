@@ -65,6 +65,8 @@
   // Poengtavla undervegs: plassane blir lagra, og mobilane viser «Plass 4 etter runde 5» til neste gong
   async function taStilling(){
     if (st.modus === "avsloring") return;
+    // Ingen rundar med vist fasit: alle står på 0 og ville fått 1. plass. Då blir det ingen plass på mobilane.
+    if (!vist.length) { if (live.no.stilling) { await setNo({ stilling: null }); oppdater(); } return; }
     const c = (live.quiz?.kategoriar || []).filter(k => vist.includes(k.id)).map(k => kats.get(k.id)?.nr || k.namn);
     const etter = c.length ? "etter runde " + (c.length > 1 ? c.slice(0, -1).join(", ") + " og " + c[c.length - 1] : c[0]) : "";
     await setNo({ stilling: { plass: stillingNo(), etter, t: Date.now() } });
