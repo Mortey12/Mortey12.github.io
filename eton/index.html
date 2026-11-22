@@ -52,25 +52,14 @@
   </section>
 
   <section>
-    <h2><span class="n">2</span>Leit etter boksen</h2>
+    <h2><span class="n">2</span>Prøv den gamle adressa</h2>
     <ol>
-      <li>På PC-en: <b class="k">Innstillingar → Nettverk og Internett → Wi-Fi → nettet på hytta</b> → IP-tilordning → <b>Rediger</b> → <b>Automatisk (DHCP)</b> → Lagre.</li>
       <li>Trykk Windows-tasten, skriv <code>cmd</code>, trykk Enter.</li>
       <li>Kopier denne og noter <b>Standard gateway</b> og <b>nettmaske</b>. Du skriv dei inn i steg 5:</li>
     </ol>
     <div class="cmd"><pre>ipconfig | findstr /i "IPv4 mask gateway"</pre><button class="copy">Kopier</button></div>
-    <ol start="4">
-      <li>Kopier denne, lim inn, trykk Enter. Vent om lag eitt minutt:</li>
-    </ol>
-    <div class="cmd"><pre>(for /L %i in (1,1,254) do @ping -n 1 -w 100 192.168.50.%i &gt;nul) &amp; arp -a | findstr 00-40-9d</pre><button class="copy">Kopier</button></div>
-    <div class="box good"><b>Kjem det ei linje</b> med <code>00-40-9d</code>? Talet til venstre er adressa til boksen. Gå til steg 4.</div>
-    <p><b>Kjem det ingenting?</b> Gå til steg 3.</p>
-  </section>
-
-  <section>
-    <h2><span class="n">3</span>Prøv den gamle adressa</h2>
-    <ol>
-      <li><b class="k">Innstillingar → … → Wi-Fi → nettet på hytta</b> → IP-tilordning → <b>Rediger</b> → <b>Manuell</b> → slå på IPv4:
+    <ol start="3">
+      <li><b class="k">Innstillingar → Nettverk og Internett → Wi-Fi → nettet på hytta</b> → IP-tilordning → <b>Rediger</b> → <b>Manuell</b> → slå på IPv4:
         <ul>
           <li>IP-adresse: <code>192.168.42.10</code></li>
           <li>Nettmaske: <code>255.255.255.0</code></li>
@@ -80,10 +69,19 @@
       <li>Kopier denne inn i cmd:</li>
     </ol>
     <div class="cmd"><pre>ping 192.168.42.30</pre><button class="copy">Kopier</button></div>
-    <ul>
-      <li><b>«Svar fra …»</b>: boksen lever. Adressa er <code>192.168.42.30</code>. Gå til steg 4.</li>
-      <li><b>«Tidsavbrudd»</b>: boksen svarar ikkje. Gjer steg 1 éin gong til.</li>
-    </ul>
+    <div class="box good"><b>«Svar fra …»</b>: boksen lever. Adressa er <code>192.168.42.30</code>. Gå til steg 4.</div>
+    <p><b>«Tidsavbrudd»?</b> Gå til steg 3.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Leit etter boksen på heimenettet</h2>
+    <ol>
+      <li><b class="k">Innstillingar → … → Wi-Fi → nettet på hytta</b> → IP-tilordning → <b>Rediger</b> → <b>Automatisk (DHCP)</b> → Lagre.</li>
+      <li>Kopier denne inn i cmd. Vent om lag eitt minutt:</li>
+    </ol>
+    <div class="cmd"><pre>(for /L %i in (1,1,254) do @ping -n 1 -w 100 192.168.50.%i &gt;nul) &amp; arp -a | findstr 00-40-9d</pre><button class="copy">Kopier</button></div>
+    <div class="box good"><b>Kjem det ei linje</b> med <code>00-40-9d</code>? Talet til venstre er adressa til boksen. Gå til steg 4.</div>
+    <p><b>Kjem det ingenting?</b> Gjer steg 1 éin gong til, og prøv steg 2 og 3 på nytt.</p>
   </section>
 
   <section>
@@ -113,8 +111,8 @@
     <h2><span class="n">6</span>Etter at du har lagra</h2>
     <ol>
       <li>Sida forsvinn. Det er <b>normalt</b>: boksen har fått ny adresse.</li>
-      <li>Set PC-en tilbake til <b>Automatisk (DHCP)</b> som i steg 2.</li>
-      <li>Køyr kommandoen frå steg 2 att for å finna den nye adressa.</li>
+      <li>Set PC-en tilbake til <b>Automatisk (DHCP)</b> som i steg 3.</li>
+      <li>Køyr leitekommandoen frå steg 3 for å finna den nye adressa.</li>
       <li>Skriv adressa i feltet «Actual IP Address» på etiketten under boksen.</li>
     </ol>
   </section>
