@@ -73,6 +73,15 @@
     // Mobilane startar på nytt òg: ingen fasit vist, ingen stilling, resultatet stengt
     try { await b.commit(); await setNo({ ope: false, endeleg: false, vist: [], stilling: null, avsloring: false, avslort: {} }); melding("Poenga er nullstilte"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
   }
+  // Berre det mobilane ser og fasiten: ingen fasit vist, inga stilling, resultat og avsløring stengt.
+  // Poeng, retting og joker blir ikkje rørte.
+  async function nullstillMobil(){
+    try {
+      await setNo({ ope: false, endeleg: false, underveis: false, vist: [], stilling: null, avsloring: false, avslort: {} });
+      if (live.quizId === live.aktivId) await setState({ modus: "plan", fasit: null, fasitKat: null, spenning: false, avslort: 0, sist: 0 });
+      melding("Mobilane og fasiten er nullstilte. Poenga er urørte.");
+    } catch (e) { melding("Feila: " + feiltekst(e), true); }
+  }
   async function slettLag(){
     // Lag, kodar og resultat høyrer saman, så alt blir sletta
     const b = writeBatch(db);
@@ -129,7 +138,8 @@
   <div class="kort stack">
     <h2>Nullstilling</h2>
     <div class="rad">
-      <button class="btn" type="button" onclick={() => setState({ steg: 0, modus: "plan", avslort: 0, sist: 0 })}>Storskjermen til start</button>
+      <button class="btn" type="button" onclick={() => setState({ steg: 0, modus: "plan", avslort: 0, sist: 0, spenning: false, fasit: null, fasitKat: null })}>Storskjermen til start</button>
+      <button class="btn" type="button" onclick={() => arm("mobil", nullstillMobil)}>{armert === "mobil" ? "Trykk igjen for å nullstille" : "Nullstill mobilar og fasit"}</button>
       <button class="btn fare" type="button" onclick={() => arm("poeng", nullstillPoeng)}>{armert === "poeng" ? "Trykk igjen for å nullstille" : "Nullstill poeng og joker"}</button>
       <button class="btn fare" type="button" onclick={() => arm("lag", slettLag)}>{armert === "lag" ? "Trykk igjen for å slette" : "Slett alle lag"}</button>
     </div>

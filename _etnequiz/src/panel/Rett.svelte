@@ -46,8 +46,11 @@
   const tom = n => Array.from({ length: n }, () => ({ m: "", c: "" }));
   function verdi(i, m = marks[i], c = cfg[i]){
     if (!m || !c) return 0;
-    return m.m === "full" ? c.full : m.m === "annet" ? c.annet : m.m === "halv" ? c.full / 2 : m.m === "eigen" ? num(m.c) : 0;
+    return m.m === "full" ? c.full : m.m === "annet" ? c.annet : m.m === "halv" ? c.full / 2 : m.m === "kvart" ? c.full / 4 : m.m === "eigen" ? num(m.c) : 0;
   }
+  // Eigne faste summar for denne runda (t.d. 1,5 og 2). Blir knappar på kvart spørsmål og tastane 5–9.
+  let ekstraDemo = $state({});
+  const ekstra = $derived((demo ? ekstraDemo : live.rettEkstra || {})[katId] || []);
   const sum = $derived(marks.reduce((s, _, i) => s + verdi(i), 0));
   const maks = $derived(cfg.reduce((s, c) => s + c.full, 0));
 
@@ -78,6 +81,20 @@
   function velgRunde(id){ katId = id; if (lagId) { const x = lagId; queueMicrotask(() => velgLag(x)); } }
   function sett(i, m){ marks[i].m = marks[i].m === m ? "" : m; marks[i].c = ""; aktiv = Math.min(marks.length - 1, i + (marks[i].m ? 1 : 0)); }
   function eigen(i, v){ marks[i].c = v; marks[i].m = v.trim() ? "eigen" : ""; aktiv = i; }
+  // Ein av dei faste eigne summane: lagrast som «eigen», så mobilane viser han som delpoeng
+  function settSum(i, v){
+    const c = String(v).replace(".", ",");
+    if (marks[i].m === "eigen" && num(marks[i].c) === num(v)) { marks[i].m = ""; marks[i].c = ""; return; }
+    marks[i].m = "eigen"; marks[i].c = c; aktiv = Math.min(marks.length - 1, i + 1);
+  }
+  const erSum = (i, v) => marks[i]?.m === "eigen" && num(marks[i].c) === num(v);
+  // Alle spørsmål som ikkje er kryssa av, blir feil
+  function restenFeil(){ marks.forEach(m => { if (!m.m) { m.m = "feil"; m.c = ""; } }); }
+  async function skrivEkstra(tekst){
+    const arr = [...new Set(String(tekst).split(/[;\s]+/).map(s => num(s)).filter(v => v > 0))].sort((a, b) => a - b).slice(0, 5);
+    if (demo) { ekstraDemo = { ...ekstraDemo, [katId]: arr }; return; }
+    try { await setDoc(rettDoc(), { ekstra: { [katId]: arr } }, { merge: true }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
+  }
 
   let lagrar = $state(false);
   async function lagre(){
@@ -143,7 +160,7 @@
     const e = live.lag.map(l => l.rett?.[katId]).filter(r => r?.vals);
     return { n: e.length, rader: spm.map((_, i) => {
       let f = 0, a = 0, h = 0, s = 0;
-      e.forEach(r => { const m = r.marks?.[i]?.m; s += r.vals[i] || 0; if (m === "full") f++; else if (m === "annet" || m === "eigen") a++; else if (m === "halv") h++; });
+      e.forEach(r => { const m = r.marks?.[i]?.m; s += r.vals[i] || 0; if (m === "full") f++; else if (m === "annet" || m === "eigen") a++; else if (m === "halv" || m === "kvart") h++; });
       const n = e.length || 1; return { f: f / n * 100, a: a / n * 100, h: h / n * 100, pst: cfg[i].full ? Math.round(s / n / cfg[i].full * 100) : 0 };
     }) };
   });
@@ -174,9 +191,10 @@
     if (e.key === "Escape") { nyttLag(); return; }
     if (felt || e.ctrlKey || e.metaKey || e.altKey) { if (e.key === "Enter" && e.ctrlKey) lagre(); return; }
     if (!lag) { if (e.key.length === 1 && /\S/.test(e.key)) sokEl?.focus(); return; }
-    const kart = { 1: "full", 2: "annet", 3: "halv" };
+    const kart = { 1: "full", 2: "annet", 3: "halv", 4: "kvart" };
     if (kart[e.key]) { e.preventDefault(); marks[aktiv].m = kart[e.key]; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
-    else if (e.key === "0") { e.preventDefault(); marks[aktiv].m = ""; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
+    else if (/^[5-9]$/.test(e.key) && ekstra[Number(e.key) - 5] !== undefined) { e.preventDefault(); marks[aktiv].m = "eigen"; marks[aktiv].c = String(ekstra[Number(e.key) - 5]).replace(".", ","); aktiv = Math.min(marks.length - 1, aktiv + 1); }
+    else if (e.key === "0") { e.preventDefault(); marks[aktiv].m = "feil"; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if (e.key === "ArrowDown") { e.preventDefault(); aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if (e.key === "ArrowUp") { e.preventDefault(); aktiv = Math.max(0, aktiv - 1); }
     else if (e.key === "Enter" && e.target.tagName !== "BUTTON") { e.preventDefault(); lagre(); }
@@ -231,7 +249,11 @@
       </div>
       {#if visPoeng}
         <div class="cfgboks">
-          <p class="dempa" style="margin:0 0 8px">Poeng per spørsmål i denne runda. Det gjeld for begge som rettar. Halv er alltid halvparten av full.</p>
+          <p class="dempa" style="margin:0 0 8px">Poeng per spørsmål i denne runda. Det gjeld for begge som rettar. Halv og kvart er alltid halvparten og fjerdeparten av full.</p>
+          <label class="ekstrafelt">
+            <span>Eigne faste summar i denne runda (opptil fem, skil med mellomrom), t.d. <i>1,5 2</i>:</span>
+            <input class="inp" inputmode="decimal" aria-label="Eigne faste summar" value={ekstra.map(f2).join(" ")} onchange={e => skrivEkstra(e.target.value)} placeholder="1,5 2">
+          </label>
           <div class="cfg">
             <span></span><b>Full</b><b>Annet</b>
             {#each spm as _, i}
@@ -247,14 +269,23 @@
           {#each spm as s, i}
             <div class="q" class:aktiv={i === aktiv}>
               <div class="lbl"><b>Spm {i + 1}</b>{#if s.svar}<span class="svar">{s.svar}</span>{/if}</div>
-              <button type="button" class="o full" aria-pressed={marks[i]?.m === "full"} onclick={() => sett(i, "full")}><small>Full</small><b>{f2(cfg[i].full)}</b></button>
-              <button type="button" class="o annet" aria-pressed={marks[i]?.m === "annet"} onclick={() => sett(i, "annet")}><small>Annet</small><b>{f2(cfg[i].annet)}</b></button>
-              <button type="button" class="o halv" aria-pressed={marks[i]?.m === "halv"} onclick={() => sett(i, "halv")}><small>Halv</small><b>{f2(cfg[i].full / 2)}</b></button>
-              <input class="inp eigen" class:paa={marks[i]?.m === "eigen"} inputmode="decimal" placeholder="Anna" aria-label="Eigen poengsum spørsmål {i + 1}" value={marks[i]?.m === "eigen" ? marks[i].c : ""} oninput={e => eigen(i, e.target.value)} onkeydown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); aktiv = Math.min(marks.length - 1, i + 1); } }}>
+              <div class="valg">
+                <button type="button" class="o full" aria-pressed={marks[i]?.m === "full"} onclick={() => sett(i, "full")}><small>Full</small><b>{f2(cfg[i].full)}</b></button>
+                <button type="button" class="o annet" aria-pressed={marks[i]?.m === "annet"} onclick={() => sett(i, "annet")}><small>Annet</small><b>{f2(cfg[i].annet)}</b></button>
+                <button type="button" class="o halv" aria-pressed={marks[i]?.m === "halv"} onclick={() => sett(i, "halv")}><small>Halv</small><b>{f2(cfg[i].full / 2)}</b></button>
+                <button type="button" class="o kvart" aria-pressed={marks[i]?.m === "kvart"} onclick={() => sett(i, "kvart")}><small>Kvart</small><b>{f2(cfg[i].full / 4)}</b></button>
+                {#each ekstra as v}<button type="button" class="o sum" aria-pressed={erSum(i, v)} onclick={() => settSum(i, v)}><small>Sum</small><b>{f2(v)}</b></button>{/each}
+                <button type="button" class="o feil" aria-pressed={marks[i]?.m === "feil"} onclick={() => sett(i, "feil")}><small>Feil</small><b>✗</b></button>
+              </div>
+              <input class="inp eigen" class:paa={marks[i]?.m === "eigen" && !ekstra.some(v => erSum(i, v))} inputmode="decimal" placeholder="Anna" aria-label="Eigen poengsum spørsmål {i + 1}" value={marks[i]?.m === "eigen" && !ekstra.some(v => erSum(i, v)) ? marks[i].c : ""} oninput={e => eigen(i, e.target.value)} onkeydown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); aktiv = Math.min(marks.length - 1, i + 1); } }}>
             </div>
           {/each}
         </div>
-        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> annet · <kbd>3</kbd> halv · <kbd>0</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
+        <div class="rad restenrad">
+          <button class="btn liten" type="button" onclick={restenFeil} disabled={!marks.some(m => !m.m)}>Resten feil ({marks.filter(m => !m.m).length})</button>
+          <span class="dempa">Alle spørsmål du ikkje har kryssa av, blir feil.</span>
+        </div>
+        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> annet · <kbd>3</kbd> halv · <kbd>4</kbd> kvart{#each ekstra as v, j}{" · "}<kbd>{j + 5}</kbd> {f2(v)}{/each} · <kbd>0</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
       {:else}
         <p class="dempa" style="margin:6px 0 0">Vel eit lag for å rette.</p>
       {/if}
@@ -350,11 +381,20 @@
   .cfg{display:grid;grid-template-columns:56px 1fr 1fr;gap:6px 8px;align-items:center;font-size:14px}
   .cfg b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--p-dempa)}
   .spm{display:flex;flex-direction:column;gap:4px;margin-top:8px}
-  .q{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,74px) 78px;gap:6px;align-items:center;padding:6px;border:2px solid transparent;border-radius:12px}
+  .q{display:grid;grid-template-columns:minmax(90px,1fr) auto 70px;gap:6px;align-items:center;padding:6px;border:2px solid transparent;border-radius:12px}
+  .valg{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+  .valg .o{width:64px}
+  .o.kvart[aria-pressed="true"]{background:#E0EEFB;border-color:#1F5FA8;color:#1F5FA8}
+  .o.sum[aria-pressed="true"]{background:#FFF1D6;border-color:#9A6B0E;color:#9A6B0E}
+  .o.feil{color:#8E1F26}
+  .o.feil[aria-pressed="true"]{background:#FDECEC;border-color:#C8323A;color:#C8323A}
+  .restenrad{gap:10px;margin-top:8px;align-items:center}
+  .ekstrafelt{display:flex;flex-direction:column;gap:4px;font-size:13px;margin:0 0 10px}
+  .ekstrafelt .inp{max-width:200px}
   .q.aktiv{background:var(--p-flate-2);border-color:var(--p-linje)}
   .lbl{display:flex;flex-direction:column;min-width:0}.lbl b{font-size:15px}
   .svar{font-size:12px;color:var(--p-dempa);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  @media (max-width:560px){.q{grid-template-columns:repeat(3,1fr) 78px}.lbl{grid-column:1/-1;flex-direction:row;gap:10px;align-items:baseline}}
+  @media (max-width:760px){.q{grid-template-columns:minmax(0,1fr) 70px}.lbl{grid-column:1/-1;flex-direction:row;gap:10px;align-items:baseline}.valg{justify-content:flex-start}}
   .o{height:54px;border-radius:12px;border:2px solid var(--p-linje);background:var(--p-flate);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:0}
   .o small{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--p-dempa)}
   .o b{font-size:17px;font-variant-numeric:tabular-nums}

@@ -43,8 +43,8 @@
     unRes = onSnapshot(doc(db, "etneQuiz", quiz, "resultat", bord + "_" + kode), s => { res = s.exists() ? s.data() : null; resKlar = true; }, () => { res = null; resKlar = true; });
   });
 
-  const IKON = { full: "✓", annet: "≈", halv: "½", eigen: "•", "": "✗" };
-  const TEKST = { full: "Rett", annet: "Delvis rett", halv: "Halvt rett", eigen: "Delpoeng", "": "Feil" };
+  const IKON = { full: "✓", annet: "≈", halv: "½", kvart: "¼", eigen: "•", feil: "✗", "": "✗" };
+  const TEKST = { full: "Rett", annet: "Delvis rett", halv: "Halvt rett", kvart: "Kvart poeng", eigen: "Delpoeng", feil: "Feil", "": "Feil" };
   const tittel = $derived(res?.tittel || no.tittel || "Etnequizen");
   const lagnamn = $derived(res?.namn || no.lagnamn?.[bord] || "");
   const barmeny = $derived(/^https?:\/\//i.test(no.barmeny || "") ? no.barmeny : "");
@@ -113,10 +113,10 @@
             {#if opne[i]}
               <ol class="spm">
                 {#each k.spm || [] as s, n}
-                  <li class={s.m == null ? "" : s.m === "" ? "feil" : s.m === "full" ? "rett" : "delvis"}>
+                  <li class={s.m == null ? "" : (s.m === "" || s.m === "feil") ? "feil" : s.m === "full" ? "rett" : "delvis"}>
                     <span class="nr">{n + 1}</span>
                     <span class="sv">{s.svar || "–"}</span>
-                    {#if s.m != null}<span class="dom" title={TEKST[s.m] || ""}>{IKON[s.m] ?? ""}{#if s.m && s.m !== "full"} <small>{fmt(s.p * (k.joker ? 2 : 1))}</small>{/if}</span>{/if}
+                    {#if s.m != null}<span class="dom" title={TEKST[s.m] || ""}>{IKON[s.m] ?? ""}{#if s.m && s.m !== "full" && s.m !== "feil"} <small>{fmt(s.p * (k.joker ? 2 : 1))}</small>{/if}</span>{/if}
                   </li>
                 {/each}
               </ol>
