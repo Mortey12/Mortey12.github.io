@@ -10,9 +10,12 @@
   import { num, nummerer, rangering, sumLag } from "../lib/quiz.js";
   import { melding } from "./red.svelte.js";
 
+  // demo: førehandsvising utan innlogging. Alt blir halde i minnet, ingenting går til Firebase.
+  let { demo = false } = $props();
+
   const f2 = n => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString("nb-NO");
   const norm = s => String(s || "").toLowerCase().replace(/æ/g, "ae").replace(/ø/g, "o").replace(/å/g, "a").normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const meg = () => (auth.currentUser?.email || "").toLowerCase();
+  const meg = () => demo ? "deg@demo" : (auth.currentUser?.email || "").toLowerCase();
   const kortNamn = e => (e || "").split("@")[0];
 
   const kat = $derived((live.quiz?.kategoriar || []).filter(k => !k.hurtig));
@@ -39,7 +42,7 @@
   const lagMedNamn = $derived(live.lag.filter(l => (l.namn || "").trim()));
   const lag = $derived(live.lag.find(l => l.id === lagId));
 
-  onMount(() => onSnapshot(doc(db, "etne", "rett"), s => { cfgDoc = s.exists() ? (s.data().cfg || {}) : {}; }, e => melding("Poenginnstillingar: " + feiltekst(e), true)));
+  onMount(() => demo ? undefined : onSnapshot(doc(db, "etne", "rett"), s => { cfgDoc = s.exists() ? (s.data().cfg || {}) : {}; }, e => melding("Poenginnstillingar: " + feiltekst(e), true)));
 
   const tom = n => Array.from({ length: n }, () => ({ m: "", c: "" }));
   function verdi(i, m = marks[i], c = cfg[i]){
@@ -82,10 +85,17 @@
     if (!lag || lagrar) return;
     lagrar = true;
     const vals = marks.map((_, i) => verdi(i));
+    const rett = { marks: $state.snapshot(marks), vals, by: meg(), at: Date.now() };
+    if (demo) {
+      lag.poeng = { ...(lag.poeng || {}), [katId]: vals.reduce((a, b) => a + b, 0) };
+      lag.rett = { ...(lag.rett || {}), [katId]: rett };
+      vis(`Lagra · ${lag.namn} · ${k.namn} · ${f2(sum)}`);
+      nyttLag(); lagrar = false; return;
+    }
     try {
       await updateDoc(doc(db, "etneLag", lag.id), {
         ["poeng." + katId]: vals.reduce((a, b) => a + b, 0),
-        ["rett." + katId]: { marks: $state.snapshot(marks), vals, by: meg(), at: Date.now() }
+        ["rett." + katId]: rett
       });
       melding(`Lagra ${lag.namn} · ${k.namn} · ${f2(sum)}`);
       vis(`Lagra · ${lag.namn} · ${k.namn} · ${f2(sum)}`);
@@ -96,6 +106,7 @@
 
   async function skrivCfg(i, felt, v){
     const arr = cfg.map(c => ({ ...c })); arr[i][felt] = num(v);
+    if (demo) { cfgDoc = { ...cfgDoc, [katId]: arr }; return; }
     try { await setDoc(doc(db, "etne", "rett"), { cfg: { [katId]: arr } }, { merge: true }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
   }
 

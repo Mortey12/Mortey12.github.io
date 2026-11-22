@@ -102,6 +102,7 @@
       <h2>Logg inn</h2>
       <p>Panelet er berre for quizmasteren. Logg inn med Google-kontoen som har tilgang.</p>
       <button class="btn primary" type="button" onclick={logg}>Logg inn med Google</button>
+      <a class="btn" href="demo.html">Prøv rettinga utan innlogging</a>
       {#if loginFeil}<p class="feiltekst">{loginFeil}</p>{/if}
     </section>
   {:else if status === "nekta"}
