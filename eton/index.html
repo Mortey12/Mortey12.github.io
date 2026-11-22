@@ -92,13 +92,15 @@
 
 - Boksen stod frå fabrikken på 192.168.42.30.
 - Heimenettet brukar 192.168.50.x. Ruteren er frå Altibox, og eg kjem ikkje inn i innstillingane på han.
-- Ein Raspberry Pi på same nett skal snakka med boksen (programmet xcomfortd-go).
+- Boksen slutta å svara på 192.168.42.30 etter om lag 20 minutt oppetid, og dukka ikkje opp på 192.168.50.x i ARP-skann.
+- Ein Raspberry Pi på same nett skal snakka med boksen via xcomfortd-go (ECI-klientsocket, port 7153).
 
-1. Sei nøyaktig kva eg skal skriva eller velja i kvart felt, så boksen kjem på 192.168.50.x. Er du usikker på ei fast adresse, rå meg til DHCP.
-2. Sei kva eg IKKJE skal endra.
-3. Åtvar meg om noko kan gjera at eg mistar kontakten med boksen.
+1. Kva skal stå i kvart felt for at boksen får ei fast adresse på 192.168.50.x utan å kollidera med DHCP-poolen? Eller er DHCP med reservasjon betre her?
+2. Er det innstillingar her som påverkar port 7153 eller tilgang frå andre einingar?
+3. Er det noko som kan gjera at eg mistar kontakten med boksen for godt?
+4. Kva kan forklara at han slutta å svara, og bør firmware 01.04 oppdaterast?
 
-Ta eitt steg om gongen, eg er ikkje teknisk.</pre><button class="copy">Kopier</button></div>
+Svar kort og teknisk.</pre><button class="copy">Kopier</button></div>
   </section>
 
   <section>
