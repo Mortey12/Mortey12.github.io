@@ -41,9 +41,9 @@
       <div><span class="namn">Etnequizen</span><span class="under">Førehandsvising av rettinga</span></div>
     </div>
     <nav class="meny" aria-label="Meny">
-      <a href="./">Quizmaster-panelet</a>
-      <a href="skjerm.html">Storskjermen</a>
-      <a href="demo.html" aria-current="page">Prøv rettinga</a>
+      <a href="/etnequiz/">Quizmaster-panelet</a>
+      <a href="/etnequiz/skjerm.html">Storskjermen</a>
+      <a href="./" aria-current="page">Prøv rettinga</a>
     </nav>
   </div>
 </header>
