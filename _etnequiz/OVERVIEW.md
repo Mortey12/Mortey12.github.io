@@ -108,10 +108,10 @@ One person drives the screen in Køyr, the other marks in Retting.
 | Feature | Tested | Notes |
 |---|---|---|
 | Make tables 1 to N, add one, delete one | Unchanged | |
-| Team name, joker and total per category, typed by hand | Unchanged | For corrections. A typed total does not change the marks in Retting. |
+| Team name and joker | Unchanged | Points per category are shown here but can only be set in Retting. |
 | Table cards with QR code | **Real** (the QR shows after the rules fix) | If saving the codes fails, it says so and offers "Prøv igjen" instead of flickering. |
-| Bar menu QR and Wi-Fi on the card | Fake data | Shown when set in Oppsett. |
-| Rebus on the back ("Rebus på arket") | Fake data, printed to PDF | One A4 per table, print double-sided. Long text questions as rows, picture questions as boxes. "Ingen" gives two cards per A4. |
+| Wi-Fi on the card | Fake data | Shown when set in Oppsett. The bar menu has no QR of its own; it is a button on the team page. |
+| Rebus on the back ("Rebus på arket") | Fake data, printed to PDF | One A4 per table, print double-sided. Long text questions as rows, picture questions as boxes with text and picture together. "Ingen" gives two cards per A4. |
 
 **Spørsmål (questions and run plan)**
 
@@ -127,7 +127,7 @@ One person drives the screen in Køyr, the other marks in Retting.
 | Feature | Tested | Notes |
 |---|---|---|
 | Title, line above, prize text, pause text, Wi-Fi | Unchanged | |
-| Link to the bar menu | Fake data | Button on the team page and a second QR on the cards. |
+| Link to the bar menu | Fake data | Button on the team page. |
 | Categories: name, max, "utan nummer", answer list, order | Unchanged | |
 | Legg til frå fil | Fake data | Adds questions and teams from a file without removing anything. Skips questions that already exist, so it can't fix an answer. |
 | Erstatt heile quizen frå fil | Unchanged | Replaces the run plan and categories. |
@@ -178,7 +178,7 @@ The Firestore rules are in `quizpremiar/firestore.rules` and have to be pasted i
 1. **Not tested end to end on a real phone:** the team name and bar menu on the team page, and the result after "Opne resultatet". Do a test run on mstene.no/etnequiz-ny before a real quiz.
 2. **Two people editing questions at once overwrite each other.** The whole quiz is one document. Edit questions before the evening, one person at a time. Marking in Retting is safe.
 3. **Both panels drive the big screen** from the Køyr tab.
-4. **Retting and Lag og poeng can disagree** if a total is typed by hand after marking.
+4. **Points are only set in Retting.** Lag og poeng shows them read-only, so the two can no longer disagree.
 5. **Table cards printed from /etnequiz-ny point to /etnequiz-ny.** Print the real cards after the merge.
 6. **Christmas decoration is always on**, also for Påske.
 7. **I can't edit the database from my session.** Changes go through files and "Legg til frå fil", or you do them in the panel.
