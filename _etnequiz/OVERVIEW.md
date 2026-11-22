@@ -1,19 +1,15 @@
-Etnequizen: overview of the whole app (draft)
-============================================
+Etnequizen: overview of the app (draft)
+=======================================
 
-The source is in `_etnequiz` (Svelte 5, Vite, Firebase). `npm run build` writes the finished site to `etnequiz/`, which GitHub Pages serves as mstene.no/etnequiz.
+The source is in `_etnequiz` (Svelte 5, Vite, Firebase). `npm run build` writes the finished site to `etnequiz/`, which GitHub Pages serves on mstene.no.
 
-**Decided and built on the branch (November 2026):**
+This describes the new version on the branch `claude/etnequiz-retting`. It is not live on mstene.no/etnequiz until the branch is merged into `main`.
 
-- Quick rounds are cut: no answering on phones, speed points, automatic marking or winner slide.
-- The QR code on each table opens the team's own page. During the quiz it shows the table, team name and a button to the bar menu. After the quiz, when the result is opened, the same page shows place, points per round and every question with the correct answer and whether the team had it right, partly right or wrong (from Retting).
-- Phones no longer claim a table, choose a team name or choose a joker. Quizmasters type the names in Lag og poeng and tick the joker in Retting (it is written on the answer sheet).
-- Oppsett has a link to the bar menu. It shows as a button on the team page and as a second, smaller QR code on the table cards.
-- Points show with two decimals everywhere.
-
-The tables below describe the app before these changes.
-
-This document lists everything the app does today, so we can agree on what we need, what is broken and what can go. The **Works?** column is for us to fill in after a test run. Where I suspect a problem from reading the code, it says so in **Notes**. Only the QR join is confirmed broken so far.
+| Address | What it is | Data |
+|---|---|---|
+| mstene.no/etnequiz | The current live quiz (old version) | Real Firebase |
+| mstene.no/etnequiz-ny | The new version, for testing | Real Firebase, the same data as above |
+| mstene.no/etnequiz-test | Preview of Retting only, no login, 10 sample teams | Nothing is saved |
 
 1. The pieces
 -------------
@@ -23,24 +19,20 @@ flowchart TB
   subgraph Site["mstene.no/etnequiz"]
     P["Panel (index.html)<br/>Quizmasters, Google login<br/>tabs: Køyr, Retting, Lag og poeng, Spørsmål, Oppsett"]
     S["Storskjerm (skjerm.html)<br/>Projector, same login as the panel"]
-    M["Mobil (mobil.html)<br/>One phone per table via QR code<br/>anonymous login"]
+    M["Lagside (mobil.html)<br/>Opened by the QR code on each table<br/>anonymous login, any number of phones"]
   end
   subgraph FB["Firebase project quiz-samarbeid"]
-    A["Auth<br/>Google for quizmasters, anonymous for phones"]
     T["etneTilgang<br/>who may use the panel"]
     Q["etne/quiz, etne/state, etne/rett<br/>the quiz, what is on screen, points per question"]
-    L["etneLag<br/>tables, team names, joker, points, marks"]
+    L["etneLag<br/>tables, team names, joker, points, marks per question"]
     K["etneKode<br/>secret code per table (in the QR)"]
-    MO["etneMobil<br/>which phone owns which table"]
-    LI["etneLive/no<br/>what the phones see now"]
-    SV["etneSvar<br/>answers in quick rounds"]
+    LI["etneLive/no<br/>title, bar menu link, team names, result open or not"]
     R["etneResultat<br/>result per table after the quiz"]
     B["etneBilete<br/>question images"]
   end
-  P -- read/write --> Q & L & K & MO & LI & SV & R & B
+  P -- read/write --> Q & L & K & LI & R & B
   P -. read .-> T
-  S -. read .-> Q & L & LI & SV
-  M -- create/update own --> MO & SV
+  S -. read .-> Q & L & LI
   M -. read .-> LI & R
 ```
 
@@ -52,23 +44,21 @@ sequenceDiagram
   participant QM as Quizmasters (panel)
   participant DB as Firestore
   participant Scr as Storskjerm
-  participant Ph as Team phone
-  QM->>DB: Oppsett and Spørsmål: categories and run plan
-  QM->>DB: Lag og poeng: make tables, print table cards with QR
-  Ph->>DB: Scan QR, sign in anonymously, claim table, team name, joker
+  participant Ph as Phones at the table
+  QM->>DB: Before: categories, questions, rebus, bar menu link (Spørsmål, Oppsett)
+  QM->>DB: Before: tables and team names, print table cards (Lag og poeng)
+  Note over QM: Each table gets one A4, double-sided: card with QR on the front, rebus on the back
+  Ph->>DB: Scan QR: team page with team name and bar menu
   QM->>DB: Køyr: next / previous (etne/state)
   DB-->>Scr: Shows the current slide
-  Note over QM,Ph: Paper rounds: teams write on answer sheets
-  QM->>DB: Retting: tick per question, save round total (etneLag)
-  alt Quick round
-    QM->>DB: Open question (etneLive/no)
-    Ph->>DB: Answer within the time (etneSvar)
-    QM->>DB: Show answer, fastest get most points
-  end
-  QM->>DB: Start avsløring (reveal), places shown on screen
-  QM->>DB: Open result for all (etneResultat)
-  Ph-->>DB: Anyone scanning the table QR sees place, points and answers
+  Note over QM,Ph: Teams answer on Fugl Fønix's small answer sheets, six per round
+  QM->>DB: Retting: tick each question, joker, save the round total (etneLag)
+  QM->>DB: Avsløring: reveal the standings on screen
+  QM->>DB: Opne resultatet for alle (etneResultat, etneLive)
+  DB-->>Ph: Team page shows place, points and every answer right / partly / wrong
 ```
+
+One person drives the screen in Køyr, the other marks in Retting.
 
 3. Glossary
 -----------
@@ -76,169 +66,140 @@ sequenceDiagram
 | Name | Meaning |
 |---|---|
 | Køyreplan (run plan) | The ordered list of points shown on the big screen. |
-| Punkt | One item in the run plan: `tittel`, `kategori`, `sporsmal`, `fasit`, `pause`, `poengtavle` or `hurtigresultat`. |
-| Kategori | A round, for example R1 or Rebus. Has a name, max points and optional answer list. |
-| Hurtigrunde (quick round) | A category answered on the phones, scored by speed, with its own standings and prize. Not counted in the main score. |
-| Joker | One category per team that counts double. Chosen on the phone or in the panel; locks when the first normal question is shown. |
+| Punkt | One item in the run plan: `tittel`, `kategori`, `sporsmal`, `fasit`, `pause` or `poengtavle`. |
+| Kategori | A round, for example Julerebus or Musikk. Has a name, max points, optional answer list and "utan nummer". |
+| Berre på arket | A question that is not shown on screen but counts in the answers and in Retting. Used for the rebus. |
+| Joker | One category per team that counts double. Written on the answer sheet, ticked in Retting. |
 | Bord / Lag | A table and its team. One `etneLag` document per table. |
-| Kode | Secret code per table, printed in the QR. The first phone with the right code owns the table. |
-| Frigjer | Release a table so a new phone can claim it. |
+| Kode | Secret code per table in its QR code, so a table only sees its own result. |
+| Lagside (team page) | What the QR code opens: team name and bar menu during the quiz, the result after. |
 | Retting | Marking a round per question: `full`, `annet`, `halv` or own amount. |
 | Avsløring | Revealing the final standings on screen, five places at a time until ten are left, then one by one. |
-| Resultat | The per-table summary the phones show after the quiz. |
 
 4. Everything the app does
 --------------------------
 
-**Login and access**
-
-| Feature | Where | Works? | Keep? (my suggestion) | Notes |
-|---|---|---|---|---|
-| Google login, access list `etneTilgang` | Panel, Storskjerm | | Keep | A second person needs a document with their email in `etneTilgang`. |
-| Anonymous login | Mobil | | Keep | Required for the QR join. Enabled in Firebase. |
+**Tested** says how far each part has been checked: *fake data* means in a browser against a fake database, *real* means on mstene.no with the real Firebase.
 
 **Køyr (run the quiz)**
 
-| Feature | Where | Works? | Keep? | Notes |
-|---|---|---|---|---|
-| Run plan list, click to jump | Panel | | Keep | |
-| Next / previous, arrow keys and presenter clicker | Panel | | Keep | Any open panel on the Køyr tab can move the screen. With two of us, only one should drive. |
-| Pause (key B), Poengtavle | Panel, Storskjerm | | Keep | |
-| Avsløring (reveal) | Panel, Storskjerm | | Keep | |
-| Open big screen in a pop-up window | Panel | | Keep | |
-| Live preview of the big screen | Panel | | Keep | |
-| Answer and script for the current question, "Berre for deg" | Panel | | Keep | |
-| Joker lock (automatic and manual) | Panel, Mobil | | Discuss | Locks on the first normal question shown. If we start with a quick round, check that this happens when we want. |
-| Open / hide result for all phones | Panel, Mobil | | Keep | The result is a snapshot. If points change afterwards, press it again. |
-| Quick round control: open, countdown, close, show answer and fastest | Panel, Storskjerm, Mobil | | Discuss | Depends on the QR join, so it can't work until that is fixed. |
-| Automatic marking of quick answers with typo tolerance, SJEKK, ✓/✗ override | Panel | | Discuss | Same dependency. |
+| Feature | Tested | Notes |
+|---|---|---|
+| Run plan, click to jump, next / previous with keys or presenter clicker | Unchanged from before | Any panel on the Køyr tab moves the screen. Only one of us should drive. |
+| Pause (key B), Poengtavle, Avsløring | Unchanged | |
+| Open big screen in a pop-up, live preview | Unchanged | |
+| Answer and script for the current question, "Berre for deg" | Unchanged | |
+| Opne / skjul resultatet for alle | Fake data | Sends the result to every table with a name and a QR code. Press again if points change. |
 
-**Retting (new, branch `claude/etnequiz-retting`)**
+**Retting (marking)**
 
-| Feature | Where | Works? | Keep? | Notes |
-|---|---|---|---|---|
-| Pick round and team by typing, tick per question, save | Panel | | Keep | Not tested against Firebase yet. |
-| Points per question per round, shared | Panel | | Keep | Stored in `etne/rett`. |
-| Notice when the other person saves | Panel | | Keep | |
-| Statistics per question, hardest questions | Panel | | Keep | Only counts teams marked in this tab. |
-| Result list and CSV export | Panel | | Keep | |
+| Feature | Tested | Notes |
+|---|---|---|
+| Pick round, type part of a team name, Enter picks the best match | Fake data, preview | Teams already marked go to the bottom with ✓ and who marked them. |
+| Full / Annet / Halv / own amount per question, keys 1 2 3 0, Enter saves | Fake data, preview | The answer is shown under each question. |
+| Joker button | Fake data | Sets or moves the team's joker to this round. |
+| Points per question per round ("Sett poeng") | Fake data | Shared between both quizmasters. Half is always half of full. |
+| Notice when the other person saves | Not tested | Needs two logins at once. |
+| Statistics per question, hardest questions | Fake data | Only counts teams marked in Retting. |
+| Result list with CSV export | Fake data | |
 
 **Lag og poeng (teams and points)**
 
-| Feature | Where | Works? | Keep? | Notes |
-|---|---|---|---|---|
-| Make tables 1 to N, add one table | Panel | | Keep | |
-| Team name, joker and points per category, typed in a table | Panel | | Keep for names, joker and corrections | Overlaps with Retting. Typing a total here does not change the marks in Retting, so the two can disagree. |
-| Over-max warning, sum, place | Panel | | Keep | |
-| Shows which tables have a phone, release a table | Panel | | Keep if the QR stays | |
-| Delete a table | Panel | | Keep | Does not delete the table's code or phone. |
-| Table cards with QR, Wi-Fi, two per A4, new codes | Panel | | Keep, fix | **Confirmed broken (the QR join).** Making new codes breaks cards already printed. |
+| Feature | Tested | Notes |
+|---|---|---|
+| Make tables 1 to N, add one, delete one | Unchanged | |
+| Team name, joker and total per category, typed by hand | Unchanged | For corrections. A typed total does not change the marks in Retting. |
+| Table cards with QR code | **Real** (the QR shows after the rules fix) | If saving the codes fails, it says so and offers "Prøv igjen" instead of flickering. |
+| Bar menu QR and Wi-Fi on the card | Fake data | Shown when set in Oppsett. |
+| Rebus on the back ("Rebus på arket") | Fake data, printed to PDF | One A4 per table, print double-sided. Long text questions as rows, picture questions as boxes. "Ingen" gives two cards per A4. |
 
 **Spørsmål (questions and run plan)**
 
-| Feature | Where | Works? | Keep? | Notes |
-|---|---|---|---|---|
-| Add, move, duplicate, delete points | Panel | | Keep | |
-| Question text, answer, script note | Panel | | Keep | |
-| "Nummerert" and "Berre på arket" (only on the paper sheet) | Panel | | Discuss | |
-| Image per question (shrunk, stored in Firestore) | Panel, Storskjerm | | Discuss | Images up to about 1 MB each in the database. |
-| Quick question settings: A to D or free text, time, accepted answers | Panel | | Discuss | Only needed if we keep quick rounds. |
-| "Manglar fasit" badge | Panel | | Keep | |
+| Feature | Tested | Notes |
+|---|---|---|
+| Add, move, duplicate, delete points | Unchanged | |
+| Question text, answer, script note, image | Unchanged | |
+| "Nummerert" and "Berre på arket" | Unchanged | |
+| "Manglar fasit" badge | Unchanged | |
 
 **Oppsett (setup)**
 
-| Feature | Where | Works? | Keep? | Notes |
-|---|---|---|---|---|
-| Title, line above, prize text, pause text, Wi-Fi | Panel | | Keep | |
-| Categories: name, max, "utan nummer", quick round, prize, answer list, order | Panel | | Keep | The answer list overlaps with the answers on each question. |
-| Import whole quiz from JSON file (made from PowerPoint) | Panel | | Discuss | Do we still make quizzes this way? |
-| Download a copy (JSON backup) | Panel | | Keep | |
-| Reset: screen to start, points and joker, quick rounds, release all phones, delete all teams | Panel | | Keep | "Slett alle lag" leaves codes and phones behind. |
+| Feature | Tested | Notes |
+|---|---|---|
+| Title, line above, prize text, pause text, Wi-Fi | Unchanged | |
+| Link to the bar menu | Fake data | Button on the team page and a second QR on the cards. |
+| Categories: name, max, "utan nummer", answer list, order | Unchanged | |
+| Legg til frå fil | Fake data | Adds questions and teams from a file without removing anything. Skips questions that already exist, so it can't fix an answer. |
+| Erstatt heile quizen frå fil | Unchanged | Replaces the run plan and categories. |
+| Download a copy (JSON backup) | Unchanged | |
+| Reset: screen to start, points and joker (also clears Retting marks and hides the result), delete all teams (also deletes their codes) | Fake data | |
 
 **Storskjerm (big screen)**
 
-| Feature | Where | Works? | Keep? | Notes |
-|---|---|---|---|---|
-| Follows the panel live, F for full screen | Storskjerm | | Keep | Needs a login with access on the screen computer. |
-| Slides: title, category, question with image, answers, pause, scoreboard, reveal | Storskjerm | | Keep | |
-| Quick question with ring timer, fastest five, quick round winner | Storskjerm | | Discuss | Follows the quick-round decision. |
-| Christmas decoration (snow, lights) | Storskjerm | | Discuss | Fixed Christmas theme. Fine for Jul, odd for Påske. |
+| Feature | Tested | Notes |
+|---|---|---|
+| Follows the panel live, F for full screen | Unchanged | Needs a login with access on the screen computer. |
+| Slides: title, category, question with image, answers, pause, scoreboard, reveal | Unchanged | Christmas decoration (snow, lights) is always on. |
 
-**Mobil (team phone)**
+**Lagside (team page on the phone)**
 
-| Feature | Where | Works? | Keep? | Notes |
-|---|---|---|---|---|
-| Scan QR, claim table, team name, joker | Mobil | **No** | Keep, fix | Confirmed broken. See point 6. |
-| Rest screen, wakes up for quick rounds | Mobil | | Discuss | |
-| Answer quick questions, see own result | Mobil | | Discuss | |
-| **Result after the quiz: place, points per category, quick answers, full answer list** | Mobil | | **Keep, main reason for the QR** | Anyone at the table can scan and see it once the result is opened. Depends on the QR fix. |
+| Feature | Tested | Notes |
+|---|---|---|
+| Scan the table's QR code, any number of phones | Real, as far as opening the page | |
+| During the quiz: table, team name, bar menu button | Fake data | Team name comes from Lag og poeng. |
+| After "Opne resultatet": place, total, joker, points per round | Fake data | |
+| Every question with the correct answer and ✓ / ≈ / ½ / ✗ | Fake data | Only for rounds marked in Retting. Rounds typed by hand show the answers without marks. |
+| Can be added to the phone's home screen | Not tested | |
+
+**Removed in this version**
+
+Quick rounds (answering on phones, speed points, automatic marking, the winner slide), one phone per table, releasing a table, choosing the team name and joker on the phone.
 
 5. Data
 -------
 
 | Collection | Holds | Written by | Read by |
 |---|---|---|---|
-| `etneTilgang` | One document per quizmaster email | Firebase console only | Panel, Storskjerm |
-| `etne/quiz` | The whole quiz: categories and run plan | Panel | Panel, Storskjerm |
-| `etne/state` | Current step, mode, reveal, quick-round openings | Panel | Panel, Storskjerm |
+| `etneTilgang` | One document per quizmaster email, lowercase | Firebase console only | Panel, Storskjerm |
+| `etne/quiz` | The whole quiz: categories, run plan, bar menu link | Panel | Panel, Storskjerm |
+| `etne/state` | Current step, mode, reveal | Panel | Panel, Storskjerm |
 | `etne/rett` | Points per question per round | Panel (Retting) | Panel |
-| `etneLag` | Table, team name, joker, `poeng`, `rett` marks | Panel | Panel, Storskjerm |
-| `etneKode` | Secret code per table | Panel | Panel, rules |
-| `etneMobil` | Which phone owns a table, its name and joker | Mobil, Panel | Panel, own phone |
-| `etneLive/no` | What the phones show now | Panel | Mobil, Storskjerm |
-| `etneSvar` | Quick-round answers | Mobil | Panel, own phone |
-| `etneResultat` | Result per table, id `bord_kode` | Panel | Mobil after the result is opened |
+| `etneLag` | Table, team name, joker, `poeng`, `rett` marks per question | Panel | Panel, Storskjerm |
+| `etneKode` | Secret code per table | Panel | Panel |
+| `etneLive/no` | Title, bar menu link, team names, whether the result is open | Panel | Team page, Panel |
+| `etneResultat` | Result per table, id `bord_kode` | Panel | Team page, only after the result is opened |
 | `etneBilete` | Question images | Panel | Panel, Storskjerm |
 
-The Firestore rules are in `quizpremiar/firestore.rules` and have to be pasted into the Firebase console by hand.
+The Firestore rules are in `quizpremiar/firestore.rules` and have to be pasted into the Firebase console by hand (Firestore → Rules → Publish). The console now has the rules for `etneKode`, `etneLive` and `etneResultat`. The old rules for `etneMobil` and `etneSvar` are gone, so the phone join on the old live version no longer works.
 
-6. Known and suspected problems
--------------------------------
+6. Known problems and open points
+---------------------------------
 
-1. **QR join does not work (confirmed).** The links are fine: `mstene.no/etnequiz/mobil.html` loads. So the failure is in Firebase. The likely causes, in order:
-   - The rules in the console are older than `quizpremiar/firestore.rules`. Phones need the `etneKode`, `etneMobil`, `etneLive` and `etneResultat` rules.
-   - The cards were printed before "Lag nye kodar" was pressed, so the codes no longer match.
-   - The site's API key or authorized domains in Google Cloud block anonymous login from mstene.no.
+1. **Not tested end to end on a real phone:** the team name and bar menu on the team page, and the result after "Opne resultatet". Do a test run on mstene.no/etnequiz-ny before a real quiz.
+2. **Two people editing questions at once overwrite each other.** The whole quiz is one document. Edit questions before the evening, one person at a time. Marking in Retting is safe.
+3. **Both panels drive the big screen** from the Køyr tab.
+4. **Retting and Lag og poeng can disagree** if a total is typed by hand after marking.
+5. **Table cards printed from /etnequiz-ny point to /etnequiz-ny.** Print the real cards after the merge.
+6. **Christmas decoration is always on**, also for Påske.
+7. **I can't edit the database from my session.** Changes go through files and "Legg til frå fil", or you do them in the panel.
 
-   What the phone shows tells us which it is. "Koden passar ikkje" points to codes. "Noko gjekk gale" or "Klarte ikkje kople til" points to login or rules. "Bordet har alt ein mobil" means another phone already owns the table.
-2. **Two people editing questions at once overwrite each other.** The whole quiz is one document, saved 0.8 s after the last change. The last save wins, and unsaved edits block the other person's changes from showing. Marking in Retting is not affected.
-3. **Both panels drive the screen.** Arrow keys in either panel's Køyr tab move the big screen. Both panels also copy names and jokers from the phones, which is harmless but doubles the writes.
-4. **Quarter points show rounded.** Numbers are shown with one decimal, so 0.75 shows as 0,8 on the scoreboard, the phones and in Lag og poeng. Totals are stored correctly.
-5. **Retting and Lag og poeng can disagree.** A total typed by hand in Lag og poeng does not change the marks behind it.
-6. **Deleting a table or all teams leaves its code and phone behind.**
-7. **Reset did not clear Retting marks.** Fixed on the branch.
-8. **The quick-round close timer runs only in the panel that opened the question.** The phones and the rules still stop late answers, so this is low risk.
-
-7. Candidates to cut or simplify
---------------------------------
-
-These are my suggestions, to decide together:
-
-- **Quick rounds** (phone answers, speed points, own standings, winner slide). This is the most complex part of the app and depends on the phones working. If we don't use them, the phones only need to join and show the result.
-- **Joker on the phone.** It could be written on the answer sheet and typed in Lag og poeng instead.
-- **Import from JSON.** Only needed if quizzes are still made from PowerPoint.
-- **Answer list per category.** It overlaps with the answers on each question.
-- **Typing points in Lag og poeng.** Keep it for corrections, and use Retting as the normal way.
-
-8. Order of work
+7. Order of work
 ----------------
 
-| # | Change | Size | Depends on |
-|---|---|---|---|
-| 0 | Merge Retting and this overview | done, on branch | |
-| 1 | Find and fix the QR join | small once we know the cause | Test with a phone, see point 6.1 |
-| 2 | Test evening: two panels, one big screen, two or three phones, full run | an hour | 1 |
-| 3 | Cut or simplify what we agree on in point 7 | depends on the choice | 2 |
-| 4 | Show two decimals everywhere | small | |
-| 5 | Make Retting the main way to enter points, Lag og poeng for corrections | small | 2 |
-| 6 | Make question editing safe for two people, or agree that one person edits | medium if built | |
-| 7 | Clean up codes and phones when tables are deleted | small | |
+| # | Change | Status |
+|---|---|---|
+| 1 | Retting, team page, rebus on the card, cut quick rounds | Done, on branch, test at /etnequiz-ny |
+| 2 | Firestore rules for codes, team page and results | Done, published in the console |
+| 3 | Test run: two panels, big screen, two or three phones, mark a round, open the result | Next |
+| 4 | Merge into `main` so it replaces /etnequiz, then remove /etnequiz-ny and /etnequiz-test | After 3 |
+| 5 | Print the real table cards with rebus | After 4 |
+| 6 | Theme for the big screen: Jul, Påske, Nøytral | Not started, to decide |
+| 7 | Merge Spørsmål and Oppsett into one "Quiz" tab, result list in the header | Not started, to decide |
 
-9. Discussion points
+8. Discussion points
 --------------------
 
-1. Do we keep quick rounds, or only use the phones for joining and the result?
+1. Do rebus answers go on the rebus sheet (keep the answer lines) or on one of Fugl Fønix's answer sheets (remove the lines, bigger pictures)?
 2. Who drives the big screen when two of us are in the panel?
 3. Should the result open automatically after the reveal, or stay a button?
-4. Should the theme follow the event (Jul, Påske), or stay Christmas?
-5. What else on the page have we seen not working? Add it to point 6.
+4. Do we want the theme setting (point 7.6) and the tab merge (point 7.7)?
