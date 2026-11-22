@@ -14,7 +14,9 @@ export async function lagre(){
   clearTimeout(timer);
   if (!red.quiz) return;
   red.melding = "Lagrar …";
-  try { await setDoc(doc(db, "etne", "quiz"), $state.snapshot(red.quiz)); red.melding = "Lagra"; red.feil = false; }
+  // Firestore godtek ikkje undefined. Avkryssingar og «Fjern biletet» set felt til undefined,
+  // så JSON-runden fjernar dei felta før lagring (quizen er rein JSON elles).
+  try { await setDoc(doc(db, "etne", "quiz"), JSON.parse(JSON.stringify($state.snapshot(red.quiz)))); red.melding = "Lagra"; red.feil = false; }
   catch (e) { red.melding = "Ikkje lagra: " + feiltekst(e); red.feil = true; }
   red.ventar = false;
 }

@@ -5,7 +5,6 @@
   import { db, feiltekst, hentBilete } from "../lib/firebase.js";
   import { doc, writeBatch } from "firebase/firestore";
   import { melding } from "./red.svelte.js";
-  import { lenkje } from "../lib/quiz.js";
   let { lag, lukk } = $props();
 
   const TEIKN = "abcdefghjkmnpqrstuvwxyz23456789";
@@ -48,12 +47,7 @@
     }
   });
   const skrivUt = () => window.print();
-  // Ekstra QR-kode til barmenyen, same på alle korta
-  let barSvg = $state("");
-  $effect(() => {
-    const u = lenkje(live.quiz?.barmeny); if (!u) { barSvg = ""; return; }
-    QRCode.toString(u, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: "#0F2E24", light: "#FFFFFF" } }).then(s => barSvg = s);
-  });
+  // Barmenyen har ikkje eigen QR-kode på kortet: lagsida (QR-koden over) har ein knapp til han.
   const q = $derived(live.quiz || {});
 
   // Rebusen kan stå på same arket som bordkortet: kortet øvst, rebusen nedst, eitt A4 per bord
@@ -104,9 +98,8 @@
           </div>
           <div class="bk-qr">{#if svg[t.id]}{@html svg[t.id].s}{:else}<span class="dempa">{kodeFeil ? "Ingen kode" : "Lagar kode …"}</span>{/if}</div>
         </div>
-        {#if barSvg || q.wifi}
+        {#if q.wifi}
           <div class="bk-botn">
-            {#if barSvg}<div class="bar"><div class="barqr">{@html barSvg}</div><p><b>Barmenyen</b><br>Skann for å sjå kva baren har</p></div>{/if}
             {#if q.wifi}<p class="wifi">Wi-Fi: <b>{q.wifi}</b>{#if q.wifiPassord}<br>Passord: <b>{q.wifiPassord}</b>{/if}</p>{/if}
           </div>
         {/if}
@@ -119,8 +112,9 @@
               <li>
                 <span class="rn">{i + 1}</span>
                 <div class="rinn">
-                  {#if it.bilete && bilete[it.bilete]}<img src={bilete[it.bilete]} alt="Rebus {i + 1}">
-                  {:else if it.tekst}<p>{it.tekst}</p>{/if}
+                  <!-- Tekst og bilete kan stå saman: teksten først, biletet under -->
+                  {#if it.tekst}<p>{it.tekst}</p>{/if}
+                  {#if it.bilete && bilete[it.bilete]}<img src={bilete[it.bilete]} alt="Rebus {i + 1}">{/if}
                 </div>
                 <span class="linje"></span>
               </li>
@@ -152,10 +146,6 @@
   .bk-qr{width:56mm;height:56mm;display:grid;place-items:center}
   .bk-qr :global(svg){width:100%;height:100%}
   .bk-botn{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:6mm;border-top:1px solid #E3DCCB;padding-top:3mm}
-  .bar{display:flex;align-items:center;gap:4mm}
-  .barqr{width:20mm;height:20mm;flex:none}
-  .barqr :global(svg){width:100%;height:100%}
-  .bar p{margin:0;font-size:10pt;line-height:1.3}
   .wifi{margin:0;font-size:10pt;line-height:1.4;background:#F5F1E8;border-radius:4px;padding:1.5mm 3mm}
   .bk-kort.heil{height:auto;min-height:250mm;padding:12mm 14mm 10mm;gap:6mm}
   .bk-kort.heil header{font-size:15pt}
@@ -168,8 +158,7 @@
   .bk-kort.heil .bk-venstre .stor{font-size:20pt;order:3;margin:0}
   .bk-kort.heil .bk-venstre p:not(.stor){font-size:13pt;max-width:140mm;order:4}
   .bk-kort.heil .bk-botn{padding-top:5mm}
-  .bk-kort.heil .barqr{width:28mm;height:28mm}
-  .bk-kort.heil .bar p,.bk-kort.heil .wifi{font-size:12pt}
+  .bk-kort.heil .wifi{font-size:12pt}
   .bk-rebus{min-height:250mm}
   .bk-rebus:not(.lang) .ruter{flex:1;grid-auto-rows:1fr}
   .bk-rebus:not(.lang) .rinn img{max-height:62mm}
@@ -193,6 +182,8 @@
   .bk-rebus.lang .ruter li{min-height:0;display:grid;grid-template-columns:8mm minmax(0,1fr);grid-template-rows:auto auto;column-gap:2mm;row-gap:1.5mm;padding:2.5mm 3mm}
   .bk-rebus.lang .rinn{display:block}
   .bk-rebus.lang .rinn p{text-align:left;font-size:10.5pt;line-height:1.4;white-space:pre-line}
+  .bk-rebus.lang .rinn img{display:block;max-height:70mm;margin-top:2mm}
+  .rinn p + img{margin-top:2mm}
   .bk-rebus.lang .ruter li{padding:3.5mm 4mm}
   .bk-rebus.lang .linje{height:8mm}
   .bk-rebus.lang .linje{grid-column:2;height:6mm}
