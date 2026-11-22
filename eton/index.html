@@ -41,23 +41,22 @@
 <body>
 <main>
   <h1>Eaton-boksen: få kontakt</h1>
-  <p class="lead">Følg stega i rekkjefølgje. Trykk <b>Kopier</b> og lim inn i <b>cmd</b> med høgreklikk.</p>
+  <p class="lead">Mål: gi Eaton ECI-LAN-boksen fast adresse <code>192.168.50.250</code> på nettet på hytta. Berre Network Settings skal endrast.</p>
 
-  <div class="box"><b>Ikkje rør</b> desse på Eaton-sida: Software Update, Device Reset, Administration og Backup/Restore. Hald deg unna skrueklemmene i skapet (230 V).</div>
 
   <section>
     <h2><span class="n">1</span>Start boksen på nytt</h2>
     <ol>
       <li>Sjå at nettverkskabelen sit godt i Eaton-boksen.</li>
-      <li>Dra ut den <b>raude straumkabelen</b>, vent 10 sekund, set han inn att.</li>
-      <li>Vent <b>2 minutt</b>.</li>
+      <li>Dra ut den raude straumkabelen, vent 10 sekund, set han inn att.</li>
+      <li>Vent 2 minutt.</li>
     </ol>
   </section>
 
   <section>
     <h2><span class="n">2</span>Prøv den gamle adressa</h2>
     <ol>
-      <li>Trykk Windows-tasten, skriv <code>cmd</code>, trykk Enter.</li>
+      <li>Opna cmd.</li>
       <li>Kopier denne og noter <b>Standard gateway</b> og <b>nettmaske</b>. Du skriv dei inn i steg 5:</li>
     </ol>
     <div class="cmd"><pre>ipconfig | findstr /i "IPv4 mask gateway"</pre><button class="copy">Kopier</button></div>
@@ -123,7 +122,7 @@
   <section>
     <h2><span class="n">6</span>Etter at du har lagra</h2>
     <ol>
-      <li>Sida forsvinn. Det er <b>normalt</b>: boksen har fått den nye adressa.</li>
+      <li>Sida mistar kontakten, sidan boksen no har ny adresse.</li>
       <li>Set PC-en tilbake til <b>Automatisk (DHCP)</b> som i steg 3.</li>
       <li>Opna <code>http://192.168.50.250/</code> i Edge (eller .249 om du brukte den). Kjem du inn, er alt klart.</li>
     </ol>
@@ -148,7 +147,6 @@
     <p>Gjer det KI-en seier, og ta nytt skjermbilete før du trykkjer <b>Save</b>.</p>
   </section>
 
-  <div class="box"><b>Til slutt:</b> sjekk at PC-en står på <b>Automatisk (DHCP)</b>, elles har han ikkje internett.</div>
 </main>
 <script>
   function v(id) { var el = document.getElementById(id); return el.value.trim() || el.placeholder; }
