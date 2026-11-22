@@ -54,7 +54,7 @@
   <section>
     <h2><span class="n">2</span>Leit etter boksen</h2>
     <ol>
-      <li>På PC-en: <b class="k">Innstillingar → Nettverk og Internett → Wi-Fi → Stene</b> → IP-tilordning → <b>Rediger</b> → <b>Automatisk (DHCP)</b> → Lagre.</li>
+      <li>På PC-en: <b class="k">Innstillingar → Nettverk og Internett → Wi-Fi → nettet på hytta</b> → IP-tilordning → <b>Rediger</b> → <b>Automatisk (DHCP)</b> → Lagre.</li>
       <li>Trykk Windows-tasten, skriv <code>cmd</code>, trykk Enter.</li>
       <li>Kopier denne og noter <b>Standard gateway</b> og <b>nettmaske</b>. Du skriv dei inn i steg 5:</li>
     </ol>
@@ -63,14 +63,14 @@
       <li>Kopier denne, lim inn, trykk Enter. Vent om lag eitt minutt:</li>
     </ol>
     <div class="cmd"><pre>(for /L %i in (1,1,254) do @ping -n 1 -w 100 192.168.50.%i &gt;nul) &amp; arp -a | findstr 00-40-9d</pre><button class="copy">Kopier</button></div>
-    <div class="box good"><b>Kjem det ei linje</b> med <code>00-40-9d-78-9d-ab</code>? Talet til venstre er adressa til boksen. Gå til steg 4.</div>
+    <div class="box good"><b>Kjem det ei linje</b> med <code>00-40-9d</code>? Talet til venstre er adressa til boksen. Gå til steg 4.</div>
     <p><b>Kjem det ingenting?</b> Gå til steg 3.</p>
   </section>
 
   <section>
     <h2><span class="n">3</span>Prøv den gamle adressa</h2>
     <ol>
-      <li><b class="k">Innstillingar → … → Wi-Fi → Stene</b> → IP-tilordning → <b>Rediger</b> → <b>Manuell</b> → slå på IPv4:
+      <li><b class="k">Innstillingar → … → Wi-Fi → nettet på hytta</b> → IP-tilordning → <b>Rediger</b> → <b>Manuell</b> → slå på IPv4:
         <ul>
           <li>IP-adresse: <code>192.168.42.10</code></li>
           <li>Nettmaske: <code>255.255.255.0</code></li>
