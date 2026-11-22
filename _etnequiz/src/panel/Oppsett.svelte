@@ -1,7 +1,7 @@
 <script>
   // Oppsett: namn på quizen, kategoriar, import og eksport, og nullstilling.
   import { red, endra, lagre, melding, setState, setNo } from "./red.svelte.js";
-  import { live } from "../lib/data.svelte.js";
+  import { live, lagDoc, kodeDoc } from "../lib/data.svelte.js";
   import { db, feiltekst, hentBilete } from "../lib/firebase.js";
   import { doc, setDoc, writeBatch, deleteDoc } from "firebase/firestore";
   import { nyId, num } from "../lib/quiz.js";
@@ -41,7 +41,7 @@
       const b = writeBatch(db);
       for (const l of data.lag || []) {
         const bord = Math.round(num(l.bord)); if (!bord || !n(l.namn)) continue;
-        b.set(doc(db, "etneLag", String(bord)), { bord, namn: String(l.namn).trim().slice(0, 60) }, { merge: true }); lag++;
+        b.set(lagDoc(String(bord)), { bord, namn: String(l.namn).trim().slice(0, 60) }, { merge: true }); lag++;
       }
       if (lag) await b.commit();
       impMelding = `La til ${nyeSp} spørsmål, ${nyeKat} kategoriar og ${lag} lag.`;
@@ -69,13 +69,14 @@
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `etnequiz-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   }
   async function nullstillPoeng(){
-    const b = writeBatch(db); live.lag.forEach(t => b.update(doc(db, "etneLag", t.id), { poeng: {}, joker: "", rett: {} }));
-    try { await b.commit(); await setNo({ resultat: false }); melding("Poenga er nullstilte"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
+    const b = writeBatch(db); live.lag.forEach(t => b.update(lagDoc(t.id), { poeng: {}, joker: "", rett: {} }));
+    // Mobilane startar på nytt òg: ingen fasit vist, ingen stilling, resultatet stengt
+    try { await b.commit(); await setNo({ ope: false, endeleg: false, vist: [], stilling: null, avsloring: false, avslort: {} }); melding("Poenga er nullstilte"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
   }
   async function slettLag(){
     // Lag, kodar og resultat høyrer saman, så alt blir sletta
     const b = writeBatch(db);
-    live.lag.forEach(t => { b.delete(doc(db, "etneLag", t.id)); b.delete(doc(db, "etneKode", t.id)); });
+    live.lag.forEach(t => { b.delete(lagDoc(t.id)); b.delete(kodeDoc(t.id)); });
     try { await b.commit(); melding("Alle lag er sletta"); } catch (e) { melding("Feila: " + feiltekst(e), true); }
   }
 </script>

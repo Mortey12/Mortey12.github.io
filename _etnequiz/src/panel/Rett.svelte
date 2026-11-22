@@ -4,11 +4,12 @@
   // resten av quizen verkar som før. Avkryssinga per spørsmål ligg i etneLag.rett.<kategori> og gir statistikken.
   // Poeng per spørsmål ligg i etne/rett (delt mellom dei som rettar).
   import { onMount } from "svelte";
-  import { live } from "../lib/data.svelte.js";
+  import { live, lagDoc, rettDoc } from "../lib/data.svelte.js";
   import { db, auth, feiltekst } from "../lib/firebase.js";
   import { doc, updateDoc, setDoc, onSnapshot } from "firebase/firestore";
   import { num, nummerer, rangering, sumLag, spmListe } from "../lib/quiz.js";
   import { melding } from "./red.svelte.js";
+  import { publiser } from "./resultat.js";
 
   // demo: førehandsvising utan innlogging. Alt blir halde i minnet, ingenting går til Firebase.
   let { demo = false } = $props();
@@ -39,7 +40,8 @@
   const lagMedNamn = $derived(live.lag.filter(l => (l.namn || "").trim()));
   const lag = $derived(live.lag.find(l => l.id === lagId));
 
-  onMount(() => demo ? undefined : onSnapshot(doc(db, "etne", "rett"), s => { cfgDoc = s.exists() ? (s.data().cfg || {}) : {}; }, e => melding("Poenginnstillingar: " + feiltekst(e), true)));
+  // Poeng per spørsmål for den opne quizen (data-laget følgjer quizen som er vald i vindauget)
+  $effect(() => { if (!demo) cfgDoc = live.rett || {}; });
 
   const tom = n => Array.from({ length: n }, () => ({ m: "", c: "" }));
   function verdi(i, m = marks[i], c = cfg[i]){
@@ -94,13 +96,15 @@
     // ventar, skal ikkje det nye laget bli nullstilt når denne lagringa blir ferdig.
     const lagra = lag, kn = k.namn, s = sum;
     try {
-      await updateDoc(doc(db, "etneLag", lagra.id), {
+      await updateDoc(lagDoc(lagra.id), {
         ["poeng." + katId]: vals.reduce((a, b) => a + b, 0),
         ["rett." + katId]: rett
       });
       melding(`Lagra ${lagra.namn} · ${kn} · ${f2(s)}`);
       vis(`Lagra · ${lagra.namn} · ${kn} · ${f2(s)}`);
       if (lagId === lagra.id) nyttLag();
+      // Er fasiten for runda alt vist, får mobilen til laget rettinga med ein gong
+      if (live.no.ope && (live.no.endeleg || (live.no.vist || []).includes(katId))) setTimeout(() => publiser({ berre: [lagra.id] }).catch(() => {}), 600);
     } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
     lagrar = false;
   }
@@ -110,13 +114,13 @@
     if (!lag) return;
     const ny = lag.joker === katId ? "" : katId;
     if (demo) { lag.joker = ny; return; }
-    try { await updateDoc(doc(db, "etneLag", lag.id), { joker: ny }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
+    try { await updateDoc(lagDoc(lag.id), { joker: ny }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
   }
 
   async function skrivCfg(i, felt, v){
     const arr = cfg.map(c => ({ ...c })); arr[i][felt] = num(v);
     if (demo) { cfgDoc = { ...cfgDoc, [katId]: arr }; return; }
-    try { await setDoc(doc(db, "etne", "rett"), { cfg: { [katId]: arr } }, { merge: true }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
+    try { await setDoc(rettDoc(), { cfg: { [katId]: arr } }, { merge: true }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
   }
 
   let toastT;

@@ -11,7 +11,8 @@
     if (!u) { status = "ute"; return; }
     epost = u.email;
     if (!(await harTilgang(u))) { status = "nekta"; return; }
-    status = "inne"; startLive();
+    // Storskjermen følgjer alltid quizen som er gjort aktiv i panelet
+    status = "inne"; startLive({ folgAktiv: true });
   });
 
   let stille = $state(false), t;
@@ -24,7 +25,7 @@
 
 <div class="skjerm" class:stille>
   {#if status === "inne" && live.quiz}
-    <Stage><Slide quiz={live.quiz} steg={live.state.steg} modus={live.state.modus} lag={live.lag} avslort={live.state.avslort} sist={live.state.sist} /></Stage>
+    <Stage><Slide quiz={live.quiz} steg={live.state.steg} modus={live.state.modus} lag={live.lag} avslort={live.state.avslort} sist={live.state.sist} spenning={!!live.state.spenning} fasit={live.state.fasit ?? null} fasitKat={live.state.fasitKat ?? null} telKat={live.no.vist || []} /></Stage>
     <div class="hint">Trykk F for fullskjerm <button type="button" onclick={fs}>Fullskjerm</button></div>
   {:else}
     <div class="melding">

@@ -1,6 +1,6 @@
 <script>
   // Lag og poeng: éi rad per bord. Poeng frå svararka per kategori, joker gir dobbel poeng.
-  import { live } from "../lib/data.svelte.js";
+  import { live, lagDoc } from "../lib/data.svelte.js";
   import { db, feiltekst } from "../lib/firebase.js";
   import { doc, setDoc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
   import { num, fmt, rangering, sumLag } from "../lib/quiz.js";
@@ -19,24 +19,24 @@
     const go = async () => {
       delete timers[k];
       const v = felt.startsWith("poeng.") ? (String(verdi).trim() === "" ? "" : num(verdi)) : verdi;
-      try { await updateDoc(doc(db, "etneLag", id), { [felt]: v }); melding("Lagra"); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
+      try { await updateDoc(lagDoc(id), { [felt]: v }); melding("Lagra"); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
       if (vent[k] === verdi) delete vent[k];
     };
     if (straks) go(); else timers[k] = setTimeout(go, 500);
   }
   async function leggTil(){
     const nr = lag.reduce((m, t) => Math.max(m, t.bord || 0), 0) + 1;
-    try { await setDoc(doc(db, "etneLag", String(nr)), { bord: nr, namn: "", joker: "", poeng: {} }); } catch (e) { melding("Ikkje lagt til: " + feiltekst(e), true); }
+    try { await setDoc(lagDoc(String(nr)), { bord: nr, namn: "", joker: "", poeng: {} }); } catch (e) { melding("Ikkje lagt til: " + feiltekst(e), true); }
   }
   async function lagTil(){
     const fins = new Set(lag.map(t => t.bord)); const b = writeBatch(db); let n = 0;
-    for (let i = 1; i <= Math.min(Math.max(1, num(tilN)), 120); i++) if (!fins.has(i)) { b.set(doc(db, "etneLag", String(i)), { bord: i, namn: "", joker: "", poeng: {} }); n++; }
+    for (let i = 1; i <= Math.min(Math.max(1, num(tilN)), 120); i++) if (!fins.has(i)) { b.set(lagDoc(String(i)), { bord: i, namn: "", joker: "", poeng: {} }); n++; }
     try { if (n) await b.commit(); melding(n ? `La til ${n} bord` : "Alle bord finst alt"); } catch (e) { melding("Ikkje lagt til: " + feiltekst(e), true); }
   }
   let armert = $state(null);
   async function slett(id){
     if (armert !== id) { armert = id; setTimeout(() => { if (armert === id) armert = null; }, 3000); return; }
-    armert = null; try { await deleteDoc(doc(db, "etneLag", id)); } catch (e) { melding("Ikkje sletta: " + feiltekst(e), true); }
+    armert = null; try { await deleteDoc(lagDoc(id)); } catch (e) { melding("Ikkje sletta: " + feiltekst(e), true); }
   }
   const overMaks = (k, v) => k.maks && num(v) > num(k.maks);
 </script>

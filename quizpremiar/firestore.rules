@@ -51,7 +51,6 @@ service cloud.firestore {
     match /etneLag/{id} {
       allow read, write: if etneAdmin();
     }
-
     // ---- Etnequizen: lagsida på mobilen (QR-koden på bordet, anonym innlogging) ----
     // Hemmeleg kode per bord (står i QR-koden). Berre quizmasteren ser dei.
     match /etneKode/{bord} {
@@ -68,6 +67,31 @@ service cloud.firestore {
       allow get: if etneAdmin() || (request.auth != null
         && get(/databases/$(database)/documents/etneLive/no).data.get('resultat', false) == true);
       allow list, write: if etneAdmin();
+    }
+
+    // ---- Etnequizen med fleire quizar (mstene.no/etnequiz-ny) ----
+    // Kvar quiz har si eiga mappe: etneQuiz/<quiz> er spørsmåla, og under ligg lag, kodar,
+    // poenginnstillingar, det mobilane får sjå (offentleg/no) og resultata.
+    function offentlegDoc(q) { return /databases/$(database)/documents/etneQuiz/$(q)/offentleg/no; }
+
+    match /etneQuiz/{q} {
+      allow read, write: if etneAdmin();
+      // Lag, QR-kodar og poenginnstillingar: berre quizmasterane
+      match /lag/{id} { allow read, write: if etneAdmin(); }
+      match /kode/{id} { allow read, write: if etneAdmin(); }
+      match /meta/{id} { allow read, write: if etneAdmin(); }
+      // Det lagsida får sjå for denne quizen: tittel, barmeny, lagnamn og om resultat er ope
+      match /offentleg/{id} {
+        allow read: if request.auth != null;
+        allow write: if etneAdmin();
+      }
+      // Resultatet per bord. Id-en er «bord_kode», så berre dei som har skanna QR-koden kan opne det,
+      // og berre når quizmasteren har opna resultat for denne quizen (under eller etter quizen).
+      match /resultat/{id} {
+        allow get: if etneAdmin() || (request.auth != null && exists(offentlegDoc(q))
+          && get(offentlegDoc(q)).data.get('ope', false) == true);
+        allow list, write: if etneAdmin();
+      }
     }
 
     // Alt anna er stengt

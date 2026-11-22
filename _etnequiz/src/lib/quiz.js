@@ -47,12 +47,24 @@ export function rangering(lagListe, quiz){
   return l;
 }
 
-// Fem om gongen til det står ti att, så éin og éin
+// Berre nokre kategoriar tel (til dømes rundar der fasiten er vist): ein kopi av quizen med berre dei
+export const medKat = (quiz, ids) => ids ? { ...quiz, kategoriar: (quiz?.kategoriar || []).filter(c => ids.includes(c.id)) } : quiz;
+
+// Avsløringa byggjer seg opp: fem om gongen til det står 15 att, så éin og éin.
+// Frå plass 10 tek kvar plass to klikk: først «Plass 7 …» (s: spenning), så namnet.
+// v = kor mange plassar som er viste nedanfrå.
 export function avsloringSteg(n){
-  const s = [0]; let v = 0;
-  while (v < n) { const att = n - v; v += att > 10 ? Math.min(5, att - 10) : 1; s.push(v); }
+  const s = [{ v: 0, s: false }]; let v = 0;
+  while (v < n) {
+    const att = n - v;
+    if (att > 15) { v += Math.min(5, att - 15); s.push({ v, s: false }); }
+    else if (att > 10) { v += 1; s.push({ v, s: false }); }
+    else { s.push({ v, s: true }); v += 1; s.push({ v, s: false }); }
+  }
   return s;
 }
+// Kor grandiost ein plass blir vist: vinnar, pall (2–3), gull (4–10), topp (11–15) eller vanleg
+export const niva = rank => rank <= 1 ? "vinnar" : rank <= 3 ? "pall" : rank <= 10 ? "gull" : rank <= 15 ? "topp" : "";
 
 export function kortTittel(it, kats){
   const k = kats.get(it.kat);

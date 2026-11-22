@@ -6,13 +6,13 @@
   import { auth, db } from "../lib/firebase.js";
   import { fmt } from "../lib/quiz.js";
 
-  // Bord og kode frå QR-koden, eller frå sist gong
+  // Quiz, bord og kode frå QR-koden, eller frå sist gong. Gamle kort utan quiz følgjer den aktive quizen.
   const LS = "etne-mobil";
-  let bord = "", kode = "";
+  let bord = "", kode = "", quiz = $state("");
   {
     const p = new URLSearchParams(location.search);
-    if (p.get("b") && p.get("k")) { bord = p.get("b"); kode = p.get("k"); try { localStorage.setItem(LS, JSON.stringify({ bord, kode })); } catch (_) {} }
-    else { try { const l = JSON.parse(localStorage.getItem(LS) || "null"); if (l) { bord = l.bord; kode = l.kode; } } catch (_) {} }
+    if (p.get("b") && p.get("k")) { bord = p.get("b"); kode = p.get("k"); const q = p.get("q") || ""; quiz = q; try { localStorage.setItem(LS, JSON.stringify({ bord, kode, quiz: q })); } catch (_) {} }
+    else { try { const l = JSON.parse(localStorage.getItem(LS) || "null"); if (l) { bord = l.bord; kode = l.kode; quiz = l.quiz || ""; } } catch (_) {} }
   }
 
   let status = $state(bord ? "lastar" : "utanKode"), feil = $state("");
@@ -21,18 +21,26 @@
   // Tek for lang tid utan svar frå databasen, seier vi frå i staden for å vente i det uendelege
   const vakt = setTimeout(() => { if (status === "lastar") { status = "feil"; feil = "Fekk ikkje kontakt med quizen. Sjekk at du er på nettet, og prøv igjen."; } }, 12000);
 
+  const lesFeil = e => { status = "feil"; feil = "Fekk ikkje lese quizen (" + (e.code || e.message) + ")."; clearTimeout(vakt); };
+  let unNo;
+  // Det quizmasteren har opna for denne quizen
+  function folg(q){
+    unNo?.(); if (!q) return;
+    unNo = onSnapshot(doc(db, "etneQuiz", q, "offentleg", "no"), s => { no = s.exists() ? s.data() : {}; status = "inne"; clearTimeout(vakt); }, lesFeil);
+  }
   onAuthStateChanged(auth, u => {
     if (!bord) return;
     if (!u) { signInAnonymously(auth).catch(e => { status = "feil"; feil = "Klarte ikkje kople til (" + (e.code || e.message) + ")."; }); return; }
-    onSnapshot(doc(db, "etneLive", "no"), s => { no = s.exists() ? s.data() : {}; status = "inne"; clearTimeout(vakt); },
-      e => { status = "feil"; feil = "Fekk ikkje lese quizen (" + (e.code || e.message) + ")."; clearTimeout(vakt); });
+    if (quiz) folg(quiz);
+    // Kort utan quiz i QR-koden: følg quizen som er aktiv no
+    else onSnapshot(doc(db, "etneLive", "no"), s => { const q = s.exists() ? (s.data().aktivQuiz || "") : ""; if (q !== quiz) { quiz = q; folg(q); } if (!q) { status = "inne"; clearTimeout(vakt); } }, lesFeil);
   });
 
   let unRes;
   $effect(() => {
     unRes?.(); res = null; resKlar = false;
-    if (status !== "inne" || !no.resultat) return;
-    unRes = onSnapshot(doc(db, "etneResultat", bord + "_" + kode), s => { res = s.exists() ? s.data() : null; resKlar = true; }, () => { res = null; resKlar = true; });
+    if (status !== "inne" || !no.ope || !quiz) return;
+    unRes = onSnapshot(doc(db, "etneQuiz", quiz, "resultat", bord + "_" + kode), s => { res = s.exists() ? s.data() : null; resKlar = true; }, () => { res = null; resKlar = true; });
   });
 
   const IKON = { full: "✓", annet: "≈", halv: "½", eigen: "•", "": "✗" };
@@ -54,7 +62,7 @@
     <section class="midt"><p class="dempa">Koplar til …</p></section>
   {:else if status === "feil"}
     <section class="midt"><h1>Noko gjekk gale</h1><p class="dempa">{feil}</p><button class="knapp" type="button" onclick={() => location.reload()}>Prøv igjen</button></section>
-  {:else if !no.resultat}
+  {:else if !no.ope}
     <section class="heim">
       <div class="lagkort">
         <span class="dempa">Bord {bord}</span>
@@ -74,12 +82,26 @@
     <section class="midt"><h1>Fann ikkje resultatet</h1><p class="dempa">Det finst ikkje noko resultat for bord {bord} med denne koden. Kanskje bordet ikkje hadde lagnamn, eller kortet er gammalt. Spør quizmasteren.</p></section>
   {:else}
     <section class="stack">
-      <h1>Takk for i kveld!</h1>
-      <div class="plass"><b>{res.plass ? res.plass + "." : "–"}</b><div><span class="lag">{res.namn}</span><span class="dempa">{res.plass ? `plass av ${res.av}` : "ikkje med på tavla"} · {fmt(res.sum)} poeng</span></div></div>
+      {#if res.endeleg}
+        <h1>Takk for i kveld!</h1>
+        <div class="plass"><b>{res.plass ? res.plass + "." : "–"}</b><div><span class="lag">{res.namn}</span><span class="dempa">{res.plass ? `plass av ${res.av}` : "ikkje med på tavla"} · {fmt(res.sum)} poeng</span></div></div>
+      {:else}
+        <!-- Undervegs: berre rundane med vist fasit, og plassen frå sist poengtavla vart vist -->
+        <h1>{res.namn}</h1>
+        {#if res.plass}
+          <div class="plass"><b>{res.plass}.</b><div><span class="lag">plass {res.plassTekst}</span><span class="dempa">av {res.av} lag</span></div></div>
+        {:else if res.plassTekst}
+          <p class="pille">{res.plassTekst}</p>
+        {/if}
+        {#if barmeny}<a class="knapp gull" href={barmeny} target="_blank" rel="noopener">Sjå barmenyen</a>{/if}
+        <p class="dempa liten">{(res.kat || []).length ? `${fmt(res.sum)} poeng i rundane som er retta så langt. Fleire rundar kjem når fasiten er vist.` : "Rundane kjem her etter kvart som fasiten blir vist på storskjermen."}</p>
+      {/if}
       {#if res.joker}<p class="pille">★ Joker: {res.joker} (dobbel poeng)</p>{/if}
 
-      <h2>Svara dykkar</h2>
-      <p class="dempa liten">Trykk på ein kategori for å sjå fasiten og kva de hadde rett på.</p>
+      {#if (res.kat || []).length}
+        <h2>Svara dykkar</h2>
+        <p class="dempa liten">Trykk på ein kategori for å sjå fasiten og kva de hadde rett på.</p>
+      {/if}
       <ul class="kat">
         {#each res.kat || [] as k, i}
           <li>
@@ -103,8 +125,8 @@
           </li>
         {/each}
       </ul>
-      <p class="dempa liten">✓ rett · ≈ delvis rett · ½ halvt rett · ✗ feil</p>
-      {#if barmeny}<a class="knapp" href={barmeny} target="_blank" rel="noopener">Barmenyen</a>{/if}
+      {#if (res.kat || []).length}<p class="dempa liten">✓ rett · ≈ delvis rett · ½ halvt rett · ✗ feil</p>{/if}
+      {#if barmeny && res.endeleg}<a class="knapp" href={barmeny} target="_blank" rel="noopener">Barmenyen</a>{/if}
     </section>
   {/if}
 </main>

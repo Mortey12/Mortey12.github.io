@@ -1,7 +1,7 @@
 <script>
   // Bordkort til utskrift: eitt kort per bord med QR-kode til mobilsida. Kvar kode er hemmeleg for bordet.
   import QRCode from "qrcode";
-  import { live } from "../lib/data.svelte.js";
+  import { live, kodeDoc } from "../lib/data.svelte.js";
   import { db, feiltekst, hentBilete } from "../lib/firebase.js";
   import { doc, writeBatch } from "firebase/firestore";
   import { melding } from "./red.svelte.js";
@@ -9,7 +9,8 @@
 
   const TEIKN = "abcdefghjkmnpqrstuvwxyz23456789";
   const nyKode = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), x => TEIKN[x % TEIKN.length]).join("");
-  const url = (bord, kode) => new URL(`mobil.html?b=${encodeURIComponent(bord)}&k=${kode}`, location.href).href;
+  // QR-koden høyrer til denne quizen: kortet viser alltid denne quizen, også når ein annan er aktiv
+  const url = (bord, kode) => new URL(`mobil.html?q=${encodeURIComponent(live.quizId)}&b=${encodeURIComponent(bord)}&k=${kode}`, location.href).href;
 
   let svg = $state({}), arbeider = $state(false), armert = $state(false), kodeFeil = $state("");
   // Kvart bord får berre eitt forsøk av seg sjølv. Går det gale, viser vi feilen i staden for å prøve om og om igjen.
@@ -21,7 +22,7 @@
     if (!Object.keys(nye).length) return;
     arbeider = true;
     const b = writeBatch(db);
-    for (const [id, kode] of Object.entries(nye)) b.set(doc(db, "etneKode", id), { kode });
+    for (const [id, kode] of Object.entries(nye)) b.set(kodeDoc(id), { kode });
     try {
       await b.commit();
       live.kodar = { ...live.kodar, ...nye }; kodeFeil = "";
@@ -82,7 +83,7 @@
     <button class="btn primary" type="button" onclick={skrivUt}>Skriv ut</button>
     <button class="btn" type="button" onclick={lukk}>Lukk</button>
   </div>
-  {#if kodeFeil}<p class="bk-tips feil">QR-kodane vart ikkje lagra: {kodeFeil}. Sjekk at Firestore-reglane for etneKode er publiserte. <button class="btn liten" type="button" onclick={provIgjen} disabled={arbeider}>Prøv igjen</button></p>{/if}
+  {#if kodeFeil}<p class="bk-tips feil">QR-kodane vart ikkje lagra: {kodeFeil}. Sjekk at dei nye Firestore-reglane (etneQuiz) er publiserte. <button class="btn liten" type="button" onclick={provIgjen} disabled={arbeider}>Prøv igjen</button></p>{/if}
   {#if !q.wifi}<p class="bk-tips">Tips: skriv inn Wi-Fi-namn og passord under «Oppsett», så kjem dei på korta.</p>{/if}
 
   <div class="bk-ark">
