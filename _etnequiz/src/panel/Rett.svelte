@@ -79,7 +79,8 @@
 
   let lagrar = $state(false);
   async function lagre(){
-    if (!lag || lagrar) return;
+    if (!lag) return;
+    if (lagrar) { vis("Ventar på førre lagring – trykk Enter igjen om eit augeblikk"); return; }
     lagrar = true;
     const vals = marks.map((_, i) => verdi(i));
     const rett = { marks: $state.snapshot(marks), vals, by: meg(), at: Date.now() };
@@ -89,14 +90,17 @@
       vis(`Lagra · ${lag.namn} · ${k.namn} · ${f2(sum)}`);
       nyttLag(); lagrar = false; return;
     }
+    // Hugs laget og summen før lagringa: går ein vidare til neste lag medan lagringa
+    // ventar, skal ikkje det nye laget bli nullstilt når denne lagringa blir ferdig.
+    const lagra = lag, kn = k.namn, s = sum;
     try {
-      await updateDoc(doc(db, "etneLag", lag.id), {
+      await updateDoc(doc(db, "etneLag", lagra.id), {
         ["poeng." + katId]: vals.reduce((a, b) => a + b, 0),
         ["rett." + katId]: rett
       });
-      melding(`Lagra ${lag.namn} · ${k.namn} · ${f2(sum)}`);
-      vis(`Lagra · ${lag.namn} · ${k.namn} · ${f2(sum)}`);
-      nyttLag();
+      melding(`Lagra ${lagra.namn} · ${kn} · ${f2(s)}`);
+      vis(`Lagra · ${lagra.namn} · ${kn} · ${f2(s)}`);
+      if (lagId === lagra.id) nyttLag();
     } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
     lagrar = false;
   }

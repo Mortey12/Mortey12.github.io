@@ -90,7 +90,7 @@
       <div class="felt"><label for="pa">Tekst på pauseskjermen</label><input id="pa" bind:value={q.pausetekst} oninput={endra} placeholder="Pause"></div>
       <div class="felt"><label for="wf">Wi-Fi-namn (står på bordkorta)</label><input id="wf" bind:value={q.wifi} oninput={endra} placeholder="Etne-gjest"></div>
       <div class="felt"><label for="wp">Wi-Fi-passord</label><input id="wp" bind:value={q.wifiPassord} oninput={endra}></div>
-      <div class="felt"><label for="bm">Lenkje til barmenyen (på mobilane og som QR på bordkorta)</label><input id="bm" type="url" bind:value={q.barmeny} oninput={endra} placeholder="https://…"></div>
+      <div class="felt"><label for="bm">Lenkje til barmenyen (knapp på lagsida på mobilen)</label><input id="bm" type="url" bind:value={q.barmeny} oninput={endra} placeholder="https://…"></div>
     </div>
   </div>
 

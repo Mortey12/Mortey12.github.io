@@ -51,7 +51,7 @@
     <button class="btn primary" type="button" onclick={lagTil}>Lag bord</button>
     <button class="btn gull" type="button" onclick={() => visKort = true} disabled={!lag.length}>Bordkort med QR</button>
   </div>
-  <p class="dempa" style="margin:0">Skriv poenga frå svararka etter kvar fasit. Kategorien med joker tel dobbelt. Lag utan namn kjem ikkje med på poengtavla. Joker kan òg setjast i «Retting» når du vel laget. Bordkorta har ein QR-kode der laget ser resultatet og svara sine etter quizen.</p>
+  <p class="dempa" style="margin:0">Poenga blir sette i «Retting» og kan berre lesast her. Kategorien med joker tel dobbelt. Lag utan namn kjem ikkje med på poengtavla. Joker kan òg setjast i «Retting» når du vel laget. Bordkorta har ein QR-kode der laget ser resultatet og svara sine etter quizen.</p>
 
   {#if !lag.length}
     <div class="kort dempa">Ingen bord enno. Bruk «Lag bord» for å lage alle på ein gong.</div>
@@ -71,7 +71,8 @@
               <td><select class="inp" aria-label="Joker bord {t.bord}" value={t.joker || ""} onchange={e => skriv(t.id, "joker", e.target.value, true)}><option value="">Ingen</option>{#each kat as k}<option value={k.id}>{k.namn}</option>{/each}</select></td>
               {#each kat as k}
                 {@const v = vis(t.id, "poeng." + k.id, t.poeng?.[k.id])}
-                <td class="tal"><input class="inp p" class:j={t.joker === k.id} class:over={overMaks(k, v)} inputmode="decimal" aria-label="{k.namn}, bord {t.bord}" value={v} oninput={e => skriv(t.id, "poeng." + k.id, e.target.value)}></td>
+                <!-- Poenga kjem berre frå «Retting», så her kan dei berre lesast -->
+                <td class="tal"><input class="inp p" class:j={t.joker === k.id} class:over={overMaks(k, v)} aria-label="{k.namn}, bord {t.bord}" value={v} readonly tabindex="-1" title="Poenga blir sette i «Retting»"></td>
               {/each}
               <td class="tal sum">{fmt(sumLag({ ...t, poeng: { ...t.poeng, ...Object.fromEntries(kat.map(k => [k.id, vis(t.id, "poeng." + k.id, t.poeng?.[k.id])])) } }, live.quiz))}</td>
               <td class="plass">{plassar.get(t.id) ? plassar.get(t.id) + "." : ""}</td>
@@ -98,6 +99,7 @@
   td.tal,th.tal{text-align:right}
   .inp{padding:6px 9px}
   .p{width:66px;text-align:right;font-variant-numeric:tabular-nums}
+  .p[readonly]{background:transparent;border-color:transparent;cursor:default}
   .p.j{background:#FFF4D6;border-color:var(--p-gull)}
   .p.over{border-color:var(--p-feil);background:#FDECEC}
   .sum{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
