@@ -79,8 +79,10 @@ h1.stor{margin:0;font-family:var(--f-tittel);font-weight:700;line-height:1;lette
 .dots-venting{display:flex;gap:28px;height:116px;align-items:center}
 .dots-venting i{width:34px;height:34px;border-radius:50%;background:currentColor;opacity:.35;animation:venting 1.2s ease-in-out infinite}
 .dots-venting i:nth-child(2){animation-delay:.2s}.dots-venting i:nth-child(3){animation-delay:.4s}
-.stor-vinnar{min-width:1200px;padding:70px 110px;border-width:10px;animation:kortInn .8s cubic-bezier(.2,1.5,.4,1)}
-.stor-vinnar .lag{font-size:150px}
+/* Vinnarkortet er sentrert med translate, så animasjonen må ha med translate (elles hoppar det ut av skjermen) */
+.stor-vinnar{min-width:1200px;max-width:1500px;padding:70px 110px;border-width:10px;animation:vinnarInn .8s cubic-bezier(.2,1.5,.4,1)}
+.stor-vinnar .lag{font-size:150px;line-height:1.02;text-wrap:balance;overflow-wrap:anywhere}
+@keyframes vinnarInn{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 .konfetti{position:absolute;inset:-40px 0 0;overflow:hidden;pointer-events:none;z-index:6}
 .konfetti i{position:absolute;top:-40px;border-radius:2px;animation:fall 3.2s linear forwards}
 .konfetti.loop i{animation:fall 3.2s linear infinite}

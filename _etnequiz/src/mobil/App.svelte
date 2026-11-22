@@ -43,8 +43,8 @@
     unRes = onSnapshot(doc(db, "etneQuiz", quiz, "resultat", bord + "_" + kode), s => { res = s.exists() ? s.data() : null; resKlar = true; }, () => { res = null; resKlar = true; });
   });
 
-  const IKON = { full: "✓", annet: "≈", halv: "½", kvart: "¼", eigen: "•", feil: "✗", "": "✗" };
-  const TEKST = { full: "Rett", annet: "Delvis rett", halv: "Halvt rett", kvart: "Kvart poeng", eigen: "Delpoeng", feil: "Feil", "": "Feil" };
+  const IKON = { full: "✓", annet: "≈", halv: "½", kvart: "¼", eigen: "•", delar: "•", feil: "✗", "": "✗" };
+  const TEKST = { full: "Rett", annet: "Delvis rett", halv: "Halvt rett", kvart: "Kvart poeng", eigen: "Delpoeng", delar: "Delvis rett", feil: "Feil", "": "Feil" };
   const tittel = $derived(res?.tittel || no.tittel || "Etnequizen");
   const lagnamn = $derived(res?.namn || no.lagnamn?.[bord] || "");
   const barmeny = $derived(/^https?:\/\//i.test(no.barmeny || "") ? no.barmeny : "");
@@ -115,11 +115,12 @@
                 {#each k.spm || [] as s, n}
                   <li class={s.m == null ? "" : (s.m === "" || s.m === "feil") ? "feil" : s.m === "full" ? "rett" : "delvis"}>
                     <span class="nr">{n + 1}</span>
-                    <span class="sv">{s.svar || "–"}</span>
+                    <span class="sv">{s.svar || "–"}{#if s.d?.length && s.m !== "full"}<small class="delar">Rett: {s.d.join(", ")}</small>{/if}</span>
                     {#if s.m != null}<span class="dom" title={TEKST[s.m] || ""}>{IKON[s.m] ?? ""}{#if s.m && s.m !== "full" && s.m !== "feil"} <small>{fmt(s.p * (k.joker ? 2 : 1))}</small>{/if}</span>{/if}
                   </li>
                 {/each}
               </ol>
+              {#each k.bonus || [] as b}<p class="bonus">★ {b.namn} <b>+{fmt(b.p)}</b></p>{/each}
               {#if (k.spm || []).every(s => s.m == null)}<p class="dempa liten">Denne runda vart retta for hand, så de ser fasiten, men ikkje kvart svar.</p>{/if}
             {/if}
           </li>
@@ -168,6 +169,8 @@
   .spm li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:baseline;font-size:16px;padding:6px 8px;border-radius:10px}
   .spm .nr{color:var(--dempa);font-variant-numeric:tabular-nums}
   .spm .sv{overflow-wrap:anywhere}
+  .spm .delar{display:block;font-size:13px;opacity:.75;margin-top:2px}
+  .bonus{margin:6px 0 0;font-size:14px;color:var(--gull)}
   .spm .dom{font-weight:700;white-space:nowrap}
   .spm .dom small{font-weight:500;color:var(--dempa)}
   .spm .rett{background:rgba(127,209,165,.12)}.spm .rett .dom{color:var(--ok)}

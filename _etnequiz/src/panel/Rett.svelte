@@ -8,7 +8,7 @@
   import { db, auth, feiltekst } from "../lib/firebase.js";
   import { doc, updateDoc, setDoc, onSnapshot } from "firebase/firestore";
   import { num, nummerer, rangering, sumLag, spmListe } from "../lib/quiz.js";
-  import { melding } from "./red.svelte.js";
+  import { melding, red, endra } from "./red.svelte.js";
   import { publiser } from "./resultat.js";
 
   // demo: førehandsvising utan innlogging. Alt blir halde i minnet, ingenting går til Firebase.
@@ -43,16 +43,47 @@
   // Poeng per spørsmål for den opne quizen (data-laget følgjer quizen som er vald i vindauget)
   $effect(() => { if (!demo) cfgDoc = live.rett || {}; });
 
-  const tom = n => Array.from({ length: n }, () => ({ m: "", c: "" }));
+  // Delar per svar (t.d. Artist 0,5 · Låt 0,5 · Film 0,5) og bonus for runda (t.d. Raud tråd 1).
+  // Ligg på kategorien i quizen, så alle som rettar ser det same.
+  const delar = $derived(k?.delar?.length ? k.delar : null);
+  const bonusar = $derived(k?.bonus || []);
+  let bonus = $state([]);
+  const bonusSum = $derived(bonusar.reduce((s, b, j) => s + (bonus[j] ? num(b.p) : 0), 0));
+
+  const tom = n => Array.from({ length: n }, () => ({ m: "", c: "", d: [] }));
   function verdi(i, m = marks[i], c = cfg[i]){
     if (!m || !c) return 0;
+    if (m.m === "delar") return (delar || []).reduce((s, d, j) => s + (m.d?.[j] ? num(d.p) : 0), 0);
     return m.m === "full" ? c.full : m.m === "annet" ? c.annet : m.m === "halv" ? c.full / 2 : m.m === "kvart" ? c.full / 4 : m.m === "eigen" ? num(m.c) : 0;
   }
   // Eigne faste summar for denne runda (t.d. 1,5 og 2). Blir knappar på kvart spørsmål og tastane 5–9.
   let ekstraDemo = $state({});
   const ekstra = $derived((demo ? ekstraDemo : live.rettEkstra || {})[katId] || []);
-  const sum = $derived(marks.reduce((s, _, i) => s + verdi(i), 0));
-  const maks = $derived(cfg.reduce((s, c) => s + c.full, 0));
+  const sum = $derived(marks.reduce((s, _, i) => s + verdi(i), 0) + bonusSum);
+  const perSvar = $derived(delar ? delar.reduce((s, d) => s + num(d.p), 0) : null);
+  const maks = $derived((delar ? perSvar * spm.length : cfg.reduce((s, c) => s + c.full, 0)) + bonusar.reduce((s, b) => s + num(b.p), 0));
+
+  // Endrar delane eller bonusen på runda: i den lokale kopien av quizen, som blir lagra av seg sjølv
+  function endreKat(fn){
+    const q = demo ? live.quiz : red.quiz; if (!q) return;
+    const kk = q.kategoriar.find(x => x.id === katId); if (!kk) return;
+    fn(kk);
+    if (!demo) endra();
+  }
+  const leggTilDel = () => endreKat(kk => { kk.delar = [...(kk.delar || []), { namn: ["Artist", "Låt", "Film", "Ekstra"][(kk.delar || []).length] || "Del", p: 0.5 }]; });
+  const leggTilBonus = () => endreKat(kk => { kk.bonus = [...(kk.bonus || []), { namn: "Raud tråd", p: 1 }]; });
+  const endreDel = (j, felt, v) => endreKat(kk => { kk.delar[j][felt] = felt === "p" ? num(v) : String(v); });
+  const endreBonus = (j, felt, v) => endreKat(kk => { kk.bonus[j][felt] = felt === "p" ? num(v) : String(v); });
+  const fjernDel = j => endreKat(kk => { kk.delar.splice(j, 1); if (!kk.delar.length) kk.delar = undefined; });
+  const fjernBonus = j => endreKat(kk => { kk.bonus.splice(j, 1); if (!kk.bonus.length) kk.bonus = undefined; });
+  const settMaks = () => endreKat(kk => { kk.maks = Math.round(maks * 100) / 100; });
+
+  // Delar: kryss av og på kvar del. Alt rett blir «full», ingenting blir «feil».
+  function del(i, j){
+    const m = marks[i]; const d = (delar || []).map((_, x) => !!(m.m === "delar" && m.d?.[x]));
+    d[j] = !d[j]; m.m = d.some(Boolean) ? "delar" : ""; m.d = d; m.c = ""; aktiv = i;
+  }
+  function alleDelar(i){ marks[i].m = "delar"; marks[i].d = (delar || []).map(() => true); marks[i].c = ""; aktiv = Math.min(marks.length - 1, i + 1); }
 
   // Lag som passar søket, best treff først. Retta lag går nedst.
   const forslag = $derived.by(() => {
@@ -74,10 +105,12 @@
   function velgLag(id){
     lagId = id; sok = ""; aktiv = 0;
     const l = live.lag.find(x => x.id === id), lagra = l?.rett?.[katId]?.marks;
-    marks = Array.from({ length: spm.length }, (_, i) => lagra?.[i] ? { m: lagra[i].m || "", c: lagra[i].c || "" } : { m: "", c: "" });
+    marks = Array.from({ length: spm.length }, (_, i) => lagra?.[i] ? { m: lagra[i].m || "", c: lagra[i].c || "", d: lagra[i].d || [] } : { m: "", c: "", d: [] });
+    const lb = l?.rett?.[katId]?.bonus || [];
+    bonus = bonusar.map((_, j) => !!lb[j]);
     sokEl?.blur();
   }
-  function nyttLag(fokus = true){ lagId = ""; marks = []; aktiv = 0; sok = ""; treff = 0; if (fokus) sokEl?.focus(); }
+  function nyttLag(fokus = true){ lagId = ""; marks = []; bonus = []; aktiv = 0; sok = ""; treff = 0; if (fokus) sokEl?.focus(); }
   function velgRunde(id){ katId = id; if (lagId) { const x = lagId; queueMicrotask(() => velgLag(x)); } }
   function sett(i, m){ marks[i].m = marks[i].m === m ? "" : m; marks[i].c = ""; aktiv = Math.min(marks.length - 1, i + (marks[i].m ? 1 : 0)); }
   function eigen(i, v){ marks[i].c = v; marks[i].m = v.trim() ? "eigen" : ""; aktiv = i; }
@@ -102,9 +135,12 @@
     if (lagrar) { vis("Ventar på førre lagring – trykk Enter igjen om eit augeblikk"); return; }
     lagrar = true;
     const vals = marks.map((_, i) => verdi(i));
-    const rett = { marks: $state.snapshot(marks), vals, by: meg(), at: Date.now() };
+    // Bonusen for runda (t.d. raud tråd) kjem i tillegg til spørsmåla
+    const b = bonusar.map((x, j) => !!bonus[j]), bp = bonusSum;
+    const rett = { marks: JSON.parse(JSON.stringify($state.snapshot(marks))), vals, bonus: b, bonusP: bp, by: meg(), at: Date.now() };
+    const total = vals.reduce((a, c) => a + c, 0) + bp;
     if (demo) {
-      lag.poeng = { ...(lag.poeng || {}), [katId]: vals.reduce((a, b) => a + b, 0) };
+      lag.poeng = { ...(lag.poeng || {}), [katId]: total };
       lag.rett = { ...(lag.rett || {}), [katId]: rett };
       vis(`Lagra · ${lag.namn} · ${k.namn} · ${f2(sum)}`);
       nyttLag(); lagrar = false; return;
@@ -114,7 +150,7 @@
     const lagra = lag, kn = k.namn, s = sum;
     try {
       await updateDoc(lagDoc(lagra.id), {
-        ["poeng." + katId]: vals.reduce((a, b) => a + b, 0),
+        ["poeng." + katId]: total,
         ["rett." + katId]: rett
       });
       melding(`Lagra ${lagra.namn} · ${kn} · ${f2(s)}`);
@@ -191,10 +227,17 @@
     if (e.key === "Escape") { nyttLag(); return; }
     if (felt || e.ctrlKey || e.metaKey || e.altKey) { if (e.key === "Enter" && e.ctrlKey) lagre(); return; }
     if (!lag) { if (e.key.length === 1 && /\S/.test(e.key)) sokEl?.focus(); return; }
+    // Rundar med delar: 1–9 slår av/på del nr., A = alt rett, mellomrom = neste spørsmål
+    if (delar) {
+      const n = Number(e.key);
+      if (/^[1-9]$/.test(e.key) && n <= delar.length) { e.preventDefault(); del(aktiv, n - 1); return; }
+      if (e.key === "a" || e.key === "A") { e.preventDefault(); alleDelar(aktiv); return; }
+      if (e.key === " ") { e.preventDefault(); aktiv = Math.min(marks.length - 1, aktiv + 1); return; }
+    }
     const kart = { 1: "full", 2: "annet", 3: "halv", 4: "kvart" };
-    if (kart[e.key]) { e.preventDefault(); marks[aktiv].m = kart[e.key]; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
-    else if (/^[5-9]$/.test(e.key) && ekstra[Number(e.key) - 5] !== undefined) { e.preventDefault(); marks[aktiv].m = "eigen"; marks[aktiv].c = String(ekstra[Number(e.key) - 5]).replace(".", ","); aktiv = Math.min(marks.length - 1, aktiv + 1); }
-    else if (e.key === "0") { e.preventDefault(); marks[aktiv].m = "feil"; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
+    if (!delar && kart[e.key]) { e.preventDefault(); marks[aktiv].m = kart[e.key]; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
+    else if (!delar && /^[5-9]$/.test(e.key) && ekstra[Number(e.key) - 5] !== undefined) { e.preventDefault(); marks[aktiv].m = "eigen"; marks[aktiv].c = String(ekstra[Number(e.key) - 5]).replace(".", ","); aktiv = Math.min(marks.length - 1, aktiv + 1); }
+    else if (["0", "x", "X", "f", "F"].includes(e.key)) { e.preventDefault(); marks[aktiv].m = "feil"; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if (e.key === "ArrowDown") { e.preventDefault(); aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if (e.key === "ArrowUp") { e.preventDefault(); aktiv = Math.max(0, aktiv - 1); }
     else if (e.key === "Enter" && e.target.tagName !== "BUTTON") { e.preventDefault(); lagre(); }
@@ -245,23 +288,59 @@
     <div class="kort">
       <div class="rad" style="justify-content:space-between">
         <h3>Spørsmål{k ? " · " + k.namn : ""}</h3>
-        <button class="btn liten" type="button" aria-pressed={visPoeng} onclick={() => visPoeng = !visPoeng}>Sett poeng</button>
+        <button class="btn liten" type="button" aria-pressed={visPoeng} onclick={() => visPoeng = !visPoeng}>Poeng for runda</button>
       </div>
       {#if visPoeng}
         <div class="cfgboks">
-          <p class="dempa" style="margin:0 0 8px">Poeng per spørsmål i denne runda. Det gjeld for begge som rettar. Halv og kvart er alltid halvparten og fjerdeparten av full.</p>
-          <label class="ekstrafelt">
-            <span>Eigne faste summar i denne runda (opptil fem, skil med mellomrom), t.d. <i>1,5 2</i>:</span>
-            <input class="inp" inputmode="decimal" aria-label="Eigne faste summar" value={ekstra.map(f2).join(" ")} onchange={e => skrivEkstra(e.target.value)} placeholder="1,5 2">
-          </label>
-          <div class="cfg">
-            <span></span><b>Full</b><b>Annet</b>
-            {#each spm as _, i}
-              <span>Spm {i + 1}</span>
-              <input class="inp" inputmode="decimal" aria-label="Full poeng spørsmål {i + 1}" value={f2(cfg[i].full)} onchange={e => skrivCfg(i, "full", e.target.value)}>
-              <input class="inp" inputmode="decimal" aria-label="Annet-poeng spørsmål {i + 1}" value={f2(cfg[i].annet)} onchange={e => skrivCfg(i, "annet", e.target.value)}>
-            {/each}
-          </div>
+          <h4>Delar per svar</h4>
+          <p class="dempa liten">Til dømes musikk: Artist 0,5 · Låt 0,5 · Film 0,5. Når du rettar, kryssar du av delane laget hadde rett. Utan delar blir det Full / Annet / Halv / Kvart.</p>
+          {#each delar || [] as d, j}
+            <div class="delrad">
+              <span class="delnr">{j + 1}</span>
+              <input class="inp" aria-label="Namn på del {j + 1}" value={d.namn} onchange={e => endreDel(j, "namn", e.target.value)}>
+              <input class="inp tal" inputmode="decimal" aria-label="Poeng for del {j + 1}" value={f2(d.p)} onchange={e => endreDel(j, "p", e.target.value)}>
+              <span class="dempa">p</span>
+              <button class="ibtn" type="button" aria-label="Fjern del {j + 1}" onclick={() => fjernDel(j)}>✕</button>
+            </div>
+          {/each}
+          <button class="btn liten" type="button" onclick={leggTilDel}>+ Legg til del</button>
+
+          <h4>Bonus for runda</h4>
+          <p class="dempa liten">Éin gong per lag, i tillegg til spørsmåla. Til dømes raud tråd.</p>
+          {#each bonusar as b, j}
+            <div class="delrad">
+              <span class="delnr">★</span>
+              <input class="inp" aria-label="Namn på bonus {j + 1}" value={b.namn} onchange={e => endreBonus(j, "namn", e.target.value)}>
+              <input class="inp tal" inputmode="decimal" aria-label="Poeng for bonus {j + 1}" value={f2(b.p)} onchange={e => endreBonus(j, "p", e.target.value)}>
+              <span class="dempa">p</span>
+              <button class="ibtn" type="button" aria-label="Fjern bonus {j + 1}" onclick={() => fjernBonus(j)}>✕</button>
+            </div>
+          {/each}
+          <button class="btn liten" type="button" onclick={leggTilBonus}>+ Legg til bonus</button>
+
+          <p class="maksline">
+            Maks i runda: <b>{f2(maks)}</b>{#if delar} ({f2(perSvar)} per svar × {spm.length} svar{bonusar.length ? " + bonus" : ""}){/if}
+            {#if k && num(k.maks) !== Math.round(maks * 100) / 100}· står som {f2(k.maks)} i Oppsett <button class="btn liten" type="button" onclick={settMaks}>Bruk {f2(maks)}</button>{/if}
+          </p>
+
+          {#if !delar}
+            <details class="avansert">
+              <summary>Avansert: poeng per spørsmål og eigne faste summar</summary>
+              <p class="dempa liten">Halv og kvart er alltid halvparten og fjerdeparten av full.</p>
+              <label class="ekstrafelt">
+                <span>Eigne faste summar (opptil fem, skil med mellomrom), t.d. <i>1,5 2</i>:</span>
+                <input class="inp" inputmode="decimal" aria-label="Eigne faste summar" value={ekstra.map(f2).join(" ")} onchange={e => skrivEkstra(e.target.value)} placeholder="1,5 2">
+              </label>
+              <div class="cfg">
+                <span></span><b>Full</b><b>Annet</b>
+                {#each spm as _, i}
+                  <span>Spm {i + 1}</span>
+                  <input class="inp" inputmode="decimal" aria-label="Full poeng spørsmål {i + 1}" value={f2(cfg[i].full)} onchange={e => skrivCfg(i, "full", e.target.value)}>
+                  <input class="inp" inputmode="decimal" aria-label="Annet-poeng spørsmål {i + 1}" value={f2(cfg[i].annet)} onchange={e => skrivCfg(i, "annet", e.target.value)}>
+                {/each}
+              </div>
+            </details>
+          {/if}
         </div>
       {/if}
       {#if lag}
@@ -269,6 +348,14 @@
           {#each spm as s, i}
             <div class="q" class:aktiv={i === aktiv}>
               <div class="lbl"><b>Spm {i + 1}</b>{#if s.svar}<span class="svar">{s.svar}</span>{/if}</div>
+              {#if delar}
+                <!-- Delar: kryss av kvar del laget hadde rett -->
+                <div class="valg">
+                  {#each delar as d, j}<button type="button" class="o del" aria-pressed={marks[i]?.m === "delar" && !!marks[i].d?.[j]} onclick={() => del(i, j)}><small>{d.namn}</small><b>{f2(d.p)}</b></button>{/each}
+                  <button type="button" class="o full" aria-pressed={marks[i]?.m === "delar" && delar.every((_, j) => marks[i].d?.[j])} onclick={() => alleDelar(i)}><small>Alt</small><b>{f2(perSvar)}</b></button>
+                  <button type="button" class="o feil" aria-pressed={marks[i]?.m === "feil"} onclick={() => sett(i, "feil")}><small>Feil</small><b>✗</b></button>
+                </div>
+              {:else}
               <div class="valg">
                 <button type="button" class="o full" aria-pressed={marks[i]?.m === "full"} onclick={() => sett(i, "full")}><small>Full</small><b>{f2(cfg[i].full)}</b></button>
                 <button type="button" class="o annet" aria-pressed={marks[i]?.m === "annet"} onclick={() => sett(i, "annet")}><small>Annet</small><b>{f2(cfg[i].annet)}</b></button>
@@ -277,15 +364,26 @@
                 {#each ekstra as v}<button type="button" class="o sum" aria-pressed={erSum(i, v)} onclick={() => settSum(i, v)}><small>Sum</small><b>{f2(v)}</b></button>{/each}
                 <button type="button" class="o feil" aria-pressed={marks[i]?.m === "feil"} onclick={() => sett(i, "feil")}><small>Feil</small><b>✗</b></button>
               </div>
+              {/if}
               <input class="inp eigen" class:paa={marks[i]?.m === "eigen" && !ekstra.some(v => erSum(i, v))} inputmode="decimal" placeholder="Anna" aria-label="Eigen poengsum spørsmål {i + 1}" value={marks[i]?.m === "eigen" && !ekstra.some(v => erSum(i, v)) ? marks[i].c : ""} oninput={e => eigen(i, e.target.value)} onkeydown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); aktiv = Math.min(marks.length - 1, i + 1); } }}>
             </div>
           {/each}
         </div>
+        {#if bonusar.length}
+          <div class="bonusrad">
+            <span class="dempa">Bonus:</span>
+            {#each bonusar as b, j}<button type="button" class="btn bonus" aria-pressed={!!bonus[j]} onclick={() => bonus[j] = !bonus[j]}>★ {b.namn} +{f2(b.p)}</button>{/each}
+          </div>
+        {/if}
         <div class="rad restenrad">
           <button class="btn liten" type="button" onclick={restenFeil} disabled={!marks.some(m => !m.m)}>Resten feil ({marks.filter(m => !m.m).length})</button>
           <span class="dempa">Alle spørsmål du ikkje har kryssa av, blir feil.</span>
         </div>
-        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> annet · <kbd>3</kbd> halv · <kbd>4</kbd> kvart{#each ekstra as v, j}{" · "}<kbd>{j + 5}</kbd> {f2(v)}{/each} · <kbd>0</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
+        {#if delar}
+          <p class="dempa tastar">{#each delar as d, j}{j ? " · " : ""}<kbd>{j + 1}</kbd> {d.namn}{/each} · <kbd>A</kbd> alt rett · <kbd>X</kbd> eller <kbd>F</kbd> feil · <kbd>Mellomrom</kbd> neste spørsmål · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
+        {:else}
+        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> annet · <kbd>3</kbd> halv · <kbd>4</kbd> kvart{#each ekstra as v, j}{" · "}<kbd>{j + 5}</kbd> {f2(v)}{/each} · <kbd>X</kbd> eller <kbd>F</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
+        {/if}
       {:else}
         <p class="dempa" style="margin:6px 0 0">Vel eit lag for å rette.</p>
       {/if}
@@ -389,6 +487,17 @@
   .o.feil{color:#8E1F26}
   .o.feil[aria-pressed="true"]{background:#FDECEC;border-color:#C8323A;color:#C8323A}
   .restenrad{gap:10px;margin-top:8px;align-items:center}
+  .cfgboks h4{margin:6px 0 2px;font-size:15px}
+  .cfgboks .liten{font-size:13px;margin:0 0 6px}
+  .delrad{display:grid;grid-template-columns:22px minmax(0,1fr) 70px auto auto;gap:6px;align-items:center;margin-bottom:6px}
+  .delnr{font-weight:700;color:var(--p-dempa);text-align:center}
+  .delrad .tal{text-align:right}
+  .maksline{margin:12px 0 0;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .avansert{margin-top:12px;font-size:14px}
+  .avansert summary{cursor:pointer;font-weight:600}
+  .o.del[aria-pressed="true"]{background:#DCF3E3;border-color:var(--p-ok);color:var(--p-ok)}
+  .bonusrad{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .btn.bonus[aria-pressed="true"]{background:#FFF1D6;border-color:#9A6B0E;color:#7A5410;font-weight:700}
   .ekstrafelt{display:flex;flex-direction:column;gap:4px;font-size:13px;margin:0 0 10px}
   .ekstrafelt .inp{max-width:200px}
   .q.aktiv{background:var(--p-flate-2);border-color:var(--p-linje)}

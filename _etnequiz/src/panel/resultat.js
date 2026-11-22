@@ -48,8 +48,19 @@ export async function publiser({ berre = null } = {}){
         return {
           namn: k.namn, joker: j === 2, maks: num(k.maks) * j,
           p: p === undefined || p === "" ? null : num(p) * j,
-          // m: "full" | "annet" | "halv" | "eigen" | "" (feil) | null (ikkje retta per spørsmål)
-          spm: spm[k.id].map((s, i) => ({ svar: s.svar, m: rett ? (rett.marks?.[i]?.m ?? "") : null, p: rett ? (rett.vals?.[i] ?? 0) : null }))
+          // m: "full" | "annet" | "halv" | "kvart" | "eigen" | "delar" | "feil"/"" | null (ikkje retta per spørsmål)
+          // d: namna på delane laget hadde rett (rundar med delar, t.d. «Artist, Låt»)
+          spm: spm[k.id].map((s, i) => {
+            const mk = rett?.marks?.[i];
+            if (!rett) return { svar: s.svar, m: null, p: null };
+            if (mk?.m === "delar" && k.delar?.length) {
+              const har = k.delar.filter((_, j) => mk.d?.[j]);
+              return { svar: s.svar, m: har.length === k.delar.length ? "full" : har.length ? "delar" : "feil", p: rett.vals?.[i] ?? 0, d: har.map(x => x.namn) };
+            }
+            return { svar: s.svar, m: mk?.m ?? "", p: rett.vals?.[i] ?? 0 };
+          }),
+          // Bonus for runda (t.d. raud tråd) som laget fekk
+          bonus: (k.bonus || []).filter((_, j) => rett?.bonus?.[j]).map(b => ({ namn: b.namn, p: num(b.p) * j }))
         };
       }),
       t: Date.now()
