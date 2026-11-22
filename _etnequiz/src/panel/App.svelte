@@ -9,11 +9,12 @@
   import { nyId, num } from "../lib/quiz.js";
   import Koyr from "./Koyr.svelte";
   import Poeng from "./Poeng.svelte";
+  import Rett from "./Rett.svelte";
   import Sporsmal from "./Sporsmal.svelte";
   import Oppsett from "./Oppsett.svelte";
 
   let status = $state("lastar"), epost = $state(""), loginFeil = $state("");
-  const FANER = [["koyr", "Køyr quizen"], ["poeng", "Lag og poeng"], ["sporsmal", "Spørsmål"], ["oppsett", "Oppsett"]];
+  const FANER = [["koyr", "Køyr quizen"], ["rett", "Retting"], ["poeng", "Lag og poeng"], ["sporsmal", "Spørsmål"], ["oppsett", "Oppsett"]];
   let fane = $state((() => { try { return localStorage.getItem("etne-fane") || "koyr"; } catch (_) { return "koyr"; } })());
   $effect(() => { try { localStorage.setItem("etne-fane", fane); } catch (_) {} });
 
@@ -112,6 +113,7 @@
   {:else if !live.klar || !red.quiz}
     <p class="dempa">Hentar quizen …</p>
   {:else if fane === "koyr"}<Koyr />
+  {:else if fane === "rett"}<Rett />
   {:else if fane === "poeng"}<Poeng />
   {:else if fane === "sporsmal"}<Sporsmal />
   {:else}<Oppsett />{/if}
