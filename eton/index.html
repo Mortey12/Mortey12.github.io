@@ -74,11 +74,15 @@
           <li>Resten tomt → <b>Lagre</b></li>
         </ul>
       </li>
-      <li>Kopier denne inn i cmd:</li>
+      <li>Opna <b>Edge</b> og skriv <code>http://192.168.42.30/</code></li>
     </ol>
-    <div class="cmd"><pre>ping 192.168.42.30</pre><button class="copy">Kopier</button></div>
-    <div class="box good"><b>«Svar fra …»</b>: boksen lever. Adressa er <code>192.168.42.30</code>. Gå til steg 4.</div>
-    <p><b>«Tidsavbrudd»?</b> Gå til steg 3.</p>
+    <div class="box good"><b>Kjem det ei innloggingsside?</b> Boksen lever. Gå til steg 4.</div>
+    <p><b>Lastar ikkje sida?</b> Kopier denne inn i cmd for å sjå kvifor:</p>
+    <div class="cmd"><pre>ping -n 2 192.168.42.30</pre><button class="copy">Kopier</button></div>
+    <ul>
+      <li><b>«Svar fra …»</b>: boksen lever, det er nettlesaren. Sjå at det står <code>http://</code> og ikkje <code>https://</code>, og prøv igjen.</li>
+      <li><b>«Tidsavbrudd»</b>: gå til steg 3.</li>
+    </ul>
   </section>
 
   <section>
@@ -95,7 +99,7 @@
   <section>
     <h2><span class="n">4</span>Opna nettverkssida</h2>
     <ol>
-      <li>Opna <b>Edge</b>. Skriv <code>http://</code> + adressa, til dømes <code>http://192.168.42.30/</code></li>
+      <li>Er du ikkje alt der: opna <b>Edge</b> og skriv <code>http://</code> + adressa, til dømes <code>http://192.168.42.30/</code></li>
       <li>Logg inn med brukarnamn og passord frå etiketten under boksen.</li>
       <li>Trykk <b>Network Settings</b>. Står det <code>https://</code> i adresselinja, endra til <code>http://</code>.</li>
       <li>Ta skjermbilete av sida slik ho er no, i tilfelle du må tilbake.</li>
@@ -121,11 +125,12 @@
     <ol>
       <li>Sida forsvinn. Det er <b>normalt</b>: boksen har fått den nye adressa.</li>
       <li>Set PC-en tilbake til <b>Automatisk (DHCP)</b> som i steg 3.</li>
-      <li>Kopier denne inn i cmd (byt til .249 om du brukte den). Svarar boksen, er alt klart:</li>
+      <li>Opna <code>http://192.168.50.250/</code> i Edge (eller .249 om du brukte den). Kjem du inn, er alt klart.</li>
     </ol>
+    <p><b>Lastar ikkje sida?</b> Kopier denne inn i cmd:</p>
     <div class="cmd"><pre>ping -n 2 192.168.50.250</pre><button class="copy">Kopier</button></div>
+    <p>Svarar han, er det nettlesaren (sjekk <code>http://</code>). Svarar han ikkje, ventar du eitt minutt og prøver igjen.</p>
     <ol start="4">
-      <li>Opna <code>http://192.168.50.250/</code> i Edge for å sjekka at du kjem inn.</li>
       <li>Skriv adressa i feltet «Actual IP Address» på etiketten under boksen.</li>
     </ol>
   </section>
