@@ -125,8 +125,11 @@
 {/if}
 
 <style>
-  .form { display: grid; gap: 10px; }
+  .form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .form input { width: 5em; }
+  /* Let long labels wrap and the select shrink, so nothing runs past the panel on phones */
+  .form label { display: flex; flex-wrap: wrap; row-gap: 4px; }
+  .form select { flex: 1 1 14em; max-width: 100%; }
   .tag { padding: 0 8px; border-radius: 99px; background: var(--accent-soft); }
   .tag.adm { background: color-mix(in srgb, var(--gold) 30%, transparent); }
   .access { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 4px; }

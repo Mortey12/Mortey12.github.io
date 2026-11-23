@@ -66,7 +66,7 @@ h3 { font: 700 1rem/1.3 var(--head); margin: 1rem 0 .4rem; }
 .panel.flush { padding: 0; overflow: hidden; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 18px; }
 
 /* Buttons: pills with a hard shadow that presses in */
 button, .btn {
@@ -85,7 +85,7 @@ button.small, .btn.small { padding: 4px 11px; font-size: .82rem; box-shadow: 1px
 button:disabled { opacity: .45; cursor: default; transform: none; box-shadow: none; }
 input, select, textarea {
   font: inherit; color: var(--ink); background: var(--input); border: 2px solid var(--line);
-  border-radius: 8px; padding: 7px 10px; min-width: 0;
+  border-radius: 8px; padding: 7px 10px; min-width: 0; max-width: 100%;
 }
 input:hover, select:hover, textarea:hover { border-color: var(--muted); }
 input:focus, select:focus, textarea:focus { border-color: var(--edge); }

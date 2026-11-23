@@ -1,0 +1,152 @@
+/* Quiz på Kvarteret: design kit (quiz-kit.css)
+   ------------------------------------------------------------------------------------------
+   Samfunnet i Bergen's design language (warm off-white, near-black text, DM Sans / DM Mono,
+   pill buttons, 2px outlines, hard offset shadows) with the quiz's own colour, the mint from
+   the old "Quiz på Kvarteret" banner, in the place Samfunnet's red has. Red is for errors only.
+
+   Use: add the font link from README.md, then <link rel="stylesheet" href="quiz-kit.css">.
+   Plain HTML classes, no build step. Light and dark mode follow the system; force one with
+   <html data-theme="light"> or <html data-theme="dark">.
+   Source of truth: mstene.no/pubquiz (_pubquiz/src/app.css). Keep the two in sync.
+   ------------------------------------------------------------------------------------------ */
+
+:root {
+  --bg: #faf7f2;          /* Samfunnet off-white */
+  --panel: #ffffff;
+  --ink: #241d1b;         /* Samfunnet near-black */
+  --muted: #5f5754;
+  --line: #e6e1da;        /* soft rules inside panels */
+  --edge: #241d1b;        /* outlines */
+  --shadow: #9cc4ad;      /* hard offset shadows in deep mint */
+  --brand: #cfe2d6;       /* the quiz mint (banner) */
+  --brand-strong: #9cc4ad;
+  --accent: #1d6b45;      /* dark mint-green: links, readable on white */
+  --accent-ink: #ffffff;
+  --accent-soft: #e4f0e9; /* pale mint for highlights */
+  --primary: #9cc4ad; --primary-ink: #241d1b;
+  --good: #1d6b45; --bad: #c42b2b; --gold: #a87400; --focus: #1d6b45;
+  --row-alt: #f7f4ee; --input: #ffffff;
+  --head: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121a16; --panel: #1a241f; --ink: #eef4ef; --muted: #a9bcb0; --line: #2c3a33;
+    --edge: #9cc4ad; --shadow: #050a07; --brand: #2b4336; --brand-strong: #9cc4ad;
+    --accent: #8fd3ad; --accent-ink: #10201a; --accent-soft: #223a2e;
+    --primary: #9cc4ad; --primary-ink: #10201a;
+    --good: #6fd39a; --bad: #ff8a80; --gold: #f0c04a; --focus: #8fd3ad;
+    --row-alt: #1c2c24; --input: #102019;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121a16; --panel: #1a241f; --ink: #eef4ef; --muted: #a9bcb0; --line: #2c3a33;
+  --edge: #9cc4ad; --shadow: #050a07; --brand: #2b4336; --brand-strong: #9cc4ad;
+  --accent: #8fd3ad; --accent-ink: #10201a; --accent-soft: #223a2e;
+  --primary: #9cc4ad; --primary-ink: #10201a;
+  --good: #6fd39a; --bad: #ff8a80; --gold: #f0c04a; --focus: #8fd3ad;
+  --row-alt: #1c2c24; --input: #102019;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.5 var(--head);
+  -webkit-text-size-adjust: 100%;
+}
+a { color: var(--accent); text-decoration: none; font-weight: 500; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Headings: bold uppercase grotesk, like the banner */
+h1 { font: 800 1.7rem/1.1 var(--head); text-transform: uppercase; letter-spacing: .01em; margin: 0 0 .35rem; }
+h2 { font: 800 1.05rem/1.2 var(--head); text-transform: uppercase; letter-spacing: .04em; margin: 1.5rem 0 .7rem; }
+h3 { font: 700 1rem/1.3 var(--head); margin: 1rem 0 .4rem; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 56px; }
+.wide { max-width: none; }
+.panel {
+  background: var(--panel); border: 2px solid var(--edge); border-radius: 14px; padding: 16px 18px;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.panel.flush { padding: 0; overflow: hidden; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+
+/* Buttons: pills with a hard shadow that presses in */
+button, .btn {
+  font: 600 .95rem/1.2 var(--head); border: 2px solid var(--edge); background: var(--panel); color: var(--ink);
+  padding: 7px 15px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 2px 2px 0 var(--shadow); transition: transform .06s, box-shadow .06s;
+}
+button:hover, .btn:hover { text-decoration: none; background: var(--accent-soft); }
+button:active, .btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--shadow); }
+button.primary, .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+button.primary:hover, .btn.primary:hover { background: var(--primary); filter: brightness(1.25); }
+button.danger { color: var(--bad); }
+button.ghost { border-color: transparent; background: transparent; box-shadow: none; }
+button.ghost:hover { background: var(--accent-soft); }
+button.small, .btn.small { padding: 4px 11px; font-size: .82rem; box-shadow: 1px 1px 0 var(--shadow); }
+button:disabled { opacity: .45; cursor: default; transform: none; box-shadow: none; }
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--input); border: 2px solid var(--line);
+  border-radius: 8px; padding: 7px 10px; min-width: 0;
+}
+input:hover, select:hover, textarea:hover { border-color: var(--muted); }
+input:focus, select:focus, textarea:focus { border-color: var(--edge); }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--focus); outline-offset: 2px;
+}
+input[type="checkbox"] { accent-color: var(--ink); width: 1.05em; height: 1.05em; }
+label { display: inline-flex; gap: 6px; align-items: center; }
+
+table { border-collapse: collapse; width: 100%; }
+th, td { padding: 7px 9px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+/* Small labels in DM Mono, as in Samfunnet's design system */
+th { font: 500 .72rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); white-space: nowrap; }
+tbody tr:nth-child(even) { background: var(--row-alt); }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.place { font-weight: 800; width: 2.5em; }
+.p1 { color: var(--gold); }
+.tag {
+  display: inline-block; font: 500 .72rem/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em;
+  padding: 1px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--ink); border: 1.5px solid var(--edge);
+}
+.err { color: var(--bad); }
+.ok { color: var(--good); }
+kbd { font: .8em var(--mono); border: 1.5px solid var(--edge); border-bottom-width: 3px; border-radius: 5px; padding: 0 5px; background: var(--panel); }
+details > summary { cursor: pointer; }
+
+/* ---------- Extras used across quiz apps ---------- */
+
+/* Header band in the quiz mint, like the banner */
+.qk-header { background: var(--brand); color: var(--ink); border-bottom: 2px solid var(--edge); position: sticky; top: 0; z-index: 20; }
+.qk-header .bar { display: flex; align-items: center; gap: 16px; max-width: 1100px; margin: 0 auto; padding: 10px 16px; flex-wrap: wrap; row-gap: 8px; }
+.qk-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--ink); font: 900 1.12rem/1 var(--head); text-transform: uppercase; letter-spacing: .02em; }
+.qk-brand:hover { text-decoration: none; }
+.qk-brand svg { width: 30px; height: 30px; flex: none; }
+.qk-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.qk-nav a { color: var(--ink); font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 2px solid transparent; }
+.qk-nav a:hover { text-decoration: none; border-color: var(--edge); }
+.qk-nav a.on, .qk-nav a[aria-current="page"] { background: var(--panel); border-color: var(--edge); }
+
+/* Section label: red-free version of Samfunnet's numbered headings ("01  BUTTON") */
+.qk-label { font: 500 .78rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--accent); }
+
+/* Tinted callouts (info / success / error), as in Samfunnet's Alert */
+.qk-note { border: 2px solid var(--brand-strong); background: var(--accent-soft); border-radius: 12px; padding: 10px 14px; }
+.qk-note.bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, var(--panel)); }
+
+/* Projector / big-screen slide: mint background, black capitals (exactly the banner look).
+   Put it in a 16:9 box; size text with the slide, e.g. font-size: 4vw for full-screen use. */
+.qk-slide { background: #cfe2d6; color: #241d1b; font-family: var(--head); aspect-ratio: 16 / 9; display: flex; flex-direction: column; justify-content: center; padding: 6%; }
+.qk-slide .kicker { font: 700 1em/1 var(--head); letter-spacing: .18em; text-transform: uppercase; color: #1d6b45; }
+.qk-slide .title { font: 900 3.6em/.95 var(--head); text-transform: uppercase; margin: .25em 0; }
+.qk-slide .card { background: #faf7f2; border: 4px solid #241d1b; box-shadow: 10px 10px 0 #241d1b; border-radius: 22px; padding: .8em 1.2em; }
+.qk-slide .gold { background: linear-gradient(135deg, #c79a1e, #f2d37a); }
+.qk-slide .silver { background: linear-gradient(135deg, #6d737c, #c9ced6); }
+.qk-slide .bronze { background: linear-gradient(135deg, #6b3d1c, #c58552); color: #1c0f06; }
