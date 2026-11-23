@@ -1,5 +1,6 @@
 <script>
-  import { S, api, cfg, save, importOld } from "../lib/store.svelte.js";
+  import { S, api, cfg, save, importOld, importedSummary, removeImported } from "../lib/store.svelte.js";
+  import importData from "../lib/import-haust2026.json";
   import { isDemo } from "../lib/backend.js";
 
   let c = $derived(cfg());
@@ -18,11 +19,20 @@
     if (e === S.user?.email?.toLowerCase() && !confirm("Remove your own access?")) return;
     await save(() => api.removeAccess(e));
   }
+  let imported = $derived(importedSummary());
+  const dayMonth = d => new Date(d + "T12:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  async function doRemove() {
+    const { weeks, teams } = imported;
+    if (!confirm(`Delete ${weeks.length} imported quiz nights and ${teams.length} imported teams that have no other results? Nights and teams added in the app are kept. This cannot be undone (but you can import again).`)) return;
+    busy = true; msg = "";
+    try { const r = await removeImported(); msg = `Removed ${r.weeks} quiz nights and ${r.teams} teams.`; }
+    catch (e) { msg = e.message; }
+    finally { busy = false; }
+  }
   async function doImport() {
     busy = true; msg = "";
     try {
-      const data = (await import("../lib/import-haust2026.json")).default;
-      const r = await importOld(data);
+      const r = await importOld(importData);
       msg = `Imported ${r.weeks} quiz nights and ${r.teams} new teams${r.skipped ? ` (${r.skipped} skipped: a night with that date already exists)` : ""}. Check Teams for names that should be merged.`;
     } catch (e) { msg = e.message; }
     finally { busy = false; }
@@ -71,8 +81,13 @@
 
     <section class="panel">
       <h2>Import the old spreadsheet</h2>
-      <p class="small">Adds the quiz nights of 29 Sep, 20 Oct and 17 Nov 2026 from “SCOREBOARD FOR QUIZ” (Round 1, Round 2, Picture quiz and penalties). Dates that already exist are skipped.</p>
-      <button onclick={doImport} disabled={busy}>{busy ? "Importing…" : "Import 3 quiz nights"}</button>
+      <p class="small">Adds the quiz nights of {importData.map(w => dayMonth(w.dato)).reverse().join(", ")} 2026 from “SCOREBOARD FOR QUIZ” (Round 1, Round 2, Picture quiz and penalties). Dates that already exist are skipped. 3 Nov isn't included: that sheet has no scores.</p>
+      <div class="row">
+        <button onclick={doImport} disabled={busy}>{busy ? "Working…" : `Import ${importData.length} quiz nights`}</button>
+        {#if imported.weeks.length || imported.teams.length}
+          <button class="danger" onclick={doRemove} disabled={busy}>Remove imported data ({imported.weeks.length} nights, {imported.teams.length} teams)</button>
+        {/if}
+      </div>
       {#if msg}<p class="small">{msg}</p>{/if}
     </section>
 

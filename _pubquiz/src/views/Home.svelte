@@ -1,6 +1,6 @@
 <script>
   import { S, cfg, createWeek, lastWeek } from "../lib/store.svelte.js";
-  import { weeksSorted, weekResults, seasonOf, periods, seasonTable, matchTeams, fmt } from "../lib/calc.js";
+  import { weeksSorted, weekResults, seasonOf, periods, seasonTable, matchTeams, fmt, periodCfg } from "../lib/calc.js";
   import { go } from "../lib/router.svelte.js";
 
   const today = new Date().toISOString().slice(0, 10);
@@ -15,6 +15,9 @@
   }));
   let period = $derived(periods(S.weeks)[0]);
   let table = $derived(period ? seasonTable(S.weeks, S.teams, cfg(), period.test).rows.slice(0, 5) : []);
+  // Latest month with quiz nights; every night counts
+  let month = $derived(periods(S.weeks).find(p => p.month));
+  let monthTable = $derived(month ? seasonTable(S.weeks, S.teams, periodCfg(cfg(), month), month.test) : null);
   let found = $derived(matchTeams(q, S.teams));
 
   async function create(e) {
@@ -84,6 +87,18 @@
         </tbody>
       </table>
       <p><a href="#/season">Full season table →</a></p>
+    {/if}
+    {#if monthTable?.rows.length}
+      <h2>{month.label} — top 5</h2>
+      <p class="small muted">{monthTable.weekCount} {monthTable.weekCount === 1 ? "night" : "nights"} so far; every night counts.</p>
+      <table class="panel-table">
+        <tbody>
+          {#each monthTable.rows.slice(0, 5) as r}
+            <tr><td class="place" class:p1={r.place === 1}>{r.place}</td><td><a href={"#/team/" + r.teamId}>{r.name}</a></td><td class="num">{fmt(r.score)} pts</td></tr>
+          {/each}
+        </tbody>
+      </table>
+      <p><a href={"#/season/" + month.id}>Full month table →</a></p>
     {/if}
   </section>
 </div>

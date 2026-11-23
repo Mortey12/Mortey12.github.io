@@ -99,8 +99,20 @@ export function periods(weeks) {
   }
   const out = [...set.values()].reverse();
   if (out.length) out.push({ id: "*", label: "All time", test: () => true });
-  return out;
+  // Months, newest first. In a month every night counts (see periodCfg)
+  const months = new Map();
+  for (const w of weeksSorted(weeks)) {
+    const m = w.date.slice(0, 7);
+    if (!months.has(m)) months.set(m, {
+      id: m, month: true, test: d => d.startsWith(m),
+      label: new Date(m + "-15T12:00").toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+    });
+  }
+  return out.concat([...months.values()].reverse());
 }
+
+// Settings for a period's table: a month counts every night, with no minimum
+export const periodCfg = (cfg, period) => (period?.month ? { ...cfg, bestN: 0, minNights: 0 } : cfg);
 
 export function seasonTable(weeks, teams, cfg, test) {
   const list = weeksSorted(weeks).filter(w => test(w.date));

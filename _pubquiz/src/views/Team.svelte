@@ -1,6 +1,6 @@
 <script>
   import { S, cfg } from "../lib/store.svelte.js";
-  import { periods, seasonTable, categoryStats, weekResults, weeksSorted, fmt } from "../lib/calc.js";
+  import { periods, seasonTable, categoryStats, weekResults, weeksSorted, fmt, periodCfg } from "../lib/calc.js";
   import PeriodPicker from "./PeriodPicker.svelte";
   import Strengths from "./Strengths.svelte";
   import TeamPin from "./TeamPin.svelte";
@@ -13,7 +13,7 @@
   let period = $derived(list.find(p => p.id === pid) || list[0]);
   let test = $derived(period ? period.test : () => true);
 
-  let table = $derived(seasonTable(S.weeks, S.teams, c, test));
+  let table = $derived(seasonTable(S.weeks, S.teams, periodCfg(c, period), test));
   let me = $derived(table.rows.find(r => r.teamId === id));
   let history = $derived(weeksSorted(S.weeks).filter(w => test(w.date) && w.teams?.[id]).reverse().map(w => {
     const rows = weekResults(w, S.teams, c);

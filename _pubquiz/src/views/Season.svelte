@@ -1,11 +1,14 @@
 <script>
   import { S, cfg } from "../lib/store.svelte.js";
-  import { periods, seasonTable, fmt, weeksSorted, pointsRule } from "../lib/calc.js";
+  import { periods, seasonTable, fmt, weeksSorted, pointsRule, periodCfg } from "../lib/calc.js";
   import PeriodPicker from "./PeriodPicker.svelte";
 
-  let c = $derived(cfg());
+  let c = $derived(periodCfg(cfg(), period));
   let list = $derived(periods(S.weeks));
+  let { initial = "" } = $props();
   let pid = $state("");
+  // #/season/2026-11 opens that period (used by the home page's month box)
+  $effect.pre(() => { pid = initial; });
   let period = $derived(list.find(p => p.id === pid) || list[0]);
   let t = $derived(period ? seasonTable(S.weeks, S.teams, c, period.test) : { rows: [], weekCount: 0 });
   let weeks = $derived(period ? weeksSorted(S.weeks).filter(w => period.test(w.date)) : []);
@@ -17,9 +20,9 @@
 
 <div class="row head">
   <div>
-    <h1>Season table</h1>
+    <h1>{period?.month ? "Month table" : "Season table"}</h1>
     <p class="muted small">
-      Each quiz night {pointsRule(c)}.{#if Number(c.bestN)}{" "}Only each team's best {c.bestN} nights count.{/if}{#if min}{" "}To win the season a team must play at least {min} nights.{/if}{" "}
+      Each quiz night {pointsRule(c)}.{#if period?.month}{" "}Every night this month counts.{/if}{#if Number(c.bestN)}{" "}Only each team's best {c.bestN} nights count.{/if}{#if min}{" "}To win the season a team must play at least {min} nights.{/if}{" "}
       <a href="#/rules">All rules →</a>
     </p>
   </div>

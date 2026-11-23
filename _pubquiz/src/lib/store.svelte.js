@@ -153,6 +153,25 @@ export async function mergeTeams(from, into) {
   await save(() => api.batch(ops));
 }
 
+// Undo the spreadsheet import: deletes imported nights, then imported teams that have no
+// results left in other nights. Nights and teams added in the app are kept.
+export function importedSummary() {
+  const weeks = Object.entries(S.weeks).filter(([, w]) => w.imported).map(([id]) => id);
+  const left = new Set(Object.entries(S.weeks).filter(([, w]) => !w.imported).flatMap(([, w]) => Object.keys(w.teams || {})));
+  const teams = Object.entries(S.teams).filter(([id, t]) => t.imported && !left.has(id)).map(([id]) => id);
+  return { weeks, teams };
+}
+export async function removeImported() {
+  const { weeks, teams } = importedSummary();
+  const ops = [
+    ...weeks.map(id => ({ op: "delete", col: "weeks", id })),
+    ...teams.flatMap(id => [...pinOps(id), { op: "delete", col: "teams", id }])
+  ];
+  // Firestore allows 500 writes per batch
+  for (let i = 0; i < ops.length; i += 450) await save(() => api.batch(ops.slice(i, i + 450)));
+  return { weeks: weeks.length, teams: teams.length };
+}
+
 // Import weeks from the old spreadsheet (see import-haust2026.json)
 export async function importOld(data) {
   const ops = [];
@@ -161,7 +180,7 @@ export async function importOld(data) {
     const existing = findTeamByName(name) || Object.entries(newTeams).find(([, t]) => norm(t.name) === norm(name))?.[0];
     if (existing) return existing;
     const id = api.newId();
-    newTeams[id] = { name: name.trim(), aliases: [], created: new Date().toISOString() };
+    newTeams[id] = { name: name.trim(), aliases: [], created: new Date().toISOString(), imported: true };
     return id;
   };
   const cats = [

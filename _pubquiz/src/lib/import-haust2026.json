@@ -275,7 +275,7 @@
   ]
  },
  {
-  "dato": "2026-10-20",
+  "dato": "2026-11-10",
   "rader": [
    {
     "namn": "HANSA LOVERS",
@@ -612,7 +612,7 @@
   ]
  },
  {
-  "dato": "2026-09-29",
+  "dato": "2026-10-27",
   "rader": [
    {
     "namn": "Hansa-lovers",
@@ -868,6 +868,298 @@
      "r1": 0.0,
      "r2": 15.0,
      "pic": 17.0
+    }
+   }
+  ]
+ },
+ {
+  "dato": "2026-10-20",
+  "rader": [
+   {
+    "namn": "Quizlag 1",
+    "p": {
+     "r1": 13.0,
+     "r2": 24.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "biofil",
+    "p": {
+     "r1": 10.0,
+     "r2": 37.0,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "en godt blanding",
+    "p": {
+     "r1": 13.0,
+     "r2": 36.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "toksisk semicolon",
+    "p": {
+     "r1": 9.0,
+     "r2": 25.0,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "klitt eller klatt",
+    "p": {
+     "r1": 13.0,
+     "r2": 36.0,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "kom for kaka",
+    "p": {
+     "r1": 11.0,
+     "r2": 31.0,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "fab 4",
+    "p": {
+     "r1": 8.0,
+     "r2": 26.5,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "get mugged",
+    "p": {
+     "r1": 8.0,
+     "r2": 25.0,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "brownies",
+    "p": {
+     "r1": 12.0,
+     "r2": 39.0,
+     "pic": 17.0
+    },
+    "trekk": 3.0
+   },
+   {
+    "namn": "fjols til fjells",
+    "p": {
+     "r1": 9.0,
+     "r2": 0.0,
+     "pic": 0.0
+    }
+   },
+   {
+    "namn": "team chiche",
+    "p": {
+     "r1": 8.0,
+     "r2": 20.0,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "hansa lovers",
+    "p": {
+     "r1": 7.0,
+     "r2": 28.0,
+     "pic": 16.0
+    }
+   },
+   {
+    "namn": "forever henri",
+    "p": {
+     "r1": 17.0,
+     "r2": 42.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "medium-sized canada",
+    "p": {
+     "r1": 11.0,
+     "r2": 35.0,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "ekko",
+    "p": {
+     "r1": 11.0,
+     "r2": 29.0,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "brannalarm",
+    "p": {
+     "r1": 12.0,
+     "r2": 0.0,
+     "pic": 0.0
+    }
+   },
+   {
+    "namn": "knut",
+    "p": {
+     "r1": 7.0,
+     "r2": 24.5,
+     "pic": 9.0
+    },
+    "trekk": 3.0
+   },
+   {
+    "namn": "blå torus",
+    "p": {
+     "r1": 12.0,
+     "r2": 38.5,
+     "pic": 19.0
+    },
+    "trekk": 3.0
+   },
+   {
+    "namn": "tennis",
+    "p": {
+     "r1": 12.0,
+     "r2": 35.0,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "quinten",
+    "p": {
+     "r1": 10.0,
+     "r2": 0.0,
+     "pic": 0.0
+    }
+   },
+   {
+    "namn": "con quiztadores",
+    "p": {
+     "r1": 14.0,
+     "r2": 38.5,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "ggfriekinez",
+    "p": {
+     "r1": 10.0,
+     "r2": 0.0,
+     "pic": 32.0
+    }
+   },
+   {
+    "namn": "jolene",
+    "p": {
+     "r1": 11.0,
+     "r2": 29.0,
+     "pic": 18.0
+    },
+    "trekk": 12.0
+   },
+   {
+    "namn": "regn sand og tapte poeng",
+    "p": {
+     "r1": 11.0,
+     "r2": 24.0,
+     "pic": 14.5
+    },
+    "trekk": 3.0
+   },
+   {
+    "namn": "cake lovers",
+    "p": {
+     "r1": 9.0,
+     "r2": 0.0,
+     "pic": 41.0
+    }
+   },
+   {
+    "namn": "sykeplayers",
+    "p": {
+     "r1": 7.0,
+     "r2": 22.0,
+     "pic": 10.5
+    }
+   },
+   {
+    "namn": "kiiste",
+    "p": {
+     "r1": 7.0,
+     "r2": 33.0,
+     "pic": 16.0
+    },
+    "trekk": 3.0
+   },
+   {
+    "namn": "potetvik",
+    "p": {
+     "r1": 14.0,
+     "r2": 30.5,
+     "pic": 17.5
+    }
+   },
+   {
+    "namn": "team joakim",
+    "p": {
+     "r1": 8.0,
+     "r2": 24.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "jeg snakker norsk",
+    "p": {
+     "r1": 11.0,
+     "r2": 31.0,
+     "pic": 16.0
+    },
+    "trekk": 9.0
+   },
+   {
+    "namn": "charlie quirk",
+    "p": {
+     "r1": 11.0,
+     "r2": 34.0,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "sophia 1en",
+    "p": {
+     "r1": 11.5,
+     "r2": 23.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "joel p fanclub",
+    "p": {
+     "r1": 8.0,
+     "r2": 18.0,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "smusstilegg (mangler antall)",
+    "p": {
+     "r1": 14.0,
+     "r2": 33.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "la familia ( mangler antall)",
+    "p": {
+     "r1": 9.0,
+     "r2": 0.0,
+     "pic": 0.0
     }
    }
   ]

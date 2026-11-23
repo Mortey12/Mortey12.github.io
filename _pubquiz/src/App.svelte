@@ -54,7 +54,7 @@
   {:else if p[0] === "week" && p[1]}
     <Week id={p[1]} />
   {:else if p[0] === "season"}
-    <Season />
+    <Season initial={p[1] || ""} />
   {:else if p[0] === "teams"}
     <Teams />
   {:else if p[0] === "team" && p[1]}
