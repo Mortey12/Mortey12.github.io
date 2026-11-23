@@ -54,8 +54,11 @@ export async function publiser({ berre = null } = {}){
             const mk = rett?.marks?.[i];
             if (!rett) return { svar: s.svar, m: null, p: null };
             if (mk?.m === "delar" && k.delar?.length) {
-              const har = k.delar.filter((_, j) => mk.d?.[j]);
-              return { svar: s.svar, m: har.length === k.delar.length ? "full" : har.length ? "delar" : "feil", p: rett.vals?.[i] ?? 0, d: har.map(x => x.namn) };
+              // d[j]: true/1 = heile delen, 0,5 = halv
+              const v = j => mk.d?.[j] === true ? 1 : num(mk.d?.[j]);
+              const har = k.delar.map((x, j) => ({ x, v: v(j) })).filter(o => o.v > 0);
+              const alt = har.length === k.delar.length && har.every(o => o.v === 1);
+              return { svar: s.svar, m: alt ? "full" : har.length ? "delar" : "feil", p: rett.vals?.[i] ?? 0, d: har.map(o => o.x.namn + (o.v < 1 ? " (½)" : "")) };
             }
             return { svar: s.svar, m: mk?.m ?? "", p: rett.vals?.[i] ?? 0 };
           }),
