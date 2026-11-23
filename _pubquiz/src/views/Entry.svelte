@@ -160,7 +160,7 @@
   let signupLog = $state([]);
   const handling = new Set();
   $effect(() => {
-    if (!S.admin || !api) return;
+    if (!S.admin || !api || !S.pinsReady) return; // wait for PINs, so PIN teams are always checked
     const weekId = id;
     return api.listenSignups(weekId, async list => {
       const items = Object.entries(list).sort((a, b) => String(a[1].created).localeCompare(String(b[1].created)));
@@ -169,7 +169,8 @@
         handling.add(sid);
         try {
           const r = await processSignup(weekId, sid, s);
-          if (r) {
+          if (r?.held) signupLog = [{ ...r, similar: [], at: new Date() }, ...signupLog].slice(0, 30);
+          else if (r) {
             const similar = r.isNew ? matchTeams(r.name, S.teams, new Set([r.tid])).filter(h => h.score < 100).slice(0, 2) : [];
             signupLog = [{ ...r, similar, at: new Date() }, ...signupLog].slice(0, 30);
           }
@@ -177,6 +178,17 @@
       }
     }, () => {});
   });
+  // A sign-up for a team with a PIN that skipped the PIN check: the quizmaster decides
+  async function acceptHeld(entry) {
+    try {
+      const r = await processSignup(id, entry.sid, entry.signup, { force: true });
+      Object.assign(entry, r, { held: false, accepted: true }); signupLog = [...signupLog];
+    } catch (e) { alert(e.message); }
+  }
+  async function rejectHeld(entry) {
+    try { await api.deleteSignup(entry.sid); entry.held = false; entry.rejected = true; signupLog = [...signupLog]; }
+    catch (e) { alert(e.message); }
+  }
   async function mergeSignup(entry, into) {
     if (!confirm(`Use the existing team “${S.teams[into].name}” instead of the new “${entry.name}”?`)) return;
     try { await mergeTeams(entry.tid, into); entry.similar = []; entry.merged = S.teams[into].name; signupLog = [...signupLog]; }
@@ -245,7 +257,15 @@
         {#each signupLog as l (l.sid)}
           <li>
             <strong>{S.teams[l.tid]?.name || l.merged || l.name}</strong> · {l.members || "?"} players
-            <span class="muted">{l.merged ? `→ merged into ${l.merged}` : l.isNew ? "new team" : l.already ? "updated" : "returning team"}</span>
+            {#if l.held}
+              <span class="err">🔒 this team has a PIN, but the sign-up didn't include it</span>
+              <button class="small" onclick={() => acceptHeld(l)}>Add anyway</button>
+              <button class="small ghost danger" onclick={() => rejectHeld(l)}>Reject</button>
+            {:else if l.rejected}
+              <span class="muted">rejected</span>
+            {:else}
+              <span class="muted">{l.merged ? `→ merged into ${l.merged}` : l.accepted ? "added by you" : l.isNew ? "new team" : l.already ? "updated" : "returning team"}</span>
+            {/if}
             {#each l.similar as h}<button class="small chip" onclick={() => mergeSignup(l, h.id)}>Same as {h.name}?</button>{/each}
           </li>
         {/each}

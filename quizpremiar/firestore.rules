@@ -101,6 +101,13 @@ service cloud.firestore {
     function pubQuizKonto() { return epost().matches('^([a-z0-9._-]+[.])?quiz@samfunnetibergen[.]no$'); }
     function pubAdmin() { return innlogga() && (pubQuizKonto() || exists(/databases/$(database)/documents/pubTilgang/$(epost()))); }
 
+    // Valfri PIN per lag. Står det teamId i påmeldinga og laget har PIN, må pinHash stemme.
+    function pubPinDoc(t) { return /databases/$(database)/documents/pubPin/$(t); }
+    function pubPinOk(d) {
+      return !('teamId' in d) || (d.teamId is string
+        && (!exists(pubPinDoc(d.teamId)) || (('pinHash' in d) && d.pinHash == get(pubPinDoc(d.teamId)).data.hash)));
+    }
+
     match /pubTilgang/{e} {
       allow read: if innlogga() && (e == epost() || pubAdmin());
       allow write: if pubAdmin();
@@ -120,15 +127,35 @@ service cloud.firestore {
     // Påmelding frå QR-koden: kven som helst kan melde på eit lag, men berre når
     // quizmasteren har opna påmeldinga for den kvelden. Berre admin kan lese og slette.
     match /pubSignup/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['weekId', 'name', 'members', 'created'])
+      allow create: if request.resource.data.keys().hasOnly(['weekId', 'name', 'members', 'created', 'teamId', 'pinHash'])
         && request.resource.data.weekId is string
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
         && request.resource.data.members is int
         && request.resource.data.members >= 1 && request.resource.data.members <= 30
         && request.resource.data.created == request.time
-        && get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('signupOpen', false) == true;
+        && get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('signupOpen', false) == true
+        && pubPinOk(request.resource.data);
       allow read, delete: if pubAdmin();
+      allow update: if false;
+    }
+    // PIN-en (som SHA-256): kven som helst kan setje PIN på eit lag som ikkje har det,
+    // saman med merket i pubHarPin. Berre admin kan lese hashen og fjerne PIN-en.
+    match /pubPin/{id} {
+      allow create: if exists(/databases/$(database)/documents/pubLag/$(id))
+        && request.resource.data.keys().hasOnly(['hash'])
+        && request.resource.data.hash is string && request.resource.data.hash.size() == 64
+        && existsAfter(/databases/$(database)/documents/pubHarPin/$(id));
+      allow read, delete: if pubAdmin();
+      allow update: if false;
+    }
+    // Offentleg merke: «dette laget har PIN», så påmeldinga veit når ho skal spørje
+    match /pubHarPin/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['created'])
+        && request.resource.data.created == request.time
+        && existsAfter(pubPinDoc(id));
+      allow delete: if pubAdmin();
       allow update: if false;
     }
 

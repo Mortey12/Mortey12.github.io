@@ -42,13 +42,15 @@
         <label>Penalty per extra player <input type="number" min="0" step="0.5" value={c.penaltyPer} onchange={e => setNum("penaltyPer", e.target.value)} /> points</label>
         <label>Season points
           <select value={c.seasonMode} onchange={e => save(() => api.setConfig({ seasonMode: e.target.value }))}>
+            <option value="field">Share of the field: winner 100, middle ~50</option>
             <option value="placement">By placing: teams beaten + 1</option>
             <option value="raw">Raw total score</option>
           </select>
         </label>
         <label>Count each team's best <input type="number" min="0" value={c.bestN} onchange={e => setNum("bestN", e.target.value)} /> nights (0 = all)</label>
+        <label>Must play at least <input type="number" min="0" value={c.minNights} onchange={e => setNum("minNights", e.target.value)} /> nights to win the season (0 = no minimum)</label>
       </div>
-      <p class="small muted">Changes apply to every week, past ones too, since totals are computed from the raw scores.</p>
+      <p class="small muted">Changes apply to every week, past ones too, since totals are computed from the raw scores. Set these before the semester starts, so the rules don't change mid-season. With about 20 nights in spring: best 13, at least 8. Autumn has about 16: best 11, at least 6.</p>
     </section>
 
     <section class="panel">

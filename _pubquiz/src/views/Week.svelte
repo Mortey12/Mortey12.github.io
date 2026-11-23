@@ -1,6 +1,6 @@
 <script>
   import { S, cfg } from "../lib/store.svelte.js";
-  import { weekResults, fmt, seasonOf } from "../lib/calc.js";
+  import { weekResults, fmt, seasonOf, pointsRule } from "../lib/calc.js";
 
   let { id } = $props();
   let week = $derived(S.weeks[id]);
@@ -39,7 +39,7 @@
             {#each cats as k}<th class="num" title={k.round}>{k.name}</th>{/each}
             {#if hasPenalty}<th class="num">Penalty</th>{/if}
             <th class="num">Total</th>
-            <th class="num" title={c.seasonMode === "raw" ? "Season points = total score" : "Season points = teams beaten + 1"}>Season pts</th>
+            <th class="num" title={"Season points: " + pointsRule(c)}>Season pts</th>
           </tr>
         </thead>
         <tbody>

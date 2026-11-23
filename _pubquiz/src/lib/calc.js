@@ -1,6 +1,14 @@
 // Pure scoring logic: week results, season table and category strengths.
 
-export const DEFAULT_CONFIG = { penaltyFrom: 6, penaltyPer: 5, seasonMode: "placement", bestN: 8 };
+// seasonMode: "field" = share of the field (winner 100), "placement" = teams beaten + 1, "raw" = total score
+export const DEFAULT_CONFIG = { penaltyFrom: 6, penaltyPer: 5, seasonMode: "field", bestN: 13, minNights: 8 };
+
+// Plain-language description of how a night turns into season points
+export function pointsRule(cfg) {
+  if (cfg.seasonMode === "raw") return "a team's season points for a night are its total score that night";
+  if (cfg.seasonMode === "placement") return "a team gets one point per team it beats, plus one (the winner of a 30-team night gets 30)";
+  return "a team gets 100 × (teams that night − its place + 1) ÷ teams that night: the winner always gets 100, the middle of the table about 50";
+}
 
 export const DEFAULT_CATEGORIES = [
   { id: "c1", name: "Category 1", round: "Round 1" },
@@ -65,7 +73,9 @@ export function weekResults(week, teams, cfg) {
 }
 
 export function seasonPoints(row, n, cfg) {
-  return cfg.seasonMode === "raw" ? row.total : n - row.place + 1;
+  if (cfg.seasonMode === "raw") return row.total;
+  if (cfg.seasonMode === "placement") return n - row.place + 1;
+  return Math.round((1000 * (n - row.place + 1)) / n) / 10; // share of the field, one decimal
 }
 
 export function roundsOf(cats) {
@@ -108,9 +118,10 @@ export function seasonTable(weeks, teams, cfg, test) {
     const places = t.results.map(x => x.place);
     return {
       ...t, name: teams[t.teamId]?.name || t.name,
-      score: counted.reduce((a, b) => a + b, 0), played: t.results.length,
+      score: Math.round(counted.reduce((a, b) => a + b, 0) * 10) / 10, played: t.results.length,
       wins: places.filter(p => p === 1).length, podiums: places.filter(p => p <= 3).length,
-      avgPlace: places.reduce((a, b) => a + b, 0) / places.length, best: Math.min(...places)
+      avgPlace: places.reduce((a, b) => a + b, 0) / places.length, best: Math.min(...places),
+      qualified: t.results.length >= (Number(cfg.minNights) || 0)
     };
   });
   rows.sort((a, b) => b.score - a.score || b.wins - a.wins || a.avgPlace - b.avgPlace);
@@ -118,7 +129,7 @@ export function seasonTable(weeks, teams, cfg, test) {
     const p = rows[i - 1];
     r.place = p && p.score === r.score && p.wins === r.wins && p.avgPlace === r.avgPlace ? p.place : i + 1;
   });
-  return { rows, weekCount: list.length };
+  return { rows, weekCount: list.length, anyQualified: rows.some(r => r.qualified) };
 }
 
 // Category strengths. A team's index in a category = its score / the field average

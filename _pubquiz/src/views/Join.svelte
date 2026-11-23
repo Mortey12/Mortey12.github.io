@@ -1,5 +1,5 @@
 <script>
-  import { S, api, cfg, openWeek, findTeamByName } from "../lib/store.svelte.js";
+  import { S, api, cfg, openWeek, findTeamByName, pinHash } from "../lib/store.svelte.js";
   import { matchTeams } from "../lib/calc.js";
 
   const get = (k, d) => { try { return localStorage.getItem("pq-" + k) ?? d; } catch { return d; } };
@@ -15,6 +15,14 @@
 
   let existing = $derived(name.trim() ? findTeamByName(name) : null);
   let tonight = $derived(existing && week?.teams?.[existing]);
+  // Only teams that set a PIN on their team page are asked for it
+  let needsPin = $derived(!!(existing && S.hasPin[existing]));
+  let pin = $state("");
+  let pinFor = "";
+  $effect(() => {
+    // Fill in a PIN saved on this phone when the team name matches
+    if (needsPin && pinFor !== existing) { pinFor = existing; pin = get("pin-" + existing, ""); }
+  });
   // Suggest registered names while typing, so returning teams keep the same spelling
   let hints = $derived(!existing && name.trim().length >= 2 ? matchTeams(name, S.teams).slice(0, 4) : []);
 
@@ -25,11 +33,16 @@
     busy = true; err = "";
     try {
       members = Math.max(1, Math.min(30, Math.round(Number(members)) || 1));
-      await api.addSignup(week.id, n.slice(0, 60), members);
+      const extra = existing ? { teamId: existing } : {};
+      if (needsPin) extra.pinHash = await pinHash(existing, pin);
+      await api.addSignup(week.id, n.slice(0, 60), members, extra);
       put("myteam", n); put("mymembers", members);
+      if (needsPin) put("pin-" + existing, pin.trim());
       done = { name: S.teams[existing]?.name || n, tid: existing };
     } catch (e2) {
-      err = e2?.code === "permission-denied" ? "Sign-up is closed. Ask the quizmaster." : "Couldn't send. Check your connection and try again.";
+      err = e2?.code !== "permission-denied" ? "Couldn't send. Check your connection and try again."
+        : needsPin && week?.signupOpen ? "Wrong PIN. Try again, or ask the quizmaster if you've forgotten it."
+        : "Sign-up is closed. Ask the quizmaster.";
     } finally { busy = false; }
   }
 </script>
@@ -44,7 +57,7 @@
       <h1>You're in!</h1>
       <p><strong>{done.name}</strong> · {members} {members === 1 ? "player" : "players"}</p>
       <p class="muted small">Write the same team name on your answer sheets. Good luck!</p>
-      {#if done.tid}<p><a href={"#/team/" + done.tid}>See your team's stats →</a></p>{/if}
+      {#if done.tid}<p><a href={"#/team/" + done.tid}>See your team's stats{S.hasPin[done.tid] ? "" : " or set a PIN"} →</a></p>{/if}
       <button onclick={() => (done = null)}>Change or sign up another team</button>
     </div>
   {:else}
@@ -66,6 +79,12 @@
         <p class="small muted">This team is already signed up tonight. Sending again only updates the number of players.</p>
       {/if}
 
+      {#if needsPin}
+        <label class="field" for="pin">🔒 Team PIN</label>
+        <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" bind:value={pin} required placeholder="The PIN your team set" />
+        <p class="small muted">Forgot it? Ask the quizmaster.</p>
+      {/if}
+
       <label class="field" for="mem">Number of players</label>
       <div class="stepper">
         <button type="button" aria-label="Fewer players" onclick={() => (members = Math.max(1, members - 1))}>−</button>
@@ -77,7 +96,7 @@
       {/if}
 
       {#if err}<p class="err small">{err}</p>{/if}
-      <button class="primary go" disabled={busy || !name.trim()}>{busy ? "Sending…" : tonight ? "Update" : "Sign up"}</button>
+      <button class="primary go" disabled={busy || !name.trim() || (needsPin && !pin.trim())}>{busy ? "Sending…" : tonight ? "Update" : "Sign up"}</button>
     </form>
   {/if}
 </div>

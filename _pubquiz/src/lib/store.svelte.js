@@ -3,7 +3,9 @@ import { DEFAULT_CONFIG, DEFAULT_CATEGORIES, weeksSorted, norm } from "./calc.js
 
 export const S = $state({
   ready: false, error: "", teams: {}, weeks: {}, configRaw: {}, access: {},
-  user: null, admin: false, saving: 0, saveError: ""
+  user: null, admin: false, saving: 0, saveError: "",
+  hasPin: {},        // public: teamId -> marker, for teams that set a PIN
+  pins: {}, pinsReady: false // admins only: teamId -> { hash }
 });
 export const cfg = () => ({ ...DEFAULT_CONFIG, ...S.configRaw });
 
@@ -18,11 +20,17 @@ export async function start() {
   api.listenTeams(v => { S.teams = v; done(); }, fail);
   api.listenWeeks(v => { S.weeks = v; done(); }, fail);
   api.listenConfig(v => { S.configRaw = v; done(); }, fail);
-  let stopAccess = null;
+  api.listenHasPin(v => (S.hasPin = v), () => {});
+  let stopAccess = null, stopPins = null;
   api.onUser((user, admin) => {
     S.user = user; S.admin = admin;
     stopAccess?.(); stopAccess = null;
-    if (admin) stopAccess = api.listenAccess(v => (S.access = v), () => {});
+    stopPins?.(); stopPins = null; S.pins = {}; S.pinsReady = false;
+    if (admin) {
+      stopAccess = api.listenAccess(v => (S.access = v), () => {});
+      // Sign-ups wait for this, so a PIN team is never added without its PIN being checked
+      stopPins = api.listenPins(v => { S.pins = v; S.pinsReady = true; }, () => { S.pinsReady = true; });
+    }
   });
 }
 
@@ -64,6 +72,23 @@ export const setField = (weekId, teamId, field, v) =>
 export const addTeamToWeek = (weekId, teamId) => save(() => api.updateWeek(weekId, { [`teams.${teamId}`]: { s: {} } }));
 export const removeTeamFromWeek = (weekId, teamId) => save(() => api.updateWeek(weekId, { [`teams.${teamId}`]: DELETE }));
 
+// ---------- Team PIN ----------
+// Only the hash is stored. The team id is part of it, so the same PIN gives different hashes per team.
+export async function pinHash(teamId, pin) {
+  const bytes = new TextEncoder().encode(`pubquiz:${teamId}:${String(pin).trim()}`);
+  const buf = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+export const validPin = pin => /^\d{4,8}$/.test(String(pin).trim());
+export const removePin = teamId => save(() => api.batch([
+  { op: "delete", col: "pins", id: teamId }, { op: "delete", col: "hasPin", id: teamId }
+]));
+const pinOps = teamId => S.hasPin[teamId]
+  ? [{ op: "delete", col: "pins", id: teamId }, { op: "delete", col: "hasPin", id: teamId }] : [];
+export async function deleteTeam(teamId) {
+  await save(() => api.batch([...pinOps(teamId), { op: "delete", col: "teams", id: teamId }]));
+}
+
 // ---------- QR sign-up ----------
 export const openWeek = () => weeksSorted(S.weeks).reverse().find(w => w.signupOpen);
 
@@ -79,11 +104,15 @@ export async function setSignupOpen(weekId, open) {
 
 // Turn a sign-up into a team in the week. Idempotent: a new team's id comes from the
 // sign-up id, so two admin tabs handling the same sign-up produce the same result.
-export async function processSignup(weekId, sid, s) {
+// A sign-up that names a team with a PIN but didn't come through the PIN check (no teamId)
+// is held for the quizmaster instead (returned with held: true and left in place); pass
+// force to add it anyway. With a teamId, the Firestore rules already checked the PIN.
+export async function processSignup(weekId, sid, s, { force = false } = {}) {
   const name = String(s.name || "").trim().slice(0, 60);
   const members = Math.max(0, Math.min(30, Math.round(Number(s.members) || 0)));
   if (!name) { await api.deleteSignup(sid); return null; }
-  let tid = findTeamByName(name);
+  let tid = (s.teamId && S.teams[s.teamId]) ? s.teamId : findTeamByName(name);
+  if (tid && S.pins[tid] && s.teamId !== tid && !force) return { sid, tid, name, members, held: true, signup: s };
   const isNew = !tid;
   const ops = [];
   if (isNew) {
@@ -119,6 +148,7 @@ export async function mergeTeams(from, into) {
   }
   const aliases = [...new Set([...(b.aliases || []), a.name, ...(a.aliases || [])])].filter(x => norm(x) !== norm(b.name));
   ops.push({ op: "update", col: "teams", id: into, data: { aliases } });
+  ops.push(...pinOps(from)); // the merged-away team's PIN goes; the kept team keeps its own
   ops.push({ op: "delete", col: "teams", id: from });
   await save(() => api.batch(ops));
 }

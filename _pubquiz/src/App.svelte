@@ -12,10 +12,11 @@
   import Admin from "./views/Admin.svelte";
   import Join from "./views/Join.svelte";
   import Qr from "./views/Qr.svelte";
+  import Rules from "./views/Rules.svelte";
 
   let p = $derived(route.parts);
   let entry = $derived(p[0] === "week" && p[2] === "enter");
-  const nav = [["", "Weeks"], ["season", "Season"], ["teams", "Teams"], ["categories", "Categories"]];
+  const nav = [["", "Weeks"], ["season", "Season"], ["teams", "Teams"], ["categories", "Categories"], ["rules", "Rules"]];
   let loginErr = $state("");
   async function login() { loginErr = ""; try { await api.login(); } catch (e) { loginErr = e.message; } }
 </script>
@@ -64,6 +65,8 @@
     <Join />
   {:else if p[0] === "qr"}
     <Qr />
+  {:else if p[0] === "rules"}
+    <Rules />
   {:else if p[0] === "admin"}
     <Admin />
   {:else}

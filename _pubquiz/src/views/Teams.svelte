@@ -1,5 +1,5 @@
 <script>
-  import { S, api, save, mergeTeams, createTeam, findTeamByName } from "../lib/store.svelte.js";
+  import { S, api, save, mergeTeams, createTeam, findTeamByName, deleteTeam } from "../lib/store.svelte.js";
   import { norm, matchTeams } from "../lib/calc.js";
 
   let q = $state("");
@@ -48,7 +48,7 @@
   }
   async function del(t) {
     if (!confirm(`Delete ${t.name} from the register?`)) return;
-    await save(() => api.deleteTeam(t.id));
+    await deleteTeam(t.id);
   }
 </script>
 
@@ -90,9 +90,9 @@
           <td>
             {#if S.admin}
               <input class="name" value={t.name} onchange={e => rename(t, e.target.value)} aria-label="Team name" />
-              <a class="small" href={"#/team/" + t.id}>stats</a>
+              {#if S.hasPin[t.id]}<span class="small" title="Has a PIN">🔒</span>{/if}<a class="small" href={"#/team/" + t.id}>stats</a>
             {:else}
-              <a href={"#/team/" + t.id}>{t.name}</a>
+              <a href={"#/team/" + t.id}>{t.name}</a>{#if S.hasPin[t.id]} <span title="Has a PIN">🔒</span>{/if}
             {/if}
             {#if t.aliases?.length}<div class="small muted">aka {t.aliases.join(", ")}</div>{/if}
           </td>

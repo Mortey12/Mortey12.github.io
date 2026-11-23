@@ -7,12 +7,17 @@
 //                          teams: { [teamId]: { members?, adjust?, s: { [catId]: number } } } }
 //   pubConfig/settings   { penaltyFrom, penaltyPer, seasonMode, bestN }
 //   pubTilgang/{email}   presence = may edit (plus quiz@ and any <role>.quiz@samfunnetibergen.no account)
+//   pubPin/{teamId}      { hash }  optional team PIN, SHA-256 (admins only can read)
+//   pubHarPin/{teamId}   { created }  public marker: this team has a PIN
+//   pubSignup/{id}       { weekId, name, members, created, teamId?, pinHash? }
 
 export const DELETE = Symbol("delete");
 
 // Accounts that may always edit, without being on the access list. Keep in sync with
 // pubQuizKonto() in quizpremiar/firestore.rules.
 export const QUIZ_ACCOUNT = /^([a-z0-9._-]+\.)?quiz@samfunnetibergen\.no$/;
+
+const COLS = { teams: "pubLag", weeks: "pubVeke", pins: "pubPin", hasPin: "pubHarPin" };
 
 export const isDemo = new URLSearchParams(location.search).has("demo");
 
@@ -83,18 +88,27 @@ async function firestoreBackend() {
     addAccess: email => setDoc(doc(db, "pubTilgang", email.toLowerCase()), { added: new Date().toISOString() }),
     removeAccess: email => deleteDoc(doc(db, "pubTilgang", email)),
     // Team sign-up from the QR code (anyone can create, only admins read/delete)
-    addSignup: (weekId, name, members) => addDoc(collection(db, "pubSignup"), { weekId, name, members, created: fs.serverTimestamp() }),
+    addSignup: (weekId, name, members, extra = {}) => addDoc(collection(db, "pubSignup"), { weekId, name, members, ...extra, created: fs.serverTimestamp() }),
     listenSignups: (weekId, cb, err) => onSnapshot(fs.query(collection(db, "pubSignup"), fs.where("weekId", "==", weekId)), snap => {
       const o = {};
       snap.forEach(d => (o[d.id] = d.data()));
       cb(o);
     }, err),
     deleteSignup: id => deleteDoc(doc(db, "pubSignup", id)),
+    // Optional team PIN: anyone may set one on a team that has none; only admins read or remove it
+    listenHasPin: (cb, err) => listen("pubHarPin", cb, err),
+    listenPins: (cb, err) => listen("pubPin", cb, err),
+    async setPin(teamId, hash) {
+      const b = writeBatch(db);
+      b.set(doc(db, "pubPin", teamId), { hash });
+      b.set(doc(db, "pubHarPin", teamId), { created: fs.serverTimestamp() });
+      await b.commit();
+    },
     // Several writes as one atomic batch: [{op:"set"|"update"|"delete", col:"teams"|"weeks", id, data}]
     async batch(ops) {
       const b = writeBatch(db);
       for (const o of ops) {
-        const ref = doc(db, o.col === "teams" ? "pubLag" : "pubVeke", o.id);
+        const ref = doc(db, COLS[o.col], o.id);
         if (o.op === "set") b.set(ref, o.data);
         else if (o.op === "update") b.update(ref, conv(o.data));
         else b.delete(ref);
@@ -110,12 +124,12 @@ function demoBackend() {
   let st;
   try { st = JSON.parse(localStorage.getItem(KEY)); } catch { st = null; }
   st ||= { teams: {}, weeks: {}, config: {}, access: { "demo@example.com": {} } };
-  st.signups ||= {};
-  const subs = { teams: [], weeks: [], config: [], access: [], signups: [] };
+  st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {};
+  const subs = { teams: [], weeks: [], config: [], access: [], signups: [], pins: [], hasPin: [] };
   // Keep several demo tabs in sync (e.g. a "phone" tab signing up and a "laptop" tab entering scores)
   addEventListener("storage", e => {
     if (e.key !== KEY || !e.newValue) return;
-    try { st = JSON.parse(e.newValue); st.signups ||= {}; } catch { return; }
+    try { st = JSON.parse(e.newValue); st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; } catch { return; }
     for (const k of Object.keys(subs)) subs[k].forEach(cb => cb(structuredClone(st[k])));
   });
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
@@ -130,7 +144,7 @@ function demoBackend() {
     }
   };
   const rid = () => Math.random().toString(36).slice(2, 12);
-  const col = c => (c === "teams" ? "teams" : "weeks");
+  const col = c => c;
   const api = {
     kind: "demo",
     onUser(cb) { queueMicrotask(() => cb({ email: "demo@example.com", name: "Demo" }, true)); return () => {}; },
@@ -147,9 +161,17 @@ function demoBackend() {
     async setConfig(p) { Object.assign(st.config, p); emit("config"); },
     async addAccess(e) { st.access[e.toLowerCase()] = {}; emit("access"); },
     async removeAccess(e) { delete st.access[e]; emit("access"); },
-    async addSignup(weekId, name, members) {
-      if (!st.weeks[weekId]?.signupOpen) throw Object.assign(new Error("closed"), { code: "permission-denied" });
-      st.signups[rid()] = { weekId, name, members, created: new Date().toISOString() }; emit("signups");
+    async addSignup(weekId, name, members, extra = {}) {
+      const denied = () => Object.assign(new Error("denied"), { code: "permission-denied" });
+      if (!st.weeks[weekId]?.signupOpen) throw denied();
+      if (extra.teamId && st.pins[extra.teamId] && st.pins[extra.teamId].hash !== extra.pinHash) throw denied(); // same check as the rules
+      st.signups[rid()] = { weekId, name, members, ...extra, created: new Date().toISOString() }; emit("signups");
+    },
+    listenHasPin: sub("hasPin"), listenPins: sub("pins"),
+    async setPin(teamId, hash) {
+      if (!st.teams[teamId] || st.pins[teamId]) throw Object.assign(new Error("denied"), { code: "permission-denied" });
+      st.pins[teamId] = { hash }; st.hasPin[teamId] = { created: new Date().toISOString() };
+      emit("pins"); emit("hasPin");
     },
     listenSignups(weekId, cb) {
       const f = v => cb(Object.fromEntries(Object.entries(v).filter(([, s]) => s.weekId === weekId)));
@@ -163,7 +185,7 @@ function demoBackend() {
         else if (o.op === "update") applyPatch(c[o.id], o.data);
         else delete c[o.id];
       }
-      emit("teams"); emit("weeks");
+      emit("teams"); emit("weeks"); emit("pins"); emit("hasPin");
     },
     resetDemo() { localStorage.removeItem(KEY); location.reload(); }
   };

@@ -1,6 +1,6 @@
 <script>
   import { S, cfg } from "../lib/store.svelte.js";
-  import { periods, seasonTable, fmt, weeksSorted } from "../lib/calc.js";
+  import { periods, seasonTable, fmt, weeksSorted, pointsRule } from "../lib/calc.js";
   import PeriodPicker from "./PeriodPicker.svelte";
 
   let c = $derived(cfg());
@@ -10,14 +10,17 @@
   let t = $derived(period ? seasonTable(S.weeks, S.teams, c, period.test) : { rows: [], weekCount: 0 });
   let weeks = $derived(period ? weeksSorted(S.weeks).filter(w => period.test(w.date)) : []);
   let showWeeks = $state(false);
+  let min = $derived(Number(c.minNights) || 0);
+  // Mark teams below the minimum only once someone has reached it, so early in the season nobody is greyed out
+  let markUnq = $derived(min > 0 && t.anyQualified);
 </script>
 
 <div class="row head">
   <div>
     <h1>Season table</h1>
     <p class="muted small">
-      {#if c.seasonMode === "raw"}Each quiz night's total score{:else}Each quiz night a team gets one point per team it beats, plus one (winner of a 30-team night gets 30){/if}{#if Number(c.bestN)}, and only its best {c.bestN} nights count{/if}.
-      Ties: more wins, then better average placing.
+      Each quiz night {pointsRule(c)}.{#if Number(c.bestN)}{" "}Only each team's best {c.bestN} nights count.{/if}{#if min}{" "}To win the season a team must play at least {min} nights.{/if}{" "}
+      <a href="#/rules">All rules →</a>
     </p>
   </div>
   <span class="spacer"></span>
@@ -39,9 +42,10 @@
       <tbody>
         {#each t.rows as r (r.teamId)}
           {@const counted = new Set([...r.results].sort((a, b) => b.points - a.points).slice(0, Number(c.bestN) || 999).map(x => x.weekId))}
-          <tr>
-            <td class="place" class:p1={r.place === 1}>{r.place}</td>
-            <td><a href={"#/team/" + r.teamId}>{r.name}</a></td>
+          {@const unq = markUnq && !r.qualified}
+          <tr class:unq>
+            <td class="place" class:p1={r.place === 1 && !unq}>{r.place}</td>
+            <td><a href={"#/team/" + r.teamId}>{r.name}</a>{#if unq}<span class="small need" title="Nights needed to be eligible to win the season"> {min - r.played} more {min - r.played === 1 ? "night" : "nights"} to qualify</span>{/if}</td>
             <td class="num"><strong>{fmt(r.score)}</strong></td>
             <td class="num">{r.played}</td>
             <td class="num">{r.wins || ""}</td>
@@ -59,7 +63,8 @@
       </tbody>
     </table>
   </div>
-  {#if showWeeks && Number(c.bestN)}<p class="small muted">Greyed-out nights are not among the team's best {c.bestN} and don't count.</p>{/if}
+  {#if showWeeks && Number(c.bestN)}<p class="small muted">Crossed-out nights are not among the team's best {c.bestN} and don't count.</p>{/if}
+  {#if markUnq}<p class="small muted">Greyed-out teams have played fewer than {min} nights and can't win the season yet.</p>{/if}
 {/if}
 
 <style>
@@ -67,4 +72,6 @@
   .head p { margin: 0; max-width: 60ch; }
   .flush { padding: 0; }
   .dim { opacity: .4; text-decoration: line-through; }
+  .unq td { opacity: .55; }
+  .need { white-space: nowrap; margin-left: .5em; }
 </style>

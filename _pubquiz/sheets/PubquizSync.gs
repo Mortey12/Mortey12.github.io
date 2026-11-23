@@ -16,7 +16,7 @@
 const PQ = {
   project: "quiz-samarbeid",
   apiKey: "AIzaSyB9pQJFv0_uhsWlEfMyibc608uxxDAtpkI", // public web key, same as the app uses
-  defaults: { penaltyFrom: 6, penaltyPer: 5, seasonMode: "placement", bestN: 8 },
+  defaults: { penaltyFrom: 6, penaltyPer: 5, seasonMode: "field", bestN: 13, minNights: 8 },
   refreshHours: 1
 };
 
@@ -150,15 +150,15 @@ function buildTables(data) {
     const list = weeks.filter(w => seasonOf_(w.date) === s);
     return {
       name: s,
-      header: ["Place", "Team", "Season points", "Nights played", "Wins", "Podiums", "Average place", "Best place"]
+      header: ["Place", "Team", "Season points", "Nights played", "Qualified", "Wins", "Podiums", "Average place", "Best place"]
         .concat(list.map(w => w.date.slice(8, 10) + "." + w.date.slice(5, 7))),
       rows: seasonTable_(list, results, teams, cfg)
     };
   });
 
-  const scoring = cfg.seasonMode === "raw"
-    ? "Season points = total score each night"
-    : "Season points = number of teams that night − place + 1";
+  const scoring = cfg.seasonMode === "raw" ? "Season points = total score each night"
+    : cfg.seasonMode === "placement" ? "Season points = number of teams that night − place + 1"
+    : "Season points = 100 × (teams that night − place + 1) ÷ teams that night (winner 100)";
   const info = {
     name: "Info",
     header: ["Pub quiz data", ""],
@@ -167,6 +167,7 @@ function buildTables(data) {
       ["Source", "https://mstene.no/pubquiz"],
       ["Note", "Copied from the app every hour. Don't edit these tabs: changes are overwritten. Enter scores in the app."],
       ["Season scoring", scoring + (Number(cfg.bestN) ? ", best " + cfg.bestN + " nights count" : ", all nights count")],
+      ["To win the season", Number(cfg.minNights) ? "play at least " + cfg.minNights + " nights" : "no minimum"],
       ["Player penalty", cfg.penaltyPer + " points per player over " + cfg.penaltyFrom],
       ["Quiz nights", weeks.length],
       ["Teams", Object.keys(teams).length]
@@ -216,7 +217,10 @@ function weekResults_(week, teams, cfg) {
   }
   rows.sort((a, b) => b.total - a.total);
   rows.forEach((r, i) => (r.place = i > 0 && rows[i - 1].total === r.total ? rows[i - 1].place : i + 1));
-  rows.forEach(r => (r.points = cfg.seasonMode === "raw" ? r.total : rows.length - r.place + 1));
+  const n = rows.length;
+  rows.forEach(r => (r.points = cfg.seasonMode === "raw" ? r.total
+    : cfg.seasonMode === "placement" ? n - r.place + 1
+    : Math.round((1000 * (n - r.place + 1)) / n) / 10)); // share of the field: winner 100
   return rows;
 }
 
@@ -237,7 +241,7 @@ function seasonTable_(list, results, teams, cfg) {
     const places = t.results.map(x => x.place);
     return {
       name: (teams[id] && teams[id].name) || t.name, perWeek: t.perWeek,
-      score: counted.reduce((a, b) => a + b, 0), played: places.length,
+      score: Math.round(counted.reduce((a, b) => a + b, 0) * 10) / 10, played: places.length,
       wins: places.filter(p => p === 1).length, podiums: places.filter(p => p <= 3).length,
       avg: places.reduce((a, b) => a + b, 0) / places.length, best: Math.min.apply(null, places)
     };
@@ -247,7 +251,9 @@ function seasonTable_(list, results, teams, cfg) {
     const p = rows[i - 1];
     r.place = p && p.score === r.score && p.wins === r.wins && p.avg === r.avg ? p.place : i + 1;
   });
-  return rows.map(r => [r.place, r.name, r.score, r.played, r.wins, r.podiums, Math.round(r.avg * 10) / 10, r.best].concat(r.perWeek));
+  const min = Number(cfg.minNights) || 0;
+  return rows.map(r => [r.place, r.name, r.score, r.played, r.played >= min ? "yes" : "no (" + (min - r.played) + " more)",
+    r.wins, r.podiums, Math.round(r.avg * 10) / 10, r.best].concat(r.perWeek));
 }
 
 // Lets the table logic be tested outside Apps Script (ignored inside Google Sheets)

@@ -3,6 +3,7 @@
   import { periods, seasonTable, categoryStats, weekResults, weeksSorted, fmt } from "../lib/calc.js";
   import PeriodPicker from "./PeriodPicker.svelte";
   import Strengths from "./Strengths.svelte";
+  import TeamPin from "./TeamPin.svelte";
 
   let { id } = $props();
   let team = $derived(S.teams[id]);
@@ -72,6 +73,7 @@
       </section>
     </div>
   {/if}
+  <TeamPin {id} />
 {/if}
 
 <style>
