@@ -169,7 +169,7 @@
   let signupLog = $state([]);
   const handling = new Set();
   $effect(() => {
-    if (!S.admin || !api || !S.pinsReady) return; // wait for PINs, so PIN teams are always checked
+    if (!S.admin || !api || !S.hasPinReady) return; // wait for the PIN markers, so PIN teams are always checked
     const weekId = id;
     return api.listenSignups(weekId, async list => {
       const items = Object.entries(list).sort((a, b) => String(a[1].created).localeCompare(String(b[1].created)));
@@ -286,7 +286,7 @@
             {:else}
               <span class="muted">{l.merged ? `→ merged into ${l.merged}` : l.accepted ? "added by you" : l.isNew ? "new team" : l.already ? "updated" : "returning team"}</span>
             {/if}
-            {#each l.similar as h}<button class="small chip" onclick={() => mergeSignup(l, h.id)}>Same as {h.name}?</button>{/each}
+            {#each (S.fullAdmin ? l.similar : []) as h}<button class="small chip" onclick={() => mergeSignup(l, h.id)}>Same as {h.name}?</button>{/each}
           </li>
         {/each}
       </ul>
@@ -370,7 +370,7 @@
       Decimals with comma or dot (7,5). Clear a cell to remove the score.</p>
   </details>
 
-  <p class="small"><button class="danger small" onclick={del}>Delete this quiz night</button></p>
+  {#if S.fullAdmin}<p class="small"><button class="danger small" onclick={del}>Delete this quiz night</button></p>{/if}
 {/if}
 
 <style>

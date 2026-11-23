@@ -3,7 +3,11 @@ import { DEFAULT_CONFIG, DEFAULT_CATEGORIES, weeksSorted, norm, signupLive } fro
 
 export const S = $state({
   ready: false, error: "", teams: {}, weeks: {}, configRaw: {}, access: {},
-  user: null, admin: false, saving: 0, saveError: "",
+  user: null, saving: 0, saveError: "",
+  role: null,        // "admin" | "scorer" | null
+  admin: false,      // may enter scores (admin or score keeper)
+  fullAdmin: false,  // may change settings, access, delete, handle PINs
+  hasPinReady: false,
   hasPin: {},        // public: teamId -> marker, for teams that set a PIN
   pins: {}, pinsReady: false // admins only: teamId -> { hash }
 });
@@ -20,16 +24,16 @@ export async function start() {
   api.listenTeams(v => { S.teams = v; done(); }, fail);
   api.listenWeeks(v => { S.weeks = v; done(); }, fail);
   api.listenConfig(v => { S.configRaw = v; done(); }, fail);
-  api.listenHasPin(v => (S.hasPin = v), () => {});
+  api.listenHasPin(v => { S.hasPin = v; S.hasPinReady = true; }, () => { S.hasPinReady = true; });
   let stopAccess = null, stopPins = null;
-  api.onUser((user, admin) => {
-    S.user = user; S.admin = admin;
+  api.onUser((user, role) => {
+    S.user = user; S.role = role; S.admin = !!role; S.fullAdmin = role === "admin";
+    const admin = S.admin;
     stopAccess?.(); stopAccess = null;
     stopPins?.(); stopPins = null; S.pins = {}; S.pinsReady = false;
     if (admin) {
       stopAccess = api.listenAccess(v => (S.access = v), () => {});
-      // Sign-ups wait for this, so a PIN team is never added without its PIN being checked
-      stopPins = api.listenPins(v => { S.pins = v; S.pinsReady = true; }, () => { S.pinsReady = true; });
+      if (S.fullAdmin) stopPins = api.listenPins(v => { S.pins = v; S.pinsReady = true; }, () => { S.pinsReady = true; });
     }
   });
 }
@@ -112,7 +116,7 @@ export async function processSignup(weekId, sid, s, { force = false } = {}) {
   const members = Math.max(0, Math.min(30, Math.round(Number(s.members) || 0)));
   if (!name) { await api.deleteSignup(sid); return null; }
   let tid = (s.teamId && S.teams[s.teamId]) ? s.teamId : findTeamByName(name);
-  if (tid && S.pins[tid] && s.teamId !== tid && !force) return { sid, tid, name, members, held: true, signup: s };
+  if (tid && S.hasPin[tid] && s.teamId !== tid && !force) return { sid, tid, name, members, held: true, signup: s };
   const isNew = !tid;
   const ops = [];
   if (isNew) {

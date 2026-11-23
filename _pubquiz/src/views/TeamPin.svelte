@@ -46,7 +46,7 @@
     <div class="row">
       <span>🔒 <strong>This team has a PIN.</strong> <span class="muted small">It's asked for when signing up by QR code. Forgot it? Ask the quizmaster.</span></span>
       <span class="spacer"></span>
-      {#if S.admin}<button class="small danger" onclick={reset}>Remove PIN</button>{/if}
+      {#if S.fullAdmin}<button class="small danger" onclick={reset}>Remove PIN</button>{/if}
     </div>
   {:else if !tonight}
     <p class="muted small">🔓 No PIN. Want to stop others from signing up under your team name? You can set a PIN on a quiz night, right after signing up with the QR code.</p>

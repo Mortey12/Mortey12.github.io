@@ -28,13 +28,13 @@
       {#each nav as [path, label]}
         <a href={"#/" + path} class:on={(p[0] || "") === path || (path === "" && p[0] === "week") || (path === "teams" && p[0] === "team")}>{label}</a>
       {/each}
-      {#if S.admin}<a href="#/admin" class:on={p[0] === "admin"}>Admin</a>{/if}
+      {#if S.admin}<a href="#/admin" class:on={p[0] === "admin"}>{S.fullAdmin ? "Admin" : "Access"}</a>{/if}
     </nav>
     <span class="spacer"></span>
     {#if S.saving}<span class="small muted">Saving…</span>{:else if S.saveError}<span class="small err" title={S.saveError}>Not saved</span>{/if}
     {#if isDemo}<span class="tag">Demo data</span>{/if}
     {#if S.user}
-      <span class="small muted who" title={S.user.email}>{S.admin ? "Admin" : "No edit access"}</span>
+      <span class="small muted who" title={S.user.email}>{S.fullAdmin ? "Admin" : S.admin ? "Score keeper" : "No edit access"}</span>
       {#if !isDemo}<button class="ghost small" onclick={() => api.logout()}>Sign out</button>{/if}
     {:else if S.ready || S.error}
       <button class="ghost small" onclick={login}>Quizmaster sign-in</button>

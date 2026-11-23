@@ -99,7 +99,15 @@ service cloud.firestore {
     // Den første e-posten må leggjast inn frå Firebase-konsollen (dokument-id = e-post med små bokstavar).
     // quiz@ og alle <rolle>.quiz@samfunnetibergen.no-kontoar får tilgang automatisk (berre workspace-admin kan lage dei).
     function pubQuizKonto() { return epost().matches('^([a-z0-9._-]+[.])?quiz@samfunnetibergen[.]no$'); }
-    function pubAdmin() { return innlogga() && (pubQuizKonto() || exists(/databases/$(database)/documents/pubTilgang/$(epost()))); }
+    // Two roles in pubTilgang/{email}: role "scorer" (score keeper) or no role / "admin" (full admin).
+    // Score keepers enter scores, create nights, add teams, run QR sign-up and add other score keepers.
+    // Only admins change settings, give admin access, delete nights or teams and handle PINs.
+    function pubTilgangDoc() { return /databases/$(database)/documents/pubTilgang/$(epost()); }
+    function pubScorer() { return innlogga() && (pubQuizKonto() || exists(pubTilgangDoc())); }
+    function pubAdmin() {
+      return innlogga() && (pubQuizKonto()
+        || (exists(pubTilgangDoc()) && get(pubTilgangDoc()).data.get('role', 'admin') == 'admin'));
+    }
 
     // Valfri PIN per lag. Står det teamId i påmeldinga og laget har PIN, må pinHash stemme.
     // Sign-up is open only while the quizmaster has it open AND until about 06:00 the morning
@@ -116,16 +124,23 @@ service cloud.firestore {
     }
 
     match /pubTilgang/{e} {
-      allow read: if innlogga() && (e == epost() || pubAdmin());
-      allow write: if pubAdmin();
+      allow read: if innlogga() && (e == epost() || pubScorer());
+      // Admins add anyone; score keepers can only add score keepers
+      allow create: if request.resource.data.keys().hasOnly(['added', 'role'])
+        && (pubAdmin() || (pubScorer() && request.resource.data.get('role', '') == 'scorer'));
+      allow update: if pubAdmin();
+      // Score keepers can remove score keepers (e.g. a mistyped email), never admins
+      allow delete: if pubAdmin() || (pubScorer() && resource.data.get('role', 'admin') == 'scorer');
     }
     match /pubLag/{id} {
       allow read: if true;
-      allow write: if pubAdmin();
+      allow create, update: if pubScorer();
+      allow delete: if pubAdmin();
     }
     match /pubVeke/{id} {
       allow read: if true;
-      allow write: if pubAdmin();
+      allow create, update: if pubScorer();
+      allow delete: if pubAdmin();
     }
     match /pubConfig/{id} {
       allow read: if true;
@@ -143,7 +158,7 @@ service cloud.firestore {
         && request.resource.data.created == request.time
         && pubSignupLive(request.resource.data.weekId)
         && pubPinOk(request.resource.data);
-      allow read, delete: if pubAdmin();
+      allow read, delete: if pubScorer();
       allow update: if false;
     }
     // PIN-en (som SHA-256): kan berre setjast på ein quizkveld, medan påmeldinga er open og

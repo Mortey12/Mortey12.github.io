@@ -65,7 +65,7 @@
   <form class="row add" onsubmit={add}>
     <input placeholder="New team name" bind:value={newName} />
     <button>Add team</button>
-    <span class="small muted">Same team under two names? Use “Merge” on the misspelt one.</span>
+    {#if S.fullAdmin}<span class="small muted">Same team under two names? Use “Merge” on the misspelt one.</span>{:else}<span class="small muted">Same team under two names? Ask an admin to merge them.</span>{/if}
   </form>
 {/if}
 {#if msg}<p class="small ok">{msg}</p>{/if}
@@ -83,7 +83,7 @@
 
 <div class="panel flush scroll">
   <table>
-    <thead><tr><th>Team</th><th class="num">Nights</th><th>Last played</th>{#if S.admin}<th></th>{/if}</tr></thead>
+    <thead><tr><th>Team</th><th class="num">Nights</th><th>Last played</th>{#if S.fullAdmin}<th></th>{/if}</tr></thead>
     <tbody>
       {#each list as t (t.id)}
         <tr>
@@ -98,7 +98,7 @@
           </td>
           <td class="num">{t.n}</td>
           <td class="small">{t.last}</td>
-          {#if S.admin}
+          {#if S.fullAdmin}
             <td class="row acts">
               <button class="small" onclick={() => { mergeFrom = t.id; mergeQ = ""; scrollTo({ top: 0, behavior: "smooth" }); }}>Merge…</button>
               {#if !usage[t.id]}<button class="small danger" onclick={() => del(t)}>Delete</button>{/if}

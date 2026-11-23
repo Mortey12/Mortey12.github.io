@@ -8,7 +8,8 @@ import { signupLive } from "./calc.js";
 //   pubVeke/{weekId}     { date: "YYYY-MM-DD", title, categories: [{id, name, round, max?}],
 //                          teams: { [teamId]: { members?, adjust?, s: { [catId]: number } } } }
 //   pubConfig/settings   { penaltyFrom, penaltyPer, seasonMode, bestN }
-//   pubTilgang/{email}   presence = may edit (plus quiz@ and any <role>.quiz@samfunnetibergen.no account)
+//   pubTilgang/{email}   { added, role? }  role "scorer" = score keeper; no role = full admin
+//                        (quiz@ and any <role>.quiz@samfunnetibergen.no account are always full admin)
 //   pubPin/{teamId}      { hash, weekId }  optional team PIN, SHA-256 (admins only can read);
 //                        can only be set while that week's sign-up is open and the team is on its list
 //   pubHarPin/{teamId}   { created }  public marker: this team has a PIN
@@ -61,13 +62,15 @@ async function firestoreBackend() {
     kind: "firestore",
     onUser(cb) {
       return onAuthStateChanged(auth, async user => {
-        let admin = false;
+        let role = null; // "admin", "scorer" or null (view only); same logic as firestore.rules
         if (user?.email && user.emailVerified) {
-          // quiz@ and <role>.quiz@samfunnetibergen.no accounts may always edit (same rule as firestore.rules)
-          if (QUIZ_ACCOUNT.test(user.email.toLowerCase())) admin = true;
-          else try { admin = (await getDoc(doc(db, "pubTilgang", user.email.toLowerCase()))).exists(); } catch { admin = false; }
+          if (QUIZ_ACCOUNT.test(user.email.toLowerCase())) role = "admin";
+          else try {
+            const d = await getDoc(doc(db, "pubTilgang", user.email.toLowerCase()));
+            role = !d.exists() ? null : d.data().role === "scorer" ? "scorer" : "admin";
+          } catch { role = null; }
         }
-        cb(user ? { email: user.email, name: user.displayName } : null, admin);
+        cb(user ? { email: user.email, name: user.displayName } : null, role);
       });
     },
     async login() {
@@ -88,7 +91,7 @@ async function firestoreBackend() {
     updateWeek: (id, patch) => updateDoc(doc(db, "pubVeke", id), conv(patch)),
     deleteWeek: id => deleteDoc(doc(db, "pubVeke", id)),
     setConfig: patch => setDoc(doc(db, "pubConfig", "settings"), patch, { merge: true }),
-    addAccess: email => setDoc(doc(db, "pubTilgang", email.toLowerCase()), { added: new Date().toISOString() }),
+    addAccess: (email, role) => setDoc(doc(db, "pubTilgang", email.toLowerCase()), { added: new Date().toISOString(), ...(role === "scorer" ? { role } : {}) }),
     removeAccess: email => deleteDoc(doc(db, "pubTilgang", email)),
     // Team sign-up from the QR code (anyone can create, only admins read/delete)
     addSignup: (weekId, name, members, extra = {}) => addDoc(collection(db, "pubSignup"), { weekId, name, members, ...extra, created: fs.serverTimestamp() }),
@@ -150,7 +153,8 @@ function demoBackend() {
   const col = c => c;
   const api = {
     kind: "demo",
-    onUser(cb) { queueMicrotask(() => cb({ email: "demo@example.com", name: "Demo" }, true)); return () => {}; },
+    // ?demo&role=scorer tries the app as a score keeper
+    onUser(cb) { queueMicrotask(() => cb({ email: "demo@example.com", name: "Demo" }, /role=scorer/.test(location.search) ? "scorer" : "admin")); return () => {}; },
     async login() {}, async logout() {},
     listenTeams: sub("teams"), listenWeeks: sub("weeks"), listenConfig: sub("config"), listenAccess: sub("access"),
     newId: rid,
@@ -162,7 +166,7 @@ function demoBackend() {
     async updateWeek(id, p) { applyPatch(st.weeks[id], p); emit("weeks"); },
     async deleteWeek(id) { delete st.weeks[id]; emit("weeks"); },
     async setConfig(p) { Object.assign(st.config, p); emit("config"); },
-    async addAccess(e) { st.access[e.toLowerCase()] = {}; emit("access"); },
+    async addAccess(e, role) { st.access[e.toLowerCase()] = role === "scorer" ? { role } : {}; emit("access"); },
     async removeAccess(e) { delete st.access[e]; emit("access"); },
     async addSignup(weekId, name, members, extra = {}) {
       const denied = () => Object.assign(new Error("denied"), { code: "permission-denied" });

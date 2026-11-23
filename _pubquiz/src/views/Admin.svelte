@@ -5,6 +5,10 @@
 
   let c = $derived(cfg());
   let email = $state("");
+  let role = $state("scorer");
+  const roleOf = e => (S.access[e]?.role === "scorer" ? "scorer" : "admin");
+  // Score keepers may add and remove score keepers only
+  const canRemove = e => S.fullAdmin || roleOf(e) === "scorer";
   let msg = $state("");
   let busy = $state(false);
 
@@ -13,7 +17,7 @@
     e.preventDefault();
     const v = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(v)) return;
-    await save(() => api.addAccess(v)); email = "";
+    await save(() => api.addAccess(v, S.fullAdmin ? role : "scorer")); email = "";
   }
   async function removeAccess(e) {
     if (e === S.user?.email?.toLowerCase() && !confirm("Remove your own access?")) return;
@@ -40,11 +44,12 @@
 </script>
 
 {#if !S.admin}
-  <p class="muted">Admins only.</p>
+  <p class="muted">Admins and score keepers only.</p>
 {:else}
-  <h1>Admin</h1>
+  <h1>{S.fullAdmin ? "Admin" : "Access"}</h1>
 
   <div class="grid2">
+    {#if S.fullAdmin}
     <section class="panel">
       <h2>Scoring</h2>
       <div class="form">
@@ -62,23 +67,34 @@
       </div>
       <p class="small muted">Changes apply to every week, past ones too, since totals are computed from the raw scores. Set these before the semester starts, so the rules don't change mid-season. With about 20 nights in spring: best 13, at least 8. Autumn has about 16: best 11, at least 6.</p>
     </section>
+    {/if}
 
     <section class="panel">
       <h2>Who can enter scores</h2>
       {#if isDemo}<p class="small muted">Demo mode: access isn't checked.</p>{/if}
-      <p class="small muted"><strong>quiz@samfunnetibergen.no</strong> and every <strong>[role].quiz@samfunnetibergen.no</strong> account can always edit; those don't need to be listed here.</p>
+      <p class="small muted"><strong>quiz@samfunnetibergen.no</strong> and every <strong>[role].quiz@samfunnetibergen.no</strong> account is always an admin; those don't need to be listed here.</p>
+      <p class="small muted"><strong>Score keepers</strong> enter scores, create quiz nights, add teams, run QR sign-up and can add other score keepers. <strong>Admins</strong> can also change the scoring rules, give admin access, delete nights or teams, merge teams and remove PINs.</p>
       <ul class="access">
         {#each Object.keys(S.access).sort() as e}
-          <li class="row"><span>{e}</span><span class="spacer"></span><button class="small ghost danger" onclick={() => removeAccess(e)}>Remove</button></li>
+          <li class="row">
+            <span>{e}</span>
+            <span class="tag small" class:adm={roleOf(e) === "admin"}>{roleOf(e) === "admin" ? "Admin" : "Score keeper"}</span>
+            <span class="spacer"></span>
+            {#if canRemove(e)}<button class="small ghost danger" onclick={() => removeAccess(e)}>Remove</button>{/if}
+          </li>
         {/each}
       </ul>
       <form class="row" onsubmit={addAccess}>
         <input type="email" placeholder="Google account email" bind:value={email} />
-        <button>Give access</button>
+        {#if S.fullAdmin}
+          <select bind:value={role} aria-label="Role"><option value="scorer">Score keeper</option><option value="admin">Admin</option></select>
+        {/if}
+        <button>{S.fullAdmin ? "Give access" : "Add score keeper"}</button>
       </form>
-      <p class="small muted">They sign in with “Quizmaster sign-in” using that Google account. Everyone else can only view.</p>
+      <p class="small muted">They sign in with “Quizmaster sign-in” using that Google account. Everyone else can only view.{S.fullAdmin ? " To change someone's role, remove them and add them again." : ""}</p>
     </section>
 
+    {#if S.fullAdmin}
     <section class="panel">
       <h2>Import the old spreadsheet</h2>
       <p class="small">Adds the quiz nights of {importData.map(w => dayMonth(w.dato)).reverse().join(", ")} 2026 from “SCOREBOARD FOR QUIZ” (Round 1, Round 2, Picture quiz and penalties). Dates that already exist are skipped. 3 Nov isn't included: that sheet has no scores.</p>
@@ -90,6 +106,7 @@
       </div>
       {#if msg}<p class="small">{msg}</p>{/if}
     </section>
+    {/if}
 
     {#if isDemo}
       <section class="panel">
@@ -104,5 +121,7 @@
 <style>
   .form { display: grid; gap: 10px; }
   .form input { width: 5em; }
+  .tag { padding: 0 8px; border-radius: 99px; background: var(--accent-soft); }
+  .tag.adm { background: color-mix(in srgb, var(--gold) 30%, transparent); }
   .access { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 4px; }
 </style>
