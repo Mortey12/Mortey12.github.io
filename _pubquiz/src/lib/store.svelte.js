@@ -8,6 +8,7 @@ export const S = $state({
   admin: false,      // may enter scores (admin or score keeper)
   fullAdmin: false,  // may change settings, access, delete, handle PINs
   hasPinReady: false,
+  screen: {},        // projector screen state (optional feature): { weekId, k, shown }
   hasPin: {},        // public: teamId -> marker, for teams that set a PIN
   pins: {}, pinsReady: false // admins only: teamId -> { hash }
 });
@@ -24,6 +25,7 @@ export async function start() {
   api.listenTeams(v => { S.teams = v; done(); }, fail);
   api.listenWeeks(v => { S.weeks = v; done(); }, fail);
   api.listenConfig(v => { S.configRaw = v; done(); }, fail);
+  api.listenScreen(v => (S.screen = v || {}), () => {});
   api.listenHasPin(v => { S.hasPin = v; S.hasPinReady = true; }, () => { S.hasPinReady = true; });
   let stopAccess = null, stopPins = null;
   api.onUser((user, role) => {

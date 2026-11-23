@@ -1,72 +1,113 @@
+/* Quiz på Kvarteret in Samfunnet i Bergen's design language: warm off-white page, near-black
+   text, DM Sans / DM Mono, pill buttons and hard shadows. The quiz's own colour is the mint
+   from the old banner; it takes the place Samfunnet's red has elsewhere. Red is kept for errors. */
 :root {
-  --bg: #f6f5f1; --panel: #ffffff; --ink: #1c1b19; --muted: #6b6860; --line: #e3e0d8;
-  --accent: #b4441c; --accent-ink: #ffffff; --accent-soft: #f7e4da;
-  --good: #2f7a3d; --bad: #b3261e; --gold: #c99a06; --focus: #2563eb;
-  --row-alt: #faf9f6; --input: #ffffff;
+  --bg: #faf7f2;          /* Samfunnet off-white */
+  --panel: #ffffff;
+  --ink: #241d1b;         /* Samfunnet near-black */
+  --muted: #5f5754;
+  --line: #e6e1da;        /* soft rules inside panels */
+  --edge: #241d1b;        /* outlines */
+  --shadow: #9cc4ad;      /* hard offset shadows in deep mint */
+  --brand: #cfe2d6;       /* the quiz mint (banner) */
+  --brand-strong: #9cc4ad;
+  --accent: #1d6b45;      /* dark mint-green: links, readable on white */
+  --accent-ink: #ffffff;
+  --accent-soft: #e4f0e9; /* pale mint for highlights */
+  --primary: #9cc4ad; --primary-ink: #241d1b;
+  --good: #1d6b45; --bad: #c42b2b; --gold: #a87400; --focus: #1d6b45;
+  --row-alt: #f7f4ee; --input: #ffffff;
+  --head: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #171614; --panel: #201f1c; --ink: #ecebe6; --muted: #a29f96; --line: #34322d;
-    --accent: #e0703f; --accent-ink: #1a0d06; --accent-soft: #3a2419;
-    --good: #6cc47b; --bad: #f28b82; --gold: #e6b93a; --focus: #7aa7ff;
-    --row-alt: #1c1b18; --input: #161513;
+    --bg: #121a16; --panel: #1a241f; --ink: #eef4ef; --muted: #a9bcb0; --line: #2c3a33;
+    --edge: #9cc4ad; --shadow: #050a07; --brand: #2b4336; --brand-strong: #9cc4ad;
+    --accent: #8fd3ad; --accent-ink: #10201a; --accent-soft: #223a2e;
+    --primary: #9cc4ad; --primary-ink: #10201a;
+    --good: #6fd39a; --bad: #ff8a80; --gold: #f0c04a; --focus: #8fd3ad;
+    --row-alt: #1c2c24; --input: #102019;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #171614; --panel: #201f1c; --ink: #ecebe6; --muted: #a29f96; --line: #34322d;
-  --accent: #e0703f; --accent-ink: #1a0d06; --accent-soft: #3a2419;
-  --good: #6cc47b; --bad: #f28b82; --gold: #e6b93a; --focus: #7aa7ff;
-  --row-alt: #1c1b18; --input: #161513;
+  --bg: #121a16; --panel: #1a241f; --ink: #eef4ef; --muted: #a9bcb0; --line: #2c3a33;
+  --edge: #9cc4ad; --shadow: #050a07; --brand: #2b4336; --brand-strong: #9cc4ad;
+  --accent: #8fd3ad; --accent-ink: #10201a; --accent-soft: #223a2e;
+  --primary: #9cc4ad; --primary-ink: #10201a;
+  --good: #6fd39a; --bad: #ff8a80; --gold: #f0c04a; --focus: #8fd3ad;
+  --row-alt: #1c2c24; --input: #102019;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
   background: var(--bg); color: var(--ink);
-  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 15px/1.5 var(--head);
   -webkit-text-size-adjust: 100%;
 }
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
-h1 { font-size: 1.5rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
-h2 { font-size: 1.1rem; margin: 1.5rem 0 .6rem; }
-h3 { font-size: 1rem; margin: 1rem 0 .4rem; }
+a { color: var(--accent); text-decoration: none; font-weight: 500; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Headings: bold uppercase grotesk, like the banner */
+h1 { font: 800 1.7rem/1.1 var(--head); text-transform: uppercase; letter-spacing: .01em; margin: 0 0 .35rem; }
+h2 { font: 800 1.05rem/1.2 var(--head); text-transform: uppercase; letter-spacing: .04em; margin: 1.5rem 0 .7rem; }
+h3 { font: 700 1rem/1.3 var(--head); margin: 1rem 0 .4rem; }
 .muted { color: var(--muted); }
 .small { font-size: .85rem; }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 48px; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px 56px; }
 .wide { max-width: none; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.panel {
+  background: var(--panel); border: 2px solid var(--edge); border-radius: 14px; padding: 16px 18px;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+.panel.flush { padding: 0; overflow: hidden; }
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 
+/* Buttons: pills with a hard shadow that presses in */
 button, .btn {
-  font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
-  padding: 7px 12px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  font: 600 .95rem/1.2 var(--head); border: 2px solid var(--edge); background: var(--panel); color: var(--ink);
+  padding: 7px 15px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 2px 2px 0 var(--shadow); transition: transform .06s, box-shadow .06s;
 }
-button:hover, .btn:hover { border-color: var(--muted); text-decoration: none; }
-button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button:hover, .btn:hover { text-decoration: none; background: var(--accent-soft); }
+button:active, .btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--shadow); }
+button.primary, .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+button.primary:hover, .btn.primary:hover { background: var(--primary); filter: brightness(1.25); }
 button.danger { color: var(--bad); }
-button.ghost { border-color: transparent; background: transparent; }
-button:disabled { opacity: .5; cursor: default; }
-input, select {
-  font: inherit; color: var(--ink); background: var(--input); border: 1px solid var(--line);
-  border-radius: 7px; padding: 7px 9px; min-width: 0;
+button.ghost { border-color: transparent; background: transparent; box-shadow: none; }
+button.ghost:hover { background: var(--accent-soft); }
+button.small, .btn.small { padding: 4px 11px; font-size: .82rem; box-shadow: 1px 1px 0 var(--shadow); }
+button:disabled { opacity: .45; cursor: default; transform: none; box-shadow: none; }
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--input); border: 2px solid var(--line);
+  border-radius: 8px; padding: 7px 10px; min-width: 0;
 }
-input:focus, select:focus, button:focus-visible, a:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+input:hover, select:hover, textarea:hover { border-color: var(--muted); }
+input:focus, select:focus, textarea:focus { border-color: var(--edge); }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--focus); outline-offset: 2px;
+}
+input[type="checkbox"] { accent-color: var(--ink); width: 1.05em; height: 1.05em; }
 label { display: inline-flex; gap: 6px; align-items: center; }
 
 table { border-collapse: collapse; width: 100%; }
-th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
-th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+th, td { padding: 7px 9px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+/* Small labels in DM Mono, as in Samfunnet's design system */
+th { font: 500 .72rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); white-space: nowrap; }
 tbody tr:nth-child(even) { background: var(--row-alt); }
 .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.place { font-weight: 700; width: 2.5em; }
+.place { font-weight: 800; width: 2.5em; }
 .p1 { color: var(--gold); }
-.tag { display: inline-block; font-size: .75rem; padding: 1px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--ink); }
+.tag {
+  display: inline-block; font: 500 .72rem/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em;
+  padding: 1px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--ink); border: 1.5px solid var(--edge);
+}
 .err { color: var(--bad); }
 .ok { color: var(--good); }
-kbd { font: .8em ui-monospace, monospace; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--panel); }
+kbd { font: .8em var(--mono); border: 1.5px solid var(--edge); border-bottom-width: 3px; border-radius: 5px; padding: 0 5px; background: var(--panel); }
+details > summary { cursor: pointer; }

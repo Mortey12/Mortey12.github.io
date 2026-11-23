@@ -10,6 +10,8 @@ import { signupLive } from "./calc.js";
 //   pubConfig/settings   { penaltyFrom, penaltyPer, seasonMode, bestN }
 //   pubTilgang/{email}   { added, role? }  role "scorer" = score keeper; no role = full admin
 //                        (quiz@ and any <role>.quiz@samfunnetibergen.no account are always full admin)
+//   pubQuestions/{weekId} { cats: { catId: [{ q, a, img }] } }  projector questions, score keepers only
+//   pubScreen/live       { weekId, k, shown }  what the projector screen shows right now
 //   pubPin/{teamId}      { hash, weekId }  optional team PIN, SHA-256 (admins only can read);
 //                        can only be set while that week's sign-up is open and the team is on its list
 //   pubHarPin/{teamId}   { created }  public marker: this team has a PIN
@@ -101,6 +103,11 @@ async function firestoreBackend() {
       cb(o);
     }, err),
     deleteSignup: id => deleteDoc(doc(db, "pubSignup", id)),
+    // Optional projector screen: questions per night (score keepers only) and the live screen state
+    listenQuestions: (weekId, cb, err) => onSnapshot(doc(db, "pubQuestions", weekId), d => cb(d.exists() ? d.data() : {}), err),
+    setQuestions: (weekId, data) => setDoc(doc(db, "pubQuestions", weekId), data),
+    listenScreen: (cb, err) => onSnapshot(doc(db, "pubScreen", "live"), d => cb(d.exists() ? d.data() : {}), err),
+    setScreen: data => setDoc(doc(db, "pubScreen", "live"), data),
     // Optional team PIN: anyone may set one on a team that has none; only admins read or remove it
     listenHasPin: (cb, err) => listen("pubHarPin", cb, err),
     listenPins: (cb, err) => listen("pubPin", cb, err),
@@ -130,12 +137,12 @@ function demoBackend() {
   let st;
   try { st = JSON.parse(localStorage.getItem(KEY)); } catch { st = null; }
   st ||= { teams: {}, weeks: {}, config: {}, access: { "demo@example.com": {} } };
-  st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {};
-  const subs = { teams: [], weeks: [], config: [], access: [], signups: [], pins: [], hasPin: [] };
+  st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; st.questions ||= {}; st.screen ||= {};
+  const subs = { teams: [], weeks: [], config: [], access: [], signups: [], pins: [], hasPin: [], questions: [], screen: [] };
   // Keep several demo tabs in sync (e.g. a "phone" tab signing up and a "laptop" tab entering scores)
   addEventListener("storage", e => {
     if (e.key !== KEY || !e.newValue) return;
-    try { st = JSON.parse(e.newValue); st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; } catch { return; }
+    try { st = JSON.parse(e.newValue); st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; st.questions ||= {}; st.screen ||= {}; } catch { return; }
     for (const k of Object.keys(subs)) subs[k].forEach(cb => cb(structuredClone(st[k])));
   });
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
@@ -174,6 +181,10 @@ function demoBackend() {
       if (extra.teamId && st.pins[extra.teamId] && st.pins[extra.teamId].hash !== extra.pinHash) throw denied(); // same check as the rules
       st.signups[rid()] = { weekId, name, members, ...extra, created: new Date().toISOString() }; emit("signups");
     },
+    listenQuestions: (weekId, cb) => sub("questions")(v => cb(v[weekId] || {})),
+    async setQuestions(weekId, data) { st.questions[weekId] = structuredClone(data); emit("questions"); },
+    listenScreen: sub("screen"),
+    async setScreen(data) { st.screen = structuredClone(data); emit("screen"); },
     listenHasPin: sub("hasPin"), listenPins: sub("pins"),
     async setPin(teamId, hash, weekId) {
       const w = st.weeks[weekId]; // same checks as the rules

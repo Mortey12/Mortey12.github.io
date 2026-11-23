@@ -151,13 +151,13 @@
   .top label { font-weight: 600; display: flex; gap: 8px; align-items: center; }
   .count { font-size: 1.05rem; }
   .bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
-  .bar div { height: 100%; background: var(--good); transition: width .3s; }
+  .bar div { height: 100%; background: var(--brand-strong); transition: width .3s; }
   .search { font-size: 18px; padding: 10px 12px; width: 100%; }
   .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 50vh; overflow-y: auto; }
   .list button { width: 100%; justify-content: flex-start; text-align: left; padding: 8px 12px; }
-  .list button.first { border-color: var(--accent); background: var(--accent-soft); }
+  .list button.first { background: var(--brand); }
   .list button.done { color: var(--muted); }
-  .card { display: grid; gap: 8px; border: 2px solid var(--accent); border-radius: 10px; padding: 10px 12px; }
+  .card { display: grid; gap: 8px; border: 2px solid var(--edge); border-radius: 14px; padding: 12px 14px; background: var(--accent-soft); box-shadow: 4px 4px 0 var(--shadow); }
   .tname { font-size: 1.2rem; }
   .fields { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
   .fields label { display: grid; gap: 2px; }

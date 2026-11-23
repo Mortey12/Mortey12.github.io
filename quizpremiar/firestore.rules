@@ -175,6 +175,15 @@ service cloud.firestore {
       allow read, delete: if pubAdmin();
       allow update: if false;
     }
+    // Optional projector screen. Questions and answers are readable only by score keepers and
+    // admins (never public before the quiz). The live screen state only holds which slide is shown.
+    match /pubQuestions/{id} {
+      allow read, write: if pubScorer();
+    }
+    match /pubScreen/{id} {
+      allow read: if true;
+      allow write: if pubScorer() && id == 'live';
+    }
     // Offentleg merke: «dette laget har PIN», så påmeldinga veit når ho skal spørje
     match /pubHarPin/{id} {
       allow read: if true;

@@ -73,7 +73,7 @@
   section { margin-bottom: 12px; }
   section h2 { margin-top: 0; }
   ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
-  .formula { font-family: ui-monospace, monospace; background: var(--accent-soft); padding: 6px 10px; border-radius: 6px; display: inline-block; }
+  .formula { font-family: var(--mono); background: var(--accent-soft); padding: 6px 10px; border-radius: 6px; display: inline-block; }
   .ex { width: auto; margin-top: 6px; }
   .ex caption { text-align: left; caption-side: top; padding-bottom: 4px; }
 </style>

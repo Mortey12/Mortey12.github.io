@@ -229,6 +229,7 @@
       </div>
     </div>
     <span class="spacer"></span>
+    {#if c.screen}<a class="btn" href={"#/week/" + id + "/projector"}>Projector</a>{/if}
     <a class="btn primary" href={"#/week/" + id}>See results</a>
   </div>
 
@@ -379,7 +380,7 @@
   .modes { margin: 0 0 10px; }
   .jump { position: relative; }
   .jump input { width: 230px; }
-  .pop { position: absolute; z-index: 10; list-style: none; margin: 4px 0 0; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 100%; box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
+  .pop { position: absolute; z-index: 10; list-style: none; margin: 4px 0 0; padding: 4px; background: var(--panel); border: 2px solid var(--edge); border-radius: 10px; min-width: 100%; box-shadow: 4px 4px 0 var(--shadow); }
   .pop.up { bottom: 100%; margin-bottom: 4px; }
   .pop button { width: 100%; justify-content: flex-start; border: 0; text-align: left; }
   .pop button.sel { background: var(--accent-soft); }

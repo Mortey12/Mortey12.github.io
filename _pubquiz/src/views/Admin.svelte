@@ -67,6 +67,12 @@
       </div>
       <p class="small muted">Changes apply to every week, past ones too, since totals are computed from the raw scores. Set these before the semester starts, so the rules don't change mid-season. With about 20 nights in spring: best 13, at least 8. Autumn has about 16: best 11, at least 6.</p>
     </section>
+
+    <section class="panel">
+      <h2>Projector screen (optional)</h2>
+      <label class="row"><input type="checkbox" checked={!!c.screen} onchange={e => save(() => api.setConfig({ screen: e.target.checked }))} /> Use a projector screen</label>
+      <p class="small muted">Adds a “Projector” button on the score entry page. From there you can type in each night's questions and answers, then run a full-screen page on a projector: welcome slide with the QR code, questions, answers, a results reveal from last place up, and the season table. Questions are only visible to score keepers and admins. Leave this off if you read the questions out; nothing else changes.</p>
+    </section>
     {/if}
 
     <section class="panel">
