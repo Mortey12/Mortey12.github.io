@@ -62,7 +62,7 @@
 
   <section class="panel">
     <h2>Team PIN (optional)</h2>
-    <p>On your team's page you can set a PIN. After that, signing up under your team name needs the PIN, so nobody else can sign up as you. Forgot it? Ask the quizmaster.</p>
+    <p>On a quiz night, right after signing up with the QR code, you can set a PIN for your team. After that, signing up under your team name needs the PIN, so nobody else can sign up as you. Forgot it? Ask the quizmaster.</p>
   </section>
 
   <p class="small muted">The quizmaster has the final say on answers and scores. Spotted a mistake in your score? Tell the quizmaster on the night.</p>

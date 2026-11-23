@@ -1,6 +1,7 @@
 <script>
   import { S, api, cfg, openWeek, findTeamByName, pinHash } from "../lib/store.svelte.js";
   import { matchTeams } from "../lib/calc.js";
+  import TeamPin from "./TeamPin.svelte";
 
   const get = (k, d) => { try { return localStorage.getItem("pq-" + k) ?? d; } catch { return d; } };
   const put = (k, v) => { try { localStorage.setItem("pq-" + k, v); } catch {} };
@@ -14,6 +15,8 @@
   let done = $state(null);
 
   let existing = $derived(name.trim() ? findTeamByName(name) : null);
+  // After signing up: the team's id (a new team gets one once the quizmaster's screen adds it)
+  let doneTid = $derived(done ? done.tid || findTeamByName(done.name) : null);
   let tonight = $derived(existing && week?.teams?.[existing]);
   // Only teams that set a PIN on their team page are asked for it
   let needsPin = $derived(!!(existing && S.hasPin[existing]));
@@ -57,7 +60,12 @@
       <h1>You're in!</h1>
       <p><strong>{done.name}</strong> · {members} {members === 1 ? "player" : "players"}</p>
       <p class="muted small">Write the same team name on your answer sheets. Good luck!</p>
-      {#if done.tid}<p><a href={"#/team/" + done.tid}>See your team's stats{S.hasPin[done.tid] ? "" : " or set a PIN"} →</a></p>{/if}
+      {#if doneTid}<p><a href={"#/team/" + doneTid}>See your team's stats →</a></p>{/if}
+      {#if doneTid && week?.teams?.[doneTid]}
+        <div class="pinbox"><TeamPin id={doneTid} /></div>
+      {:else if !doneTid || !S.hasPin[doneTid]}
+        <p class="small muted">Want a team PIN, so nobody else can sign up as you? The option appears here in a moment, once you're on tonight's list.</p>
+      {/if}
       <button onclick={() => (done = null)}>Change or sign up another team</button>
     </div>
   {:else}
@@ -115,4 +123,5 @@
   .go { justify-content: center; padding: 12px; font-size: 1.05rem; margin-top: 8px; }
   .done { text-align: center; display: grid; gap: 4px; justify-items: center; }
   .big { font-size: 2.5rem; }
+  .pinbox { width: 100%; text-align: left; }
 </style>

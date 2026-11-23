@@ -139,12 +139,16 @@ service cloud.firestore {
       allow read, delete: if pubAdmin();
       allow update: if false;
     }
-    // PIN-en (som SHA-256): kven som helst kan setje PIN på eit lag som ikkje har det,
-    // saman med merket i pubHarPin. Berre admin kan lese hashen og fjerne PIN-en.
+    // PIN-en (som SHA-256): kan berre setjast på ein quizkveld, medan påmeldinga er open og
+    // laget står på lista for kvelden (weekId), saman med merket i pubHarPin.
+    // Berre admin kan lese hashen og fjerne PIN-en.
     match /pubPin/{id} {
       allow create: if exists(/databases/$(database)/documents/pubLag/$(id))
-        && request.resource.data.keys().hasOnly(['hash'])
+        && request.resource.data.keys().hasOnly(['hash', 'weekId'])
         && request.resource.data.hash is string && request.resource.data.hash.size() == 64
+        && request.resource.data.weekId is string
+        && get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('signupOpen', false) == true
+        && id in get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('teams', {})
         && existsAfter(/databases/$(database)/documents/pubHarPin/$(id));
       allow read, delete: if pubAdmin();
       allow update: if false;

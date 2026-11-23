@@ -7,7 +7,8 @@
 //                          teams: { [teamId]: { members?, adjust?, s: { [catId]: number } } } }
 //   pubConfig/settings   { penaltyFrom, penaltyPer, seasonMode, bestN }
 //   pubTilgang/{email}   presence = may edit (plus quiz@ and any <role>.quiz@samfunnetibergen.no account)
-//   pubPin/{teamId}      { hash }  optional team PIN, SHA-256 (admins only can read)
+//   pubPin/{teamId}      { hash, weekId }  optional team PIN, SHA-256 (admins only can read);
+//                        can only be set while that week's sign-up is open and the team is on its list
 //   pubHarPin/{teamId}   { created }  public marker: this team has a PIN
 //   pubSignup/{id}       { weekId, name, members, created, teamId?, pinHash? }
 
@@ -98,9 +99,9 @@ async function firestoreBackend() {
     // Optional team PIN: anyone may set one on a team that has none; only admins read or remove it
     listenHasPin: (cb, err) => listen("pubHarPin", cb, err),
     listenPins: (cb, err) => listen("pubPin", cb, err),
-    async setPin(teamId, hash) {
+    async setPin(teamId, hash, weekId) {
       const b = writeBatch(db);
-      b.set(doc(db, "pubPin", teamId), { hash });
+      b.set(doc(db, "pubPin", teamId), { hash, weekId });
       b.set(doc(db, "pubHarPin", teamId), { created: fs.serverTimestamp() });
       await b.commit();
     },
@@ -168,9 +169,10 @@ function demoBackend() {
       st.signups[rid()] = { weekId, name, members, ...extra, created: new Date().toISOString() }; emit("signups");
     },
     listenHasPin: sub("hasPin"), listenPins: sub("pins"),
-    async setPin(teamId, hash) {
-      if (!st.teams[teamId] || st.pins[teamId]) throw Object.assign(new Error("denied"), { code: "permission-denied" });
-      st.pins[teamId] = { hash }; st.hasPin[teamId] = { created: new Date().toISOString() };
+    async setPin(teamId, hash, weekId) {
+      const w = st.weeks[weekId]; // same checks as the rules
+      if (!st.teams[teamId] || st.pins[teamId] || !w?.signupOpen || !w.teams?.[teamId]) throw Object.assign(new Error("denied"), { code: "permission-denied" });
+      st.pins[teamId] = { hash, weekId }; st.hasPin[teamId] = { created: new Date().toISOString() };
       emit("pins"); emit("hasPin");
     },
     listenSignups(weekId, cb) {

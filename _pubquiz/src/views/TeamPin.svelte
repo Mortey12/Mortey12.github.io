@@ -1,7 +1,11 @@
 <script>
-  import { S, api, save, pinHash, validPin, removePin } from "../lib/store.svelte.js";
+  import { S, api, save, pinHash, validPin, removePin, openWeek } from "../lib/store.svelte.js";
 
   let { id } = $props();
+  // A PIN can only be set on a quiz night: sign-up open and the team on tonight's list
+  // (the Firestore rules check the same), so nobody can lock another team's name from home.
+  let week = $derived(openWeek());
+  let tonight = $derived(!!week?.teams?.[id]);
   const put = (k, v) => { try { localStorage.setItem("pq-" + k, v); } catch {} };
 
   let has = $derived(!!S.hasPin[id]);
@@ -19,13 +23,13 @@
     if (pin.trim() !== pin2.trim()) { err = "The two PINs don't match."; return; }
     busy = true;
     try {
-      await api.setPin(id, await pinHash(id, pin));
+      await api.setPin(id, await pinHash(id, pin), week.id);
       put("pin-" + id, pin.trim()); // so this phone fills it in at sign-up
       msg = "PIN set. You'll be asked for it when you sign up by QR code. It's saved on this phone.";
       pin = pin2 = ""; open = false;
     } catch (e2) {
       err = e2?.code === "permission-denied"
-        ? "Couldn't set the PIN. Someone may have set one just now; ask the quizmaster."
+        ? "Couldn't set the PIN. Sign-up may have just closed, or someone set one just now; ask the quizmaster."
         : "Couldn't save. Check your connection and try again.";
     } finally { busy = false; }
   }
@@ -44,6 +48,8 @@
       <span class="spacer"></span>
       {#if S.admin}<button class="small danger" onclick={reset}>Remove PIN</button>{/if}
     </div>
+  {:else if !tonight}
+    <p class="muted small">🔓 No PIN. Want to stop others from signing up under your team name? You can set a PIN on a quiz night, right after signing up with the QR code.</p>
   {:else if !open}
     <div class="row">
       <span class="muted small">🔓 No PIN. Want to stop others from signing up under your team name?</span>
