@@ -1,5 +1,5 @@
 <script>
-  // Rask retting: vel runde og lag, kryss av full / annet / halv per spørsmål, lagre.
+  // Rask retting: vel runde og lag, kryss av full / halv / feil per spørsmål, lagre.
   // Summen går inn i same felt som tabellen i «Lag og poeng» (etneLag.poeng.<kategori>), så poengtavla og
   // resten av quizen verkar som før. Avkryssinga per spørsmål ligg i etneLag.rett.<kategori> og gir statistikken.
   // Poeng per spørsmål ligg i etne/rett (delt mellom dei som rettar).
@@ -33,7 +33,7 @@
   function cfgFor(kobj, n){
     const lagra = cfgDoc[kobj?.id] || [];
     const std = kobj?.maks ? num(kobj.maks) / n : 1;
-    return Array.from({ length: n }, (_, i) => lagra[i] ? { full: num(lagra[i].full), annet: num(lagra[i].annet) } : { full: std, annet: std * 0.75 });
+    return Array.from({ length: n }, (_, i) => lagra[i] ? { full: num(lagra[i].full), annet: num(lagra[i].annet), summar: lagra[i].summar || [] } : { full: std, annet: std * 0.75, summar: [] });
   }
   const spm = $derived(spmFor(katId));
   const cfg = $derived(cfgFor(k, spm.length));
@@ -58,7 +58,7 @@
     if (m.m === "delar") return (delar || []).reduce((s, d, j) => s + num(d.p) * delV(m, j), 0);
     return m.m === "full" ? c.full : m.m === "annet" ? c.annet : m.m === "halv" ? c.full / 2 : m.m === "kvart" ? c.full / 4 : m.m === "eigen" ? num(m.c) : 0;
   }
-  // Eigne faste summar for denne runda (t.d. 1,5 og 2). Blir knappar på kvart spørsmål og tastane 5–9.
+  // Eigne faste summar for denne runda . Blir knappar på kvart spørsmål og tastane 3–9.
   let ekstraDemo = $state({});
   const ekstra = $derived((demo ? ekstraDemo : live.rettEkstra || {})[katId] || []);
   const sum = $derived(marks.reduce((s, _, i) => s + verdi(i), 0) + bonusSum);
@@ -125,9 +125,12 @@
   const erSum = (i, v) => marks[i]?.m === "eigen" && num(marks[i].c) === num(v);
   // Alle spørsmål som ikkje er kryssa av, blir feil
   function restenFeil(){ marks.forEach(m => { if (!m.m) { m.m = "feil"; m.c = ""; } }); }
+  // Alle tal du skriv blir knappar, i den rekkjefølgja du skriv dei
+  const lesSummar = tekst => String(tekst).split(/[;\s]+/).filter(s => s.trim() && !isNaN(parseFloat(s.replace(",", ".")))).map(s => num(s));
+  // Summane på eit spørsmål: dei for heile runda, så dei som berre gjeld dette spørsmålet
+  const summarFor = i => [...ekstra, ...(cfg[i]?.summar || []).filter(v => !ekstra.includes(v))];
   async function skrivEkstra(tekst){
-    // Alle tal du skriv blir knappar, i den rekkjefølgja du skriv dei
-    const arr = String(tekst).split(/[;\s]+/).filter(s => s.trim() && !isNaN(parseFloat(s.replace(",", ".")))).map(s => num(s));
+    const arr = lesSummar(tekst);
     if (demo) { ekstraDemo = { ...ekstraDemo, [katId]: arr }; return; }
     try { await setDoc(rettDoc(), { ekstra: { [katId]: arr } }, { merge: true }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
   }
@@ -174,7 +177,7 @@
   }
 
   async function skrivCfg(i, felt, v){
-    const arr = cfg.map(c => ({ ...c })); arr[i][felt] = num(v);
+    const arr = cfg.map(c => ({ ...c, summar: [...c.summar] })); arr[i][felt] = felt === "summar" ? lesSummar(v) : num(v);
     if (demo) { cfgDoc = { ...cfgDoc, [katId]: arr }; return; }
     try { await setDoc(rettDoc(), { cfg: { [katId]: arr } }, { merge: true }); } catch (e) { melding("Ikkje lagra: " + feiltekst(e), true); }
   }
@@ -237,9 +240,9 @@
       if (e.key === "a" || e.key === "A") { e.preventDefault(); alleDelar(aktiv); return; }
       if (e.key === "n" || e.key === "N") { e.preventDefault(); aktiv = Math.min(marks.length - 1, aktiv + 1); return; }
     }
-    const kart = { 1: "full", 2: "annet", 3: "halv" };
+    const kart = { 1: "full", 2: "halv" };
     if (!delar && kart[e.key]) { e.preventDefault(); marks[aktiv].m = kart[e.key]; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
-    else if (!delar && /^[5-9]$/.test(e.key) && ekstra[Number(e.key) - 5] !== undefined) { e.preventDefault(); marks[aktiv].m = "eigen"; marks[aktiv].c = String(ekstra[Number(e.key) - 5]).replace(".", ","); aktiv = Math.min(marks.length - 1, aktiv + 1); }
+    else if (!delar && /^[3-9]$/.test(e.key) && summarFor(aktiv)[Number(e.key) - 3] !== undefined) { e.preventDefault(); marks[aktiv].m = "eigen"; marks[aktiv].c = String(summarFor(aktiv)[Number(e.key) - 3]).replace(".", ","); aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if ([" ", "0", "x", "X", "f", "F"].includes(e.key)) { e.preventDefault(); marks[aktiv].m = "feil"; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if (e.key === "ArrowDown") { e.preventDefault(); aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if (e.key === "ArrowUp") { e.preventDefault(); aktiv = Math.max(0, aktiv - 1); }
@@ -296,7 +299,7 @@
       {#if visPoeng}
         <div class="cfgboks">
           <h4>Delar per svar</h4>
-          <p class="dempa liten">Til dømes musikk: Artist 0,5 · Låt 0,5 · Film 0,5. Når du rettar, trykkjer du på delane laget hadde rett – to gonger gir halv del. Poenga kan vere kva tal som helst. Utan delar blir det Full / Annet / Halv.</p>
+          <p class="dempa liten">Til dømes musikk: Artist 0,5 · Låt 0,5 · Film 0,5. Når du rettar, trykkjer du på delane laget hadde rett – to gonger gir halv del. Poenga kan vere kva tal som helst. Bruk delar når eit svar har fleire ting som kan vere rett. Utan delar blir det Full / Halv / Feil.</p>
           {#each delar || [] as d, j}
             <div class="delrad">
               <span class="delnr">{j + 1}</span>
@@ -309,7 +312,7 @@
           <button class="btn liten" type="button" onclick={leggTilDel}>+ Legg til del</button>
 
           <h4>Faste summar</h4>
-          <p class="dempa liten">Knappar med akkurat dei poenga du vil, på kvart spørsmål. Skriv så mange du vil, skil med mellomrom.{#if !delar} Dei fem første får tastane 5–9.{/if} Andre tal skriv du rett i feltet «Anna» på spørsmålet.</p>
+          <p class="dempa liten">Knappar med akkurat dei poenga du vil, på alle spørsmåla i runda. Skriv så mange du vil, skil med mellomrom. Summar som berre gjeld eitt spørsmål, legg du inn under «Per spørsmål» lenger ned. Andre tal skriv du rett i feltet «Anna» på spørsmålet.</p>
           <input class="inp" inputmode="decimal" aria-label="Faste summar" value={ekstra.map(f2).join(" ")} onchange={e => skrivEkstra(e.target.value)} placeholder="Skriv summane dine" style="max-width:260px;margin-bottom:6px">
 
           <h4>Bonus for runda</h4>
@@ -330,20 +333,16 @@
             {#if k && num(k.maks) !== Math.round(maks * 100) / 100}· står som {f2(k.maks)} i Oppsett <button class="btn liten" type="button" onclick={settMaks}>Bruk {f2(maks)}</button>{/if}
           </p>
 
-          {#if !delar}
-            <details class="avansert">
-              <summary>Avansert: poeng per spørsmål</summary>
-              <p class="dempa liten">Halv er alltid halvparten av full.</p>
-              <div class="cfg">
-                <span></span><b>Full</b><b>Annet</b>
-                {#each spm as _, i}
-                  <span>Spm {i + 1}</span>
-                  <input class="inp" inputmode="decimal" aria-label="Full poeng spørsmål {i + 1}" value={f2(cfg[i].full)} onchange={e => skrivCfg(i, "full", e.target.value)}>
-                  <input class="inp" inputmode="decimal" aria-label="Annet-poeng spørsmål {i + 1}" value={f2(cfg[i].annet)} onchange={e => skrivCfg(i, "annet", e.target.value)}>
-                {/each}
-              </div>
-            </details>
-          {/if}
+          <h4>Per spørsmål</h4>
+          <p class="dempa liten">{#if !delar}Full poeng for kvart spørsmål (halv er halvparten), og {/if}faste summar som berre gjeld det spørsmålet. Skil med mellomrom.</p>
+          <div class="cfg" class:utanfull={delar}>
+            <span></span>{#if !delar}<b>Full</b>{/if}<b>Faste summar</b>
+            {#each spm as _, i}
+              <span>Spm {i + 1}</span>
+              {#if !delar}<input class="inp" inputmode="decimal" aria-label="Full poeng spørsmål {i + 1}" value={f2(cfg[i].full)} onchange={e => skrivCfg(i, "full", e.target.value)}>{/if}
+              <input class="inp" inputmode="decimal" aria-label="Faste summar spørsmål {i + 1}" value={cfg[i].summar.map(f2).join(" ")} onchange={e => skrivCfg(i, "summar", e.target.value)}>
+            {/each}
+          </div>
         </div>
       {/if}
       {#if lag}
@@ -356,19 +355,18 @@
                 <div class="valg">
                   {#each delar as d, j}{@const v = delV(marks[i], j)}<button type="button" class="o del" class:halv={v > 0 && v < 1} aria-pressed={v > 0} title="Trykk igjen for halv, ein gong til for av" onclick={() => del(i, j)}><small>{d.namn}{v > 0 && v < 1 ? " ½" : ""}</small><b>{f2(num(d.p) * (v || 1))}</b></button>{/each}
                   <button type="button" class="o full" aria-pressed={marks[i]?.m === "delar" && delar.every((_, j) => delV(marks[i], j) === 1)} onclick={() => alleDelar(i)}><small>Alt</small><b>{f2(perSvar)}</b></button>
-                  {#each ekstra as v}<button type="button" class="o sum" aria-pressed={erSum(i, v)} onclick={() => settSum(i, v)}><small>Sum</small><b>{f2(v)}</b></button>{/each}
+                  {#each summarFor(i) as v}<button type="button" class="o sum" aria-pressed={erSum(i, v)} onclick={() => settSum(i, v)}><small>Sum</small><b>{f2(v)}</b></button>{/each}
                   <button type="button" class="o feil" aria-pressed={marks[i]?.m === "feil"} onclick={() => sett(i, "feil")}><small>Feil</small><b>✗</b></button>
                 </div>
               {:else}
               <div class="valg">
                 <button type="button" class="o full" aria-pressed={marks[i]?.m === "full"} onclick={() => sett(i, "full")}><small>Full</small><b>{f2(cfg[i].full)}</b></button>
-                <button type="button" class="o annet" aria-pressed={marks[i]?.m === "annet"} onclick={() => sett(i, "annet")}><small>Annet</small><b>{f2(cfg[i].annet)}</b></button>
                 <button type="button" class="o halv" aria-pressed={marks[i]?.m === "halv"} onclick={() => sett(i, "halv")}><small>Halv</small><b>{f2(cfg[i].full / 2)}</b></button>
-                {#each ekstra as v}<button type="button" class="o sum" aria-pressed={erSum(i, v)} onclick={() => settSum(i, v)}><small>Sum</small><b>{f2(v)}</b></button>{/each}
+                {#each summarFor(i) as v}{@const n = summarFor(i).indexOf(v)}<button type="button" class="o sum" aria-pressed={erSum(i, v)} onclick={() => settSum(i, v)}><small>Sum{n < 7 ? " · " + (n + 3) : ""}</small><b>{f2(v)}</b></button>{/each}
                 <button type="button" class="o feil" aria-pressed={marks[i]?.m === "feil"} onclick={() => sett(i, "feil")}><small>Feil</small><b>✗</b></button>
               </div>
               {/if}
-              <input class="inp eigen" class:paa={marks[i]?.m === "eigen" && !ekstra.some(v => erSum(i, v))} inputmode="decimal" placeholder="Anna" aria-label="Eigen poengsum spørsmål {i + 1}" value={marks[i]?.m === "eigen" && !ekstra.some(v => erSum(i, v)) ? marks[i].c : ""} oninput={e => eigen(i, e.target.value)} onkeydown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); aktiv = Math.min(marks.length - 1, i + 1); } }}>
+              <input class="inp eigen" class:paa={marks[i]?.m === "eigen" && !summarFor(i).some(v => erSum(i, v))} inputmode="decimal" placeholder="Anna" aria-label="Eigen poengsum spørsmål {i + 1}" value={marks[i]?.m === "eigen" && !summarFor(i).some(v => erSum(i, v)) ? marks[i].c : ""} oninput={e => eigen(i, e.target.value)} onkeydown={e => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); aktiv = Math.min(marks.length - 1, i + 1); } }}>
             </div>
           {/each}
         </div>
@@ -385,7 +383,7 @@
         {#if delar}
           <p class="dempa tastar">{#each delar as d, j}{j ? " · " : ""}<kbd>{j + 1}</kbd> {d.namn}{/each} · (to gonger = halv) · <kbd>A</kbd> alt rett · <kbd>Mellomrom</kbd> eller <kbd>0</kbd> feil · <kbd>N</kbd> eller <kbd>↓</kbd> neste spørsmål · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
         {:else}
-        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> annet · <kbd>3</kbd> halv{#each ekstra as v, j}{" · "}<kbd>{j + 5}</kbd> {f2(v)}{/each} · <kbd>Mellomrom</kbd> eller <kbd>0</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
+        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> halv · <kbd>3</kbd>–<kbd>9</kbd> faste summar (talet står på knappen) · <kbd>Mellomrom</kbd> eller <kbd>0</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
         {/if}
       {:else}
         <p class="dempa" style="margin:6px 0 0">Vel eit lag for å rette.</p>
@@ -406,11 +404,11 @@
         <div class="stat">
           {#each stat.rader as r, i}
             <span>Spm {i + 1}</span>
-            <span class="stolpe" title="{f2(r.f)} % full, {f2(r.a)} % annet, {f2(r.h)} % halv"><i class="f" style="width:{r.f}%"></i><i class="a" style="width:{r.a}%"></i><i class="h" style="width:{r.h}%"></i></span>
+            <span class="stolpe" title="{f2(r.f)} % full, {f2(r.a)} % anna sum, {f2(r.h)} % halv"><i class="f" style="width:{r.f}%"></i><i class="a" style="width:{r.a}%"></i><i class="h" style="width:{r.h}%"></i></span>
             <b>{r.pst} %</b>
           {/each}
         </div>
-        <p class="dempa lg"><span><i class="f"></i>Full</span><span><i class="a"></i>Annet</span><span><i class="h"></i>Halv</span><span>Tom = feil</span></p>
+        <p class="dempa lg"><span><i class="f"></i>Full</span><span><i class="a"></i>Anna sum</span><span><i class="h"></i>Halv</span><span>Tom = feil</span></p>
       {:else}
         <p class="dempa" style="margin:6px 0 0">Ingen retta lag i denne runda enno.</p>
       {/if}
@@ -479,7 +477,7 @@
   .jokerknapp[aria-pressed="true"]{background:#FFF4D6;border-color:var(--p-gull);color:#7A5410}
   .lenke{border:0;background:none;color:var(--p-gran);font-weight:700;text-decoration:underline;cursor:pointer;min-height:40px;padding:0 6px}
   .cfgboks{margin:10px 0;padding:10px;border:1.5px dashed var(--p-linje);border-radius:10px}
-  .cfg{display:grid;grid-template-columns:56px 1fr 1fr;gap:6px 8px;align-items:center;font-size:14px}
+  .cfg{display:grid;grid-template-columns:56px 90px minmax(0,1fr);max-width:420px;gap:6px 8px;align-items:center;font-size:14px}
   .cfg b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--p-dempa)}
   .spm{display:flex;flex-direction:column;gap:4px;margin-top:8px}
   .q{display:grid;grid-template-columns:minmax(90px,1fr) auto 70px;gap:6px;align-items:center;padding:6px;border:2px solid transparent;border-radius:12px}
@@ -496,6 +494,7 @@
   .delnr{font-weight:700;color:var(--p-dempa);text-align:center}
   .delrad .tal{text-align:right}
   .maksline{margin:12px 0 0;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .cfg.utanfull{grid-template-columns:56px minmax(0,1fr)}
   .avansert{margin-top:12px;font-size:14px}
   .avansert summary{cursor:pointer;font-weight:600}
   .o.del[aria-pressed="true"]{background:#DCF3E3;border-color:var(--p-ok);color:var(--p-ok)}
