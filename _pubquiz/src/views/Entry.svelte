@@ -1,7 +1,7 @@
 <script>
   import { tick } from "svelte";
   import { S, api, cfg, save, setScore, setField, addTeamToWeek, removeTeamFromWeek, createTeam, findTeamByName, setSignupOpen, processSignup, mergeTeams } from "../lib/store.svelte.js";
-  import { weekResults, parseScore, fmt, penalty, matchTeams, norm } from "../lib/calc.js";
+  import { weekResults, parseScore, fmt, penalty, matchTeams, norm, signupLive, signupCloses } from "../lib/calc.js";
   import { go } from "../lib/router.svelte.js";
   import CategoryEditor from "./CategoryEditor.svelte";
   import Marking from "./Marking.svelte";
@@ -160,6 +160,12 @@
   }
 
   // ---------- QR sign-up ----------
+  // Re-check every minute, so the panel shows "closed" once the automatic closing time passes
+  let now = $state(Date.now());
+  $effect(() => { const t = setInterval(() => (now = Date.now()), 60e3); return () => clearInterval(t); });
+  let expired = $derived(!!week?.date && now >= signupCloses(week.date));
+  let live = $derived(signupLive(week, now));
+  let closesText = $derived(week?.date ? new Date(signupCloses(week.date)).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "");
   let signupLog = $state([]);
   const handling = new Set();
   $effect(() => {
@@ -254,13 +260,17 @@
   </div>
   {/if}
 
-  <div class="signup panel" class:open={week.signupOpen}>
+  <div class="signup panel" class:open={live}>
     <div class="row">
       <strong>QR sign-up</strong>
-      <span class="small">{week.signupOpen ? "Open: teams can sign up now" : "Closed"}</span>
+      <span class="small">{live ? `Open: teams can sign up now (closes by itself ${closesText})` : expired ? "Closed (it closes by itself the morning after the quiz)" : "Closed"}</span>
       <span class="spacer"></span>
       <a class="btn small" href="#/qr" target="_blank" rel="noopener">Show QR code</a>
-      <button class="small" class:primary={!week.signupOpen} onclick={() => setSignupOpen(id, !week.signupOpen)}>{week.signupOpen ? "Close sign-up" : "Open sign-up"}</button>
+      {#if live || week.signupOpen}
+        <button class="small" onclick={() => setSignupOpen(id, false)}>Close sign-up</button>
+      {:else if !expired}
+        <button class="small primary" onclick={() => setSignupOpen(id, true)}>Open sign-up</button>
+      {/if}
     </div>
     {#if signupLog.length}
       <ul class="log small">

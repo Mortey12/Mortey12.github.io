@@ -1,3 +1,5 @@
+import { signupLive } from "./calc.js";
+
 // Data backends. The app talks only to this interface, so it can run against
 // Firestore (live) or an in-browser demo store (?demo in the URL).
 //
@@ -164,14 +166,14 @@ function demoBackend() {
     async removeAccess(e) { delete st.access[e]; emit("access"); },
     async addSignup(weekId, name, members, extra = {}) {
       const denied = () => Object.assign(new Error("denied"), { code: "permission-denied" });
-      if (!st.weeks[weekId]?.signupOpen) throw denied();
+      if (!signupLive(st.weeks[weekId])) throw denied();
       if (extra.teamId && st.pins[extra.teamId] && st.pins[extra.teamId].hash !== extra.pinHash) throw denied(); // same check as the rules
       st.signups[rid()] = { weekId, name, members, ...extra, created: new Date().toISOString() }; emit("signups");
     },
     listenHasPin: sub("hasPin"), listenPins: sub("pins"),
     async setPin(teamId, hash, weekId) {
       const w = st.weeks[weekId]; // same checks as the rules
-      if (!st.teams[teamId] || st.pins[teamId] || !w?.signupOpen || !w.teams?.[teamId]) throw Object.assign(new Error("denied"), { code: "permission-denied" });
+      if (!st.teams[teamId] || st.pins[teamId] || !signupLive(w) || !w.teams?.[teamId]) throw Object.assign(new Error("denied"), { code: "permission-denied" });
       st.pins[teamId] = { hash, weekId }; st.hasPin[teamId] = { created: new Date().toISOString() };
       emit("pins"); emit("hasPin");
     },

@@ -102,6 +102,13 @@ service cloud.firestore {
     function pubAdmin() { return innlogga() && (pubQuizKonto() || exists(/databases/$(database)/documents/pubTilgang/$(epost()))); }
 
     // Valfri PIN per lag. Står det teamId i påmeldinga og laget har PIN, må pinHash stemme.
+    // Sign-up is open only while the quizmaster has it open AND until about 06:00 the morning
+    // after the quiz date (05:00 UTC; 07:00 in summer time), so a forgotten open sign-up closes itself.
+    function pubSignupLive(weekId) {
+      let w = get(/databases/$(database)/documents/pubVeke/$(weekId)).data;
+      return w.get('signupOpen', false) == true
+        && request.time < timestamp.date(int(w.date[0:4]), int(w.date[5:7]), int(w.date[8:10])) + duration.value(29, 'h');
+    }
     function pubPinDoc(t) { return /databases/$(database)/documents/pubPin/$(t); }
     function pubPinOk(d) {
       return !('teamId' in d) || (d.teamId is string
@@ -134,7 +141,7 @@ service cloud.firestore {
         && request.resource.data.members is int
         && request.resource.data.members >= 1 && request.resource.data.members <= 30
         && request.resource.data.created == request.time
-        && get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('signupOpen', false) == true
+        && pubSignupLive(request.resource.data.weekId)
         && pubPinOk(request.resource.data);
       allow read, delete: if pubAdmin();
       allow update: if false;
@@ -147,7 +154,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['hash', 'weekId'])
         && request.resource.data.hash is string && request.resource.data.hash.size() == 64
         && request.resource.data.weekId is string
-        && get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('signupOpen', false) == true
+        && pubSignupLive(request.resource.data.weekId)
         && id in get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('teams', {})
         && existsAfter(/databases/$(database)/documents/pubHarPin/$(id));
       allow read, delete: if pubAdmin();

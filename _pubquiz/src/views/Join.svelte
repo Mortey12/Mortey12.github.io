@@ -44,7 +44,7 @@
       done = { name: S.teams[existing]?.name || n, tid: existing };
     } catch (e2) {
       err = e2?.code !== "permission-denied" ? "Couldn't send. Check your connection and try again."
-        : needsPin && week?.signupOpen ? "Wrong PIN. Try again, or ask the quizmaster if you've forgotten it."
+        : needsPin && week ? "Wrong PIN. Try again, or ask the quizmaster if you've forgotten it."
         : "Sign-up is closed. Ask the quizmaster.";
     } finally { busy = false; }
   }

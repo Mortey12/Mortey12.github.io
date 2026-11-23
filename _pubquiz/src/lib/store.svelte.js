@@ -1,5 +1,5 @@
 import { createBackend, DELETE } from "./backend.js";
-import { DEFAULT_CONFIG, DEFAULT_CATEGORIES, weeksSorted, norm } from "./calc.js";
+import { DEFAULT_CONFIG, DEFAULT_CATEGORIES, weeksSorted, norm, signupLive } from "./calc.js";
 
 export const S = $state({
   ready: false, error: "", teams: {}, weeks: {}, configRaw: {}, access: {},
@@ -90,7 +90,7 @@ export async function deleteTeam(teamId) {
 }
 
 // ---------- QR sign-up ----------
-export const openWeek = () => weeksSorted(S.weeks).reverse().find(w => w.signupOpen);
+export const openWeek = () => weeksSorted(S.weeks).reverse().find(w => signupLive(w));
 
 export async function setSignupOpen(weekId, open) {
   // Only one quiz night can be open at a time, so the same QR code always means tonight

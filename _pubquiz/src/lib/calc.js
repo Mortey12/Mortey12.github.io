@@ -1,6 +1,11 @@
 // Pure scoring logic: week results, season table and category strengths.
 
 // seasonMode: "field" = share of the field (winner 100), "placement" = teams beaten + 1, "raw" = total score
+// QR sign-up closes by itself at 05:00 UTC (06:00 Norwegian winter time) the morning after the
+// quiz date, even if nobody pressed Close. The Firestore rules check the same time.
+export const signupCloses = date => Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10)) + 29 * 3600e3;
+export const signupLive = (w, now = Date.now()) => !!(w?.signupOpen && w.date && now < signupCloses(w.date));
+
 export const DEFAULT_CONFIG = { penaltyFrom: 6, penaltyPer: 5, seasonMode: "field", bestN: 13, minNights: 8 };
 
 // Plain-language description of how a night turns into season points
