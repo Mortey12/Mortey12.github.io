@@ -6,9 +6,13 @@
 //   pubVeke/{weekId}     { date: "YYYY-MM-DD", title, categories: [{id, name, round, max?}],
 //                          teams: { [teamId]: { members?, adjust?, s: { [catId]: number } } } }
 //   pubConfig/settings   { penaltyFrom, penaltyPer, seasonMode, bestN }
-//   pubTilgang/{email}   presence = may edit
+//   pubTilgang/{email}   presence = may edit (plus quiz@ and any <role>.quiz@samfunnetibergen.no account)
 
 export const DELETE = Symbol("delete");
+
+// Accounts that may always edit, without being on the access list. Keep in sync with
+// pubQuizKonto() in quizpremiar/firestore.rules.
+export const QUIZ_ACCOUNT = /^([a-z0-9._-]+\.)?quiz@samfunnetibergen\.no$/;
 
 export const isDemo = new URLSearchParams(location.search).has("demo");
 
@@ -50,8 +54,10 @@ async function firestoreBackend() {
     onUser(cb) {
       return onAuthStateChanged(auth, async user => {
         let admin = false;
-        if (user?.email) {
-          try { admin = (await getDoc(doc(db, "pubTilgang", user.email.toLowerCase()))).exists(); } catch { admin = false; }
+        if (user?.email && user.emailVerified) {
+          // quiz@ and <role>.quiz@samfunnetibergen.no accounts may always edit (same rule as firestore.rules)
+          if (QUIZ_ACCOUNT.test(user.email.toLowerCase())) admin = true;
+          else try { admin = (await getDoc(doc(db, "pubTilgang", user.email.toLowerCase()))).exists(); } catch { admin = false; }
         }
         cb(user ? { email: user.email, name: user.displayName } : null, admin);
       });

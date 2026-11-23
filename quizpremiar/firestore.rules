@@ -97,7 +97,9 @@ service cloud.firestore {
     // ---- Pubquiz-poeng (mstene.no/pubquiz) ----
     // Alle kan sjå resultat, sesongtabell og lagsider. Berre e-postar i pubTilgang kan endre.
     // Den første e-posten må leggjast inn frå Firebase-konsollen (dokument-id = e-post med små bokstavar).
-    function pubAdmin() { return innlogga() && exists(/databases/$(database)/documents/pubTilgang/$(epost())); }
+    // quiz@ og alle <rolle>.quiz@samfunnetibergen.no-kontoar får tilgang automatisk (berre workspace-admin kan lage dei).
+    function pubQuizKonto() { return epost().matches('^([a-z0-9._-]+[.])?quiz@samfunnetibergen[.]no$'); }
+    function pubAdmin() { return innlogga() && (pubQuizKonto() || exists(/databases/$(database)/documents/pubTilgang/$(epost()))); }
 
     match /pubTilgang/{e} {
       allow read: if innlogga() && (e == epost() || pubAdmin());

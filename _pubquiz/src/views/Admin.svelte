@@ -54,6 +54,7 @@
     <section class="panel">
       <h2>Who can enter scores</h2>
       {#if isDemo}<p class="small muted">Demo mode: access isn't checked.</p>{/if}
+      <p class="small muted"><strong>quiz@samfunnetibergen.no</strong> and every <strong>[role].quiz@samfunnetibergen.no</strong> account can always edit; those don't need to be listed here.</p>
       <ul class="access">
         {#each Object.keys(S.access).sort() as e}
           <li class="row"><span>{e}</span><span class="spacer"></span><button class="small ghost danger" onclick={() => removeAccess(e)}>Remove</button></li>
