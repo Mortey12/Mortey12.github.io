@@ -9,6 +9,12 @@
 
   let live = $derived(S.screen || {});
   let week = $derived(live.weekId ? S.weeks[live.weekId] : null);
+  let pics = $state({});
+  $effect(() => {
+    pics = {};
+    if (!S.admin || !live.weekId) return;
+    return api.listenPictures(live.weekId, v => (pics = v || {}), () => {});
+  });
   let questions = $state({});
   $effect(() => {
     questions = {};
@@ -38,7 +44,7 @@
 
 <div class="screen" class:idle>
   {#if week}
-    <Stage><Slide {week} {questions} k={live.k} shown={live.shown || 0} canSeeQuestions={S.admin} /></Stage>
+    <Stage><Slide {week} {questions} {pics} k={live.k} shown={live.shown || 0} canSeeQuestions={S.admin} /></Stage>
   {:else}
     <div class="msg">
       <h1>Quiz på Kvarteret: screen</h1>

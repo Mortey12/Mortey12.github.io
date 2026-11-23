@@ -1,5 +1,5 @@
 import { createBackend, DELETE } from "./backend.js";
-import { DEFAULT_CONFIG, DEFAULT_CATEGORIES, weeksSorted, norm, signupLive } from "./calc.js";
+import { DEFAULT_CONFIG, categoriesFromTemplate, weeksSorted, norm, signupLive } from "./calc.js";
 
 export const S = $state({
   ready: false, error: "", teams: {}, weeks: {}, configRaw: {}, access: {},
@@ -8,6 +8,7 @@ export const S = $state({
   admin: false,      // may enter scores (admin or score keeper)
   fullAdmin: false,  // may change settings, access, delete, handle PINs
   hasPinReady: false,
+  sponsors: [],      // logos for the printed answer sheets
   screen: {},        // projector screen state (optional feature): { weekId, k, shown }
   hasPin: {},        // public: teamId -> marker, for teams that set a PIN
   pins: {}, pinsReady: false // admins only: teamId -> { hash }
@@ -25,6 +26,7 @@ export async function start() {
   api.listenTeams(v => { S.teams = v; done(); }, fail);
   api.listenWeeks(v => { S.weeks = v; done(); }, fail);
   api.listenConfig(v => { S.configRaw = v; done(); }, fail);
+  api.listenSponsors(v => (S.sponsors = v || []), () => {});
   api.listenScreen(v => (S.screen = v || {}), () => {});
   api.listenHasPin(v => { S.hasPin = v; S.hasPinReady = true; }, () => { S.hasPinReady = true; });
   let stopAccess = null, stopPins = null;
@@ -65,7 +67,8 @@ export function lastWeek() {
 
 export async function createWeek(date, { copyTeams }) {
   const prev = lastWeek();
-  const categories = prev?.categories?.length && !prev.imported ? prev.categories.map(c => ({ ...c })) : DEFAULT_CATEGORIES.map(c => ({ ...c }));
+  // Every new night starts from the normal setup (Admin → New quiz nights), not from last week
+  const categories = categoriesFromTemplate(cfg().template);
   const teams = {};
   if (copyTeams && prev) for (const id of Object.keys(prev.teams || {})) if (S.teams[id]) teams[id] = { s: {} };
   return save(() => api.createWeek({ date, title: "", categories, teams, created: new Date().toISOString() }));

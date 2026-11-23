@@ -14,6 +14,7 @@
   import Qr from "./views/Qr.svelte";
   import Rules from "./views/Rules.svelte";
   import Projector from "./views/Projector.svelte";
+  import Print from "./views/Print.svelte";
   import Screen from "./views/screen/Screen.svelte";
 
   let p = $derived(route.parts);
@@ -57,6 +58,8 @@
     <p class="err">{S.error}</p>
   {:else if !S.ready}
     <p class="muted">Loading…</p>
+  {:else if p[0] === "week" && p[1] && p[2] === "print"}
+    <Print id={p[1]} />
   {:else if p[0] === "week" && p[1] && p[2] === "projector"}
     <Projector id={p[1]} />
   {:else if p[0] === "week" && p[1] && entry}

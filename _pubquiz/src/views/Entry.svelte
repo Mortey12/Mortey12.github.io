@@ -3,7 +3,7 @@
   import { S, api, cfg, save, setScore, setField, addTeamToWeek, removeTeamFromWeek, createTeam, findTeamByName, setSignupOpen, processSignup, mergeTeams } from "../lib/store.svelte.js";
   import { weekResults, parseScore, fmt, penalty, matchTeams, norm, signupLive, signupCloses } from "../lib/calc.js";
   import { go } from "../lib/router.svelte.js";
-  import CategoryEditor from "./CategoryEditor.svelte";
+  import RoundsEditor from "./RoundsEditor.svelte";
   import Marking from "./Marking.svelte";
 
   let { id } = $props();
@@ -230,6 +230,8 @@
       </div>
     </div>
     <span class="spacer"></span>
+    <button onclick={() => (showCats = !showCats)}>{showCats ? "Hide rounds" : "Edit rounds"}</button>
+    <a class="btn" href={"#/week/" + id + "/print"}>Print sheets</a>
     <!-- Projector is chosen per night: off until someone wants it for this quiz -->
     {#if week.projector}<a class="btn" href={"#/week/" + id + "/projector"}>Projector</a>
     {:else}<button class="ghost" title="Use a projector screen for this quiz night: questions, answers and a results reveal" onclick={useProjector}>+ Projector</button>{/if}
@@ -259,8 +261,6 @@
       <select bind:value={dir}><option value="down">down (one category at a time)</option><option value="right">right (one team at a time)</option></select>
     </label>
     <label class="small"><input type="checkbox" bind:checked={showAdjust} /> Extra deductions</label>
-    <span class="spacer"></span>
-    <button class="small" onclick={() => (showCats = !showCats)}>{showCats ? "Hide" : "Edit"} categories</button>
   </div>
   {/if}
 
@@ -297,7 +297,13 @@
     {/if}
   </div>
 
-  {#if showCats}<CategoryEditor weekId={id} categories={cats} />{/if}
+  {#if showCats}
+    <section class="panel roundsed">
+      <RoundsEditor categories={cats} onsave={list => save(() => api.updateWeek(id, { categories: list }))}
+        hasScores={cid => rows.some(r => r.e.s?.[cid] != null)}
+        intro="Each round is scored once. Themes are the headings and lines on the printed answer sheet and the question groups on the projector. Changes here only affect this night; the normal setup for new nights is under Admin → New quiz nights." />
+    </section>
+  {/if}
 
   {#if mode === "mark"}
     <Marking weekId={id} {rows} {cats} />
@@ -381,6 +387,7 @@
   .head { align-items: end; margin-bottom: 12px; }
   .tools { margin: 0 0 10px; }
   .modes { margin: 0 0 10px; }
+  .roundsed { margin-bottom: 12px; max-width: 760px; }
   .jump { position: relative; }
   .jump input { width: 230px; }
   .pop { position: absolute; z-index: 10; list-style: none; margin: 4px 0 0; padding: 4px; background: var(--panel); border: 2px solid var(--edge); border-radius: 10px; min-width: 100%; box-shadow: 4px 4px 0 var(--shadow); }

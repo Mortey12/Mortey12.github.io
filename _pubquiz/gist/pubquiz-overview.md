@@ -21,7 +21,7 @@ flowchart TB
     subgraph firebase["Firebase project quiz-samarbeid"]
         auth["Google sign-in"]
         rules["firestore.rules<br/>pub* section, pasted by hand in the console"]
-        db[("Firestore<br/>pubLag, pubVeke, pubConfig, pubTilgang,<br/>pubSignup, pubPin, pubHarPin,<br/>pubQuestions, pubScreen")]
+        db[("Firestore<br/>pubLag, pubVeke, pubConfig, pubTilgang,<br/>pubSignup, pubPin, pubHarPin,<br/>pubQuestions, pubPictures, pubScreen")]
     end
 
     subgraph google["Google Workspace"]
@@ -93,8 +93,10 @@ Totals are always computed from the raw scores, so changing the rules in Admin c
 |---|---|
 | Night (week) | One quiz night: a date, categories and the teams that played. Document in `pubVeke`. |
 | Team | A team in the register, with other spellings (`aliases`). Document in `pubLag`. Results build up across nights under one team. |
-| Category | One scored part of a night, for example Category 1, Category 2, Round 2, Picture quiz. |
-| Round | Categories grouped under one name. Round 1 has two categories. |
+| Round (category) | One scored part of a night: normally Round 1, Round 2 and Picture quiz. Stored in `categories`. |
+| Theme | A part of a round, not scored: a heading with a number of lines on the answer sheet (optionally a Rød tråd line per item), and a question group on the projector. For example Round 1: Tune in MF, Quizzing around the world, Musikkquiz. |
+| Normal setup | The rounds and themes every new night starts with (`config.template`, Admin → New quiz nights). One night can be changed with Edit rounds. |
+| Print sheets | One double-sided A4 per round, plus the picture sheet (1–5 front, 6–10 back), with the sponsor logos on every page. |
 | Raw score | Sum of all categories. |
 | Penalty | Points off for players over the limit (default: 5 per player over 6), plus any extra deduction. |
 | Season | Spring (January–June) or Autumn (July–December). |
@@ -156,6 +158,7 @@ Enforced by `quizpremiar/firestore.rules`, not just by the app.
 | `pubPin` | PIN hash per team | admins | create: anyone, only while sign-up is live, for a team on that night's list · delete: admin |
 | `pubHarPin` | Public "has a PIN" marker | anyone | created together with the PIN · delete: admin |
 | `pubQuestions` | Projector questions and answers per night | score keepers | score keepers |
+| `pubPictures` | Uploaded pictures (shrunk to 1280px, one per document) | score keepers | score keepers |
 | `pubScreen/live` | Which slide the projector shows | anyone | score keepers |
 
 ## 7. What gets refused
@@ -202,4 +205,4 @@ Ideas for later: picture-round images uploaded instead of linked, a timer slide,
 
 5. **Who owns the Sheet script.** The hourly trigger runs as whoever ran `setup`. If that person leaves, someone with access should run `setup` again.
 
-6. **Picture links.** Projector pictures are links (for example from Drive set to "anyone with the link"). Uploading would need Firebase Storage and more rules.
+6. **Pictures.** Uploaded in the app (Projector page), shrunk to about 200 KB and stored in `pubPictures`, readable by score keepers only. 1 GB of free Firestore storage is roughly 10 years of 10 pictures a week. Links still work too.

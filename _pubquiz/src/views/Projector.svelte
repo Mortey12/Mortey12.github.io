@@ -1,16 +1,45 @@
 <script>
   // Optional projector: run the screen (remote control + preview) and type in the night's questions.
   import { S, api, cfg, save } from "../lib/store.svelte.js";
-  import { weekResults } from "../lib/calc.js";
+  import { weekResults, sectionsOf } from "../lib/calc.js";
   import { slidePlan, step } from "../lib/screen.js";
   import Stage from "./screen/Stage.svelte";
   import Slide from "./screen/Slide.svelte";
+  import { shrinkImage } from "../lib/images.js";
 
   let { id } = $props();
   let week = $derived(S.weeks[id]);
-  let cats = $derived(week?.categories || []);
+  // Questions are typed per theme (or per round, for rounds without themes)
+  let cats = $derived(sectionsOf(week?.categories));
 
   // ---------- questions (live from the database, edited in a local copy) ----------
+  // Uploaded pictures for this night: id -> data URL
+  let pics = $state({});
+  $effect(() => {
+    if (!S.admin) return;
+    return api.listenPictures(id, v => (pics = v || {}), () => {});
+  });
+  let uploading = $state("");
+  let picErr = $state("");
+  async function upload(item, e, key) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    uploading = key; picErr = "";
+    try {
+      const data = await shrinkImage(file);
+      const old = item.pic;
+      item.pic = await save(() => api.addPicture(id, data));
+      delete item.img; // an upload replaces a link
+      changed();
+      if (old) api.deletePicture(old).catch(() => {});
+    } catch { picErr = "Couldn't use that picture. Try a JPG or PNG."; }
+    finally { uploading = ""; }
+  }
+  function removePic(item) {
+    if (item.pic) api.deletePicture(item.pic).catch(() => {});
+    delete item.pic; delete item.img; changed();
+  }
   let questions = $state({});
   let draft = $state({});        // catId -> [{ q, a, img }]
   let dirty = false;
@@ -31,21 +60,28 @@
     dirty = true;
     clearTimeout(timer);
     timer = setTimeout(async () => {
-      const clean = Object.fromEntries(Object.entries(draft).map(([k, list]) => [k, list.map(x => ({ q: x.q || "", a: x.a || "", ...(x.img ? { img: x.img } : {}) }))]));
+      const clean = Object.fromEntries(Object.entries(draft).map(([k, list]) => [k, list.map(x => ({ q: x.q || "", a: x.a || "", ...(x.qEn ? { qEn: x.qEn } : {}), ...(x.aEn ? { aEn: x.aEn } : {}), ...(x.img ? { img: x.img } : {}), ...(x.pic ? { pic: x.pic } : {}) }))]));
       try { await save(() => api.setQuestions(id, { cats: clean })); } finally { dirty = false; }
     }, 600);
   }
   // Read back through draft so we push into the reactive array, not the plain one just assigned
   const list = cid => { if (!draft[cid]) draft[cid] = []; return draft[cid]; };
   function addQ(cid) { list(cid).push({ q: "", a: "" }); changed(); }
-  function delQ(cid, i) { draft[cid].splice(i, 1); changed(); }
+  function delQ(cid, i) {
+    const pic = draft[cid][i]?.pic;
+    draft[cid].splice(i, 1); changed();
+    if (pic) api.deletePicture(pic).catch(() => {}); // don't leave the upload behind
+  }
   function moveQ(cid, i, d) { const l = draft[cid], j = i + d; if (j < 0 || j >= l.length) return; [l[i], l[j]] = [l[j], l[i]]; changed(); }
   let paste = $state({});
   function addPasted(cid) {
     const lines = (paste[cid] || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
     for (const line of lines) {
-      const [q, ...rest] = line.split("|");
-      list(cid).push({ q: q.trim(), a: rest.join("|").trim() });
+      // 2 parts: question | answer · 3: norsk | English | answer · 4: norsk | English | svar | answer
+      const p = line.split("|").map(x => x.trim());
+      const item = p.length >= 4 ? { q: p[0], qEn: p[1], a: p[2], aEn: p.slice(3).join(" | ") }
+        : p.length === 3 ? { q: p[0], qEn: p[1], a: p[2] } : { q: p[0], a: p[1] || "" };
+      list(cid).push(item);
     }
     paste[cid] = ""; changed();
   }
@@ -122,7 +158,7 @@
       {/if}
     </div>
     <div class="preview">
-      <Stage><Slide {week} {questions} k={mine ? live.k : "welcome"} shown={mine ? live.shown || 0 : 0} /></Stage>
+      <Stage><Slide {week} {questions} {pics} k={mine ? live.k : "welcome"} shown={mine ? live.shown || 0 : 0} /></Stage>
       <div class="small muted">Preview{mine ? "" : " (not on the screen yet)"}</div>
     </div>
   </section>
@@ -130,17 +166,25 @@
   <section class="panel">
     <h2>Questions</h2>
     <p class="small muted">Only score keepers and admins can see these. Leave a category empty if you don't want its questions on the screen; its title and answers slides are skipped too. Changes save by themselves.</p>
+    {#if picErr}<p class="small err">{picErr}</p>{/if}
     {#if !loaded}<p class="muted">Loading questions…</p>{/if}
     {#each loaded ? cats : [] as c (c.id)}
       {@const n = (draft[c.id] || []).length}
       <details class="cat" open={openCat === c.id} ontoggle={e => { if (e.target.open) openCat = c.id; }}>
-        <summary><strong>{c.name}</strong> <span class="muted small">{n} {n === 1 ? "question" : "questions"}</span></summary>
+        <summary>{#if c.round !== c.name}<span class="muted small">{c.round} · </span>{/if}<strong>{c.name}</strong> <span class="muted small">{n} {n === 1 ? "question" : "questions"}</span></summary>
         {#each draft[c.id] || [] as item, i}
           <div class="q">
             <span class="num">{i + 1}</span>
-            <textarea rows="2" placeholder="Question" bind:value={item.q} oninput={changed}></textarea>
-            <input placeholder="Answer" bind:value={item.a} oninput={changed} />
-            <input class="img" placeholder="Picture link (optional)" bind:value={item.img} oninput={changed} />
+            <textarea rows="2" placeholder="Spørsmål (norsk)" bind:value={item.q} oninput={changed}></textarea>
+            <input placeholder="Svar (norsk)" bind:value={item.a} oninput={changed} />
+            <textarea class="en" rows="2" placeholder="Question in English (optional)" bind:value={item.qEn} oninput={changed}></textarea>
+            <input class="en" placeholder="Answer in English (if different)" bind:value={item.aEn} oninput={changed} />
+            <div class="img row">
+              {#if item.pic || item.img}<img class="thumb" src={item.pic ? pics[item.pic] : item.img} alt="" />{/if}
+              <label class="btn small upload">{uploading === c.id + i ? "Uploading…" : item.pic ? "Replace picture" : "Upload picture"}<input type="file" accept="image/*" onchange={e => upload(item, e, c.id + i)} disabled={!!uploading} /></label>
+              {#if item.pic || item.img}<button class="ghost small danger" onclick={() => removePic(item)}>Remove picture</button>{/if}
+              {#if !item.pic}<input class="link" placeholder="…or paste a picture link" bind:value={item.img} oninput={changed} />{/if}
+            </div>
             <span class="acts">
               <button class="ghost small" title="Move up" onclick={() => moveQ(c.id, i, -1)}>↑</button>
               <button class="ghost small" title="Move down" onclick={() => moveQ(c.id, i, 1)}>↓</button>
@@ -152,7 +196,7 @@
           <button class="small" onclick={() => addQ(c.id)}>+ Add question</button>
         </div>
         <div class="paste">
-          <textarea rows="3" placeholder={"Or paste many, one per line:\nWhat is the capital of Norway? | Oslo"} bind:value={paste[c.id]}></textarea>
+          <textarea rows="4" placeholder={"Or paste many, one per line:\nHva er hovedstaden i Norge? | What is the capital of Norway? | Oslo\n(norsk | English | svar,  or  norsk | English | svar | answer,  or just  spørsmål | svar)"} bind:value={paste[c.id]}></textarea>
           <button class="small" disabled={!(paste[c.id] || "").trim()} onclick={() => addPasted(c.id)}>Add pasted questions</button>
         </div>
       </details>
@@ -175,7 +219,13 @@
   .cat summary { cursor: pointer; padding: 4px 0; }
   .q { display: grid; grid-template-columns: 2em 2fr 1fr auto; gap: 6px; align-items: start; margin: 6px 0; }
   .q .num { padding-top: 8px; color: var(--muted); text-align: right; }
-  .q .img { grid-column: 2 / 4; font-size: .85rem; }
+  .q .img { grid-column: 2 / 4; font-size: .85rem; gap: 6px; }
+  .q .thumb { height: 40px; max-width: 70px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--line); }
+  .q .link { flex: 1 1 12em; font-size: .85rem; }
+  .upload { position: relative; overflow: hidden; }
+  .upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .q .en { font-style: italic; }
+  .q textarea.en { grid-column: 2; }
   .q .acts { display: flex; gap: 2px; grid-row: 1; grid-column: 4; }
   .paste { display: grid; gap: 6px; margin-top: 8px; max-width: 640px; }
   textarea { font: inherit; resize: vertical; }

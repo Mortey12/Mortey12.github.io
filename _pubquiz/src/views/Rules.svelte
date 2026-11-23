@@ -17,7 +17,7 @@
   <section class="panel">
     <h2>Quiz night</h2>
     <ul>
-      <li>Every night has <strong>Round 1</strong> (two categories), <strong>Round 2</strong> and the <strong>Picture quiz</strong>. Your score for the night is the total of all of them.</li>
+      <li>Every night has <strong>Round 1</strong>, <strong>Round 2</strong> and the <strong>Picture quiz</strong>, each with a few themes. Your score for the night is the total of the three rounds.</li>
       <li>Teams can have any number of players, but teams with more than <strong>{c.penaltyFrom}</strong> players lose <strong>{fmt(c.penaltyPer)} points per extra player</strong>. For example, {c.penaltyFrom + 2} players means −{fmt(2 * c.penaltyPer)}.</li>
       <li>Teams with the same total share the place (1, 2, 2, 4…).</li>
       <li>Use the same team name every week, so your results build up. Sign up with the QR code on the table; it suggests your name if you've played before.</li>

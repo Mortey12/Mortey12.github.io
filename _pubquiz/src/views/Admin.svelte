@@ -2,6 +2,8 @@
   import { S, api, cfg, save, importOld, importedSummary, removeImported } from "../lib/store.svelte.js";
   import importData from "../lib/import-haust2026.json";
   import { isDemo } from "../lib/backend.js";
+  import { DEFAULT_TEMPLATE } from "../lib/calc.js";
+  import RoundsEditor from "./RoundsEditor.svelte";
 
   let c = $derived(cfg());
   let email = $state("");
@@ -70,6 +72,15 @@
 
     {/if}
 
+    {#if S.fullAdmin}
+    <section class="panel wide2">
+      <h2>New quiz nights</h2>
+      <RoundsEditor categories={c.template?.length ? c.template : DEFAULT_TEMPLATE} onsave={list => save(() => api.setConfig({ template: list }))}
+        intro="The normal setup every new quiz night starts with. One score per round; themes give the headings and lines on the printed answer sheet. A single night can still be changed on its score entry page (Edit rounds) without changing this." />
+      {#if c.template?.length}<p class="small"><button class="ghost small" onclick={() => confirm("Go back to the built-in setup (Round 1, Round 2, Picture quiz with the usual themes)?") && save(() => api.setConfig({ template: [] }))}>Reset to the built-in setup</button></p>{/if}
+    </section>
+    {/if}
+
     <section class="panel">
       <h2>Who can enter scores</h2>
       {#if isDemo}<p class="small muted">Demo mode: access isn't checked.</p>{/if}
@@ -125,6 +136,7 @@
   /* Let long labels wrap and the select shrink, so nothing runs past the panel on phones */
   .form label { display: flex; flex-wrap: wrap; row-gap: 4px; }
   .form select { flex: 1 1 14em; max-width: 100%; }
+  .wide2 { grid-column: 1 / -1; }
   .tag { padding: 0 8px; border-radius: 99px; background: var(--accent-soft); }
   .tag.adm { background: color-mix(in srgb, var(--gold) 30%, transparent); }
   .access { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 4px; }

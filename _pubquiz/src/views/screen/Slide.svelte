@@ -5,7 +5,9 @@
   import { weekResults, seasonTable, seasonOf, fmt } from "../../lib/calc.js";
   import { parseKey } from "../../lib/screen.js";
 
-  let { week, questions, k, shown = 0, canSeeQuestions = true } = $props();
+  // pics: uploaded pictures (id -> data URL); a question has either an upload (pic) or a link (img)
+  let { week, questions, pics = {}, k, shown = 0, canSeeQuestions = true } = $props();
+  const picOf = item => (item?.pic ? pics[item.pic] || "" : item?.img || "");
 
   let p = $derived(parseKey(k, week, questions));
   let results = $derived(week ? weekResults(week, S.teams, cfg()).slice().sort((a, b) => a.place - b.place || a.name.localeCompare(b.name, "nb")) : []);
@@ -63,10 +65,14 @@
     {#if !canSeeQuestions}
       <div class="qbody"><p class="qtext" style:font-size="44px">Sign in as a score keeper on this screen to show the questions.</p></div>
     {:else if p.item}
-      <div class="qbody" class:withimg={p.item.img}>
-        <p class="qtext" style:font-size={(p.type === "a" ? Math.min(qSize(p.item.q), 52) : qSize(p.item.q)) + "px"}>{p.item.q}</p>
-        {#if p.item.img}<img src={p.item.img} alt="" />{/if}
-        {#if p.type === "a"}<p class="answer">{p.item.a || "—"}</p>{/if}
+      <!-- Norwegian on top, English below; sized by the combined length so both fit -->
+      {@const both = (p.item.q || "") + " " + (p.item.qEn || "")}
+      {@const size = p.type === "a" ? Math.min(qSize(both), 52) : qSize(both)}
+      <div class="qbody" class:withimg={picOf(p.item)}>
+        <p class="qtext" style:font-size={size + "px"}>{p.item.q}</p>
+        {#if p.item.qEn}<p class="qtext en" style:font-size={Math.round(size * .72) + "px"}>{p.item.qEn}</p>{/if}
+        {#if picOf(p.item)}<img src={picOf(p.item)} alt="" />{/if}
+        {#if p.type === "a"}<p class="answer">{p.item.a || "—"}{#if p.item.aEn && p.item.aEn !== p.item.a}<span class="aen"> / {p.item.aEn}</span>{/if}</p>{/if}
       </div>
     {/if}
   </div>
@@ -149,6 +155,8 @@
   .of { color: #6b625e; }
   .qbody { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 30px; }
   .qtext { margin: 0; line-height: 1.2; font-weight: 700; max-width: 1350px; }
+  .qtext.en { font-weight: 500; font-style: italic; color: #3d3633; margin-top: -8px; }
+  .aen { font-weight: 600; font-style: italic; font-size: .7em; }
   .qbody img { max-height: 470px; max-width: 1200px; border-radius: 14px; object-fit: contain; }
   .answer { margin: 0; font-size: 92px; font-weight: 900; color: #1d6b45; line-height: 1.1; }
 

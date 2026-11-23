@@ -1,10 +1,13 @@
 // Optional projector screen: the order of slides for a quiz night.
-// Slide keys: "welcome", "title:<catId>", "q:<catId>:<i>", "answers:<catId>", "a:<catId>:<i>",
+import { sectionsOf } from "./calc.js";
+
+// Questions are grouped by section: a round's themes (or the round itself if it has none).
+// Slide keys: "welcome", "title:<sectionId>", "q:<sectionId>:<i>", "answers:<sectionId>", "a:<sectionId>:<i>",
 // "break", "reveal", "season", "blank". The live state is { weekId, k, shown } where `shown`
 // counts how many teams the results reveal has shown so far (from last place up).
 
 export function slidePlan(week, questions) {
-  const cats = week?.categories || [];
+  const cats = sectionsOf(week?.categories);
   const qs = c => questions?.cats?.[c.id] || [];
   const plan = [{ k: "welcome", label: "Welcome + QR code", group: "Start" }];
   for (const c of cats) {
@@ -24,7 +27,7 @@ export function slidePlan(week, questions) {
 // Everything a slide key refers to
 export function parseKey(k, week, questions) {
   const [type, catId, idx] = String(k || "blank").split(":");
-  const cat = (week?.categories || []).find(c => c.id === catId) || null;
+  const cat = sectionsOf(week?.categories).find(c => c.id === catId) || null;
   const list = cat ? questions?.cats?.[cat.id] || [] : [];
   const i = idx != null ? Number(idx) : null;
   return { type, cat, i, total: list.length, item: i != null ? list[i] || null : null };

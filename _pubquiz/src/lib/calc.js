@@ -15,12 +15,34 @@ export function pointsRule(cfg) {
   return "a team gets 100 × (teams that night − its place + 1) ÷ teams that night: the winner always gets 100, the middle of the table about 50";
 }
 
-export const DEFAULT_CATEGORIES = [
-  { id: "c1", name: "Category 1", round: "Round 1" },
-  { id: "c2", name: "Category 2", round: "Round 1" },
-  { id: "c3", name: "Round 2", round: "Round 2" },
-  { id: "c4", name: "Picture quiz", round: "Picture quiz" }
+// The normal setup for a new quiz night (Admin can change it, stored as config.template).
+// Each round is scored once. Themes inside a round are not scored: they are the headings and
+// line counts on the printed answer sheet and the question groups on the projector.
+export const DEFAULT_TEMPLATE = [
+  { id: "r1", name: "Round 1", themes: [
+    { id: "t1", name: "Tune in MF", lines: 6 },
+    { id: "t2", name: "Quizzing around the world", lines: 8 },
+    { id: "t3", name: "Musikkquiz", lines: 8 }
+  ] },
+  { id: "r2", name: "Round 2", themes: [
+    { id: "t4", name: "Mixmaster", lines: 10 },
+    { id: "t5", name: "Musikkdel / Music-round", lines: 2, thread: true }
+  ] },
+  { id: "r3", name: "Picture quiz", themes: [{ id: "t6", name: "Picture quiz", lines: 10 }] }
 ];
+const rid = p => p + Math.random().toString(36).slice(2, 8);
+// Copy a template into a night's categories, with fresh ids
+export const categoriesFromTemplate = tpl => (tpl?.length ? tpl : DEFAULT_TEMPLATE).map(c => ({
+  id: rid("k"), name: c.name, round: c.name, ...(c.max != null ? { max: c.max } : {}),
+  themes: (c.themes || []).map(t => ({ id: rid("t"), name: t.name, lines: t.lines || 8, ...(t.thread ? { thread: true } : {}) }))
+}));
+// Sections = what gets a heading on the answer sheet and a question group on the projector:
+// a round's themes, or the category itself when it has none (older nights)
+export function sectionsOf(cats) {
+  return (cats || []).flatMap(c => c.themes?.length
+    ? c.themes.map(t => ({ id: t.id, name: t.name, lines: t.lines, thread: !!t.thread, round: c.round || c.name, catId: c.id }))
+    : [{ id: c.id, name: c.name, lines: c.lines, thread: !!c.thread, round: c.round || c.name, catId: c.id, plain: true }]);
+}
 
 // "Hansa-Lovers", "HANSA LOVERS" and "hansalovers" become the same key
 export const norm = s => (s || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "")

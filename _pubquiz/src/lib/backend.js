@@ -11,6 +11,7 @@ import { signupLive } from "./calc.js";
 //   pubTilgang/{email}   { added, role? }  role "scorer" = score keeper; no role = full admin
 //                        (quiz@ and any <role>.quiz@samfunnetibergen.no account are always full admin)
 //   pubQuestions/{weekId} { cats: { catId: [{ q, a, img }] } }  projector questions, score keepers only
+//   pubPictures/{id}     { weekId, data, created }  uploaded picture (data URL), score keepers only
 //   pubScreen/live       { weekId, k, shown }  what the projector screen shows right now
 //   pubPin/{teamId}      { hash, weekId }  optional team PIN, SHA-256 (admins only can read);
 //                        can only be set while that week's sign-up is open and the team is on its list
@@ -107,6 +108,17 @@ async function firestoreBackend() {
     listenQuestions: (weekId, cb, err) => onSnapshot(doc(db, "pubQuestions", weekId), d => cb(d.exists() ? d.data() : {}), err),
     setQuestions: (weekId, data) => setDoc(doc(db, "pubQuestions", weekId), data),
     listenScreen: (cb, err) => onSnapshot(doc(db, "pubScreen", "live"), d => cb(d.exists() ? d.data() : {}), err),
+    // Uploaded pictures for the projector and the picture sheet, one document each (max ~1 MB)
+    listenPictures: (weekId, cb, err) => onSnapshot(fs.query(collection(db, "pubPictures"), fs.where("weekId", "==", weekId)), snap => {
+      const o = {};
+      snap.forEach(d => (o[d.id] = d.data().data));
+      cb(o);
+    }, err),
+    async addPicture(weekId, data) { return (await addDoc(collection(db, "pubPictures"), { weekId, data, created: fs.serverTimestamp() })).id; },
+    deletePicture: id => deleteDoc(doc(db, "pubPictures", id)),
+    // Sponsors printed on the answer sheets: { list: [{ name, logo }] }, logo as a small data URL
+    listenSponsors: (cb, err) => onSnapshot(doc(db, "pubConfig", "sponsors"), d => cb(d.exists() ? d.data().list || [] : []), err),
+    setSponsors: list => setDoc(doc(db, "pubConfig", "sponsors"), { list }),
     setScreen: data => setDoc(doc(db, "pubScreen", "live"), data),
     // Optional team PIN: anyone may set one on a team that has none; only admins read or remove it
     listenHasPin: (cb, err) => listen("pubHarPin", cb, err),
@@ -137,12 +149,12 @@ function demoBackend() {
   let st;
   try { st = JSON.parse(localStorage.getItem(KEY)); } catch { st = null; }
   st ||= { teams: {}, weeks: {}, config: {}, access: { "demo@example.com": {} } };
-  st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; st.questions ||= {}; st.screen ||= {};
-  const subs = { teams: [], weeks: [], config: [], access: [], signups: [], pins: [], hasPin: [], questions: [], screen: [] };
+  st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; st.questions ||= {}; st.screen ||= {}; st.sponsors ||= []; st.pictures ||= {};
+  const subs = { sponsors: [], pictures: [], teams: [], weeks: [], config: [], access: [], signups: [], pins: [], hasPin: [], questions: [], screen: [] };
   // Keep several demo tabs in sync (e.g. a "phone" tab signing up and a "laptop" tab entering scores)
   addEventListener("storage", e => {
     if (e.key !== KEY || !e.newValue) return;
-    try { st = JSON.parse(e.newValue); st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; st.questions ||= {}; st.screen ||= {}; } catch { return; }
+    try { st = JSON.parse(e.newValue); st.signups ||= {}; st.pins ||= {}; st.hasPin ||= {}; st.questions ||= {}; st.screen ||= {}; st.sponsors ||= []; st.pictures ||= {}; } catch { return; }
     for (const k of Object.keys(subs)) subs[k].forEach(cb => cb(structuredClone(st[k])));
   });
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
@@ -184,6 +196,14 @@ function demoBackend() {
     listenQuestions: (weekId, cb) => sub("questions")(v => cb(v[weekId] || {})),
     async setQuestions(weekId, data) { st.questions[weekId] = structuredClone(data); emit("questions"); },
     listenScreen: sub("screen"),
+    listenPictures(weekId, cb) {
+      const f = v => cb(Object.fromEntries(Object.entries(v).filter(([, x]) => x.weekId === weekId).map(([k, x]) => [k, x.data])));
+      return sub("pictures")(f);
+    },
+    async addPicture(weekId, data) { const id = rid(); st.pictures[id] = { weekId, data }; emit("pictures"); return id; },
+    async deletePicture(id) { delete st.pictures[id]; emit("pictures"); },
+    listenSponsors: sub("sponsors"),
+    async setSponsors(list) { st.sponsors = structuredClone(list); emit("sponsors"); },
     async setScreen(data) { st.screen = structuredClone(data); emit("screen"); },
     listenHasPin: sub("hasPin"), listenPins: sub("pins"),
     async setPin(teamId, hash, weekId) {
