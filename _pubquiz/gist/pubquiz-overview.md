@@ -107,7 +107,7 @@ Totals are always computed from the raw scores, so changing the rules in Admin c
 | Marking mode | Score entry one team at a time: search, type scores, the team drops off the list. |
 | Score keeper | Role that can enter scores, run nights and add other score keepers. |
 | Admin | Can also change rules, give admin access, delete, merge and remove PINs. Every quiz@ and [role].quiz@samfunnetibergen.no account is an admin. |
-| Projector | Optional big screen: welcome + QR, questions, answers, results reveal, season table. |
+| Projector | Optional big screen, switched on per night: welcome + QR, questions, answers, results reveal, season table. |
 | Slide key | What the projector shows: `welcome`, `title:c1`, `q:c1:0`, `answers:c1`, `a:c1:0`, `break`, `reveal`, `season`, `blank`. |
 | Archive | The separate spreadsheet with one tab per night, locked 2 days after the quiz. |
 
@@ -149,8 +149,8 @@ Enforced by `quizpremiar/firestore.rules`, not just by the app.
 | Collection | Holds | Read | Write |
 |---|---|---|---|
 | `pubLag` | Teams | anyone | create, update: score keeper · delete: admin |
-| `pubVeke` | Nights, scores, sign-up flag | anyone | create, update: score keeper · delete: admin |
-| `pubConfig` | Scoring rules, projector on or off | anyone | admin |
+| `pubVeke` | Nights, scores, sign-up flag, projector on or off for that night | anyone | create, update: score keeper · delete: admin |
+| `pubConfig` | Scoring rules | anyone | admin |
 | `pubTilgang` | Access list, `role: "scorer"` or admin | own entry, score keepers | admins add anyone; score keepers add and remove score keepers only |
 | `pubSignup` | QR sign-ups waiting | score keepers | create: anyone while sign-up is live, with the right PIN · delete: score keepers |
 | `pubPin` | PIN hash per team | admins | create: anyone, only while sign-up is live, for a team on that night's list · delete: admin |
@@ -185,7 +185,7 @@ Firestore answers `permission-denied`; the app turns it into text.
 | 7 | Marking mode | Live |
 | 8 | Sign-up closes by itself the morning after | Live, needs the latest rules |
 | 9 | Score keeper role | Live, needs the latest rules |
-| 10 | Projector: questions, answers, results reveal, season table | Live, off by default, needs the latest rules |
+| 10 | Projector: questions, answers, results reveal, season table | Live, switched on per night with "+ Projector", needs the latest rules |
 | 11 | Quiz på Kvarteret look: mint in Samfunnet's design style | Live, see `quiz-kit.md` |
 
 Ideas for later: picture-round images uploaded instead of linked, a timer slide, team history charts, Norwegian text.

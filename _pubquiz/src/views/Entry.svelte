@@ -206,6 +206,7 @@
 
   // ---------- week details ----------
   async function setMeta(field, v) { await save(() => api.updateWeek(id, { [field]: v })); }
+  async function useProjector() { await setMeta("projector", true); go("week/" + id + "/projector"); }
   async function del() {
     if (!confirm(`Delete the quiz night ${week.date} with all its scores? This cannot be undone.`)) return;
     await save(() => api.deleteWeek(id));
@@ -229,7 +230,9 @@
       </div>
     </div>
     <span class="spacer"></span>
-    {#if c.screen}<a class="btn" href={"#/week/" + id + "/projector"}>Projector</a>{/if}
+    <!-- Projector is chosen per night: off until someone wants it for this quiz -->
+    {#if week.projector}<a class="btn" href={"#/week/" + id + "/projector"}>Projector</a>
+    {:else}<button class="ghost" title="Use a projector screen for this quiz night: questions, answers and a results reveal" onclick={useProjector}>+ Projector</button>{/if}
     <a class="btn primary" href={"#/week/" + id}>See results</a>
   </div>
 

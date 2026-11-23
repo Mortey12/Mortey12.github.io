@@ -67,6 +67,12 @@
     if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); move(-1); }
   }
   const groups = ["Start", "Questions", "Answers", "End"];
+  // Hides the Projector button for this night again. Typed questions are kept.
+  async function turnOff() {
+    await save(() => api.updateWeek(id, { projector: false }));
+    if (mine) await save(() => api.setScreen({ weekId: id, k: "blank", shown: 0 }));
+    location.hash = "#/week/" + id + "/enter";
+  }
   const screenUrl = location.origin + location.pathname + location.search + "#/screen";
 </script>
 
@@ -81,6 +87,7 @@
     <h1>Projector</h1>
     <span class="muted">{week.date}</span>
     <span class="spacer"></span>
+    <button class="ghost small" onclick={turnOff}>Turn off for this night</button>
     <a class="btn" href={"#/week/" + id + "/enter"}>← Score entry</a>
   </div>
 
