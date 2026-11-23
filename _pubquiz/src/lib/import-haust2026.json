@@ -1,0 +1,875 @@
+[
+ {
+  "dato": "2026-11-17",
+  "rader": [
+   {
+    "namn": "Team Chile",
+    "p": {
+     "r1": 9.5,
+     "r2": 3.5,
+     "pic": 5.0
+    },
+    "antall": 3
+   },
+   {
+    "namn": "Potevik",
+    "p": {
+     "r1": 14.0,
+     "r2": 4.0,
+     "pic": 8.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Erasmus Witches",
+    "p": {
+     "r1": 10.5,
+     "r2": 8.5,
+     "pic": 5.0
+    },
+    "antall": 7
+   },
+   {
+    "namn": "5-stjernes",
+    "p": {
+     "r1": 14.0,
+     "r2": 6.5,
+     "pic": 4.0
+    },
+    "antall": 4
+   },
+   {
+    "namn": "Psyk faks store sønner",
+    "p": {
+     "r1": 12.0,
+     "r2": 0.0,
+     "pic": 0.0
+    },
+    "antall": 2
+   },
+   {
+    "namn": "Team Gunners",
+    "p": {
+     "r1": 8.0,
+     "r2": 7.0,
+     "pic": 4.0
+    },
+    "antall": 3
+   },
+   {
+    "namn": "Norge Danmark på MAOS etter Quiz",
+    "p": {
+     "r1": 16.5,
+     "r2": 0.0,
+     "pic": 7.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Quiz with rizz",
+    "p": {
+     "r1": 9.5,
+     "r2": 5.5,
+     "pic": 7.0
+    },
+    "antall": 4
+   },
+   {
+    "namn": "Psykoselig",
+    "p": {
+     "r1": 10.0,
+     "r2": 7.5,
+     "pic": 6.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Akademisk Nedasatte",
+    "p": {
+     "r1": 18.0,
+     "r2": 8.0,
+     "pic": 9.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Lars Monsoon",
+    "p": {
+     "r1": 10.5,
+     "r2": 6.5,
+     "pic": 8.0
+    },
+    "antall": 3
+   },
+   {
+    "namn": "The first",
+    "p": {
+     "r1": 13.0,
+     "r2": 5.0,
+     "pic": 10.0
+    },
+    "antall": 8
+   },
+   {
+    "namn": "Madagascar bikiniene",
+    "p": {
+     "r1": 15.0,
+     "r2": 7.0,
+     "pic": 6.0
+    },
+    "antall": 2
+   },
+   {
+    "namn": "Conquistadorene",
+    "p": {
+     "r1": 16.0,
+     "r2": 8.0,
+     "pic": 6.0
+    },
+    "antall": 3
+   },
+   {
+    "namn": "Krig og elendighet (War and shit)",
+    "p": {
+     "r1": 12.0,
+     "r2": 7.0,
+     "pic": 5.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "The divas",
+    "p": {
+     "r1": 14.5,
+     "r2": 9.0,
+     "pic": 10.0
+    },
+    "antall": 7
+   },
+   {
+    "namn": "Low expectations",
+    "p": {
+     "r1": 10.5,
+     "r2": 0.0,
+     "pic": 0.0
+    },
+    "antall": 6
+   },
+   {
+    "namn": "Carolin on top",
+    "p": {
+     "r1": 11.0,
+     "r2": 5.0,
+     "pic": 4.0
+    },
+    "antall": 3
+   },
+   {
+    "namn": "Brownest tacos",
+    "p": {
+     "r1": 8.0,
+     "r2": 9.0,
+     "pic": 8.0
+    },
+    "antall": 6
+   },
+   {
+    "namn": "Klitt eller Klatt",
+    "p": {
+     "r1": 11.5,
+     "r2": 7.0,
+     "pic": 8.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Blå Torus",
+    "p": {
+     "r1": 15.0,
+     "r2": 9.0,
+     "pic": 8.0
+    },
+    "antall": 6
+   },
+   {
+    "namn": "Gutta Krø",
+    "p": {
+     "r1": 8.0,
+     "r2": 4.5,
+     "pic": 5.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Banana Bread",
+    "p": {
+     "r1": 17.5,
+     "r2": 9.0,
+     "pic": 16.0
+    },
+    "antall": 4
+   },
+   {
+    "namn": "Kanskje sisteplass?",
+    "p": {
+     "r1": 10.0,
+     "r2": 8.0,
+     "pic": 6.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Hansa-Lovers",
+    "p": {
+     "r1": 11.0,
+     "r2": 11.0,
+     "pic": 9.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Hansa-Friends",
+    "p": {
+     "r1": 12.5,
+     "r2": 14.0,
+     "pic": 13.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "MikBARs disipler",
+    "p": {
+     "r1": 17.0,
+     "r2": 8.0,
+     "pic": 8.0
+    },
+    "antall": 5
+   },
+   {
+    "namn": "Kakeresten",
+    "p": {
+     "r1": 17.0,
+     "r2": 0.0,
+     "pic": 0.0
+    },
+    "antall": 6
+   },
+   {
+    "namn": "Komfyr",
+    "p": {
+     "r1": 10.5,
+     "r2": 0.0,
+     "pic": 0.0
+    },
+    "antall": 4
+   },
+   {
+    "namn": "Quiztal meth",
+    "p": {
+     "r1": 8.0,
+     "r2": 0.0,
+     "pic": 0.0
+    },
+    "antall": 4
+   }
+  ]
+ },
+ {
+  "dato": "2026-10-20",
+  "rader": [
+   {
+    "namn": "HANSA LOVERS",
+    "p": {
+     "r1": 8.0,
+     "r2": 18.5,
+     "pic": 16.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "ikke hansa men hunsa",
+    "p": {
+     "r1": 7.0,
+     "r2": 10.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "quiz Brown",
+    "p": {
+     "r1": 11.0,
+     "r2": 13.5,
+     "pic": 10.0
+    }
+   },
+   {
+    "namn": "Kiss klass kjærlighet på pinne",
+    "p": {
+     "r1": 6.0,
+     "r2": 15.5,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "Ta meg på quizen",
+    "p": {
+     "r1": 10.0,
+     "r2": 13.5,
+     "pic": 14.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "Blå Torus",
+    "p": {
+     "r1": 10.5,
+     "r2": 21.0,
+     "pic": 19.0
+    }
+   },
+   {
+    "namn": "Trekløver",
+    "p": {
+     "r1": 9.0,
+     "r2": 8.0,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "Sannsynligvis feil",
+    "p": {
+     "r1": 7.0,
+     "r2": 12.0,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "Lars Monsoon",
+    "p": {
+     "r1": 9.0,
+     "r2": 16.5,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "Russian Roulettes",
+    "p": {
+     "r1": 11.0,
+     "r2": 18.0,
+     "pic": 18.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "Quizard of Oz",
+    "p": {
+     "r1": 10.0,
+     "r2": 16.0,
+     "pic": 18.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "Alle sammen sammen",
+    "p": {
+     "r1": 10.0,
+     "r2": 11.0,
+     "pic": 19.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "Casa del Caos",
+    "p": {
+     "r1": 9.0,
+     "r2": 12.0,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "A girly gay and the gay girl",
+    "p": {
+     "r1": 10.0,
+     "r2": 15.5,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "Gruppa del 2",
+    "p": {
+     "r1": 5.0,
+     "r2": 12.0,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "Big slime og co",
+    "p": {
+     "r1": 6.0,
+     "r2": 7.5,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "big slime og co nr2",
+    "p": {
+     "r1": 9.0,
+     "r2": 11.5,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "Carolin on top",
+    "p": {
+     "r1": 9.0,
+     "r2": 10.5,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "Jeg er steve",
+    "p": {
+     "r1": 6.0,
+     "r2": 11.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "Henri is back",
+    "p": {
+     "r1": 11.0,
+     "r2": 17.0,
+     "pic": 15.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "forever henri",
+    "p": {
+     "r1": 6.0,
+     "r2": 10.0,
+     "pic": 14.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "3 girls and 1 guy",
+    "p": {
+     "r1": 11.0,
+     "r2": 18.5,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "trix",
+    "p": {
+     "r1": 13.0,
+     "r2": 13.5,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "vab 4",
+    "p": {
+     "r1": 9.0,
+     "r2": 15.0,
+     "pic": 19.0
+    }
+   },
+   {
+    "namn": "jenny penny og co",
+    "p": {
+     "r1": 7.0,
+     "r2": 19.0,
+     "pic": 15.0
+    },
+    "trekk": 2.0
+   },
+   {
+    "namn": "sliten penis",
+    "p": {
+     "r1": 11.0,
+     "r2": 17.0,
+     "pic": 20.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "the divas",
+    "p": {
+     "r1": 11.0,
+     "r2": 17.5,
+     "pic": 16.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "Con quiztudorene",
+    "p": {
+     "r1": 13.0,
+     "r2": 12.0,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "stratosfærekameratene",
+    "p": {
+     "r1": 6.0,
+     "r2": 8.0,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "brownies",
+    "p": {
+     "r1": 16.0,
+     "r2": 22.0,
+     "pic": 17.0
+    },
+    "trekk": 1.0
+   },
+   {
+    "namn": "bimbotekarene",
+    "p": {
+     "r1": 5.5,
+     "r2": 12.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "team chile",
+    "p": {
+     "r1": 3.0,
+     "r2": 6.0,
+     "pic": 8.0
+    }
+   },
+   {
+    "namn": "tar meg på quizen",
+    "p": {
+     "r1": 5.5,
+     "r2": 12.5,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "kom for kaka",
+    "p": {
+     "r1": 8.0,
+     "r2": 17.5,
+     "pic": 18.0
+    },
+    "trekk": 6.0
+   },
+   {
+    "namn": "ark og penn",
+    "p": {
+     "r1": 7.5,
+     "r2": 16.0,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "sykkelstausen",
+    "p": {
+     "r1": 7.0,
+     "r2": 13.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "madagaskarbikini",
+    "p": {
+     "r1": 12.0,
+     "r2": 21.5,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "pussy power",
+    "p": {
+     "r1": 8.0,
+     "r2": 12.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "quizkletivet",
+    "p": {
+     "r1": 5.0,
+     "r2": 0.0,
+     "pic": 0.0
+    }
+   },
+   {
+    "namn": "nadia og noldus",
+    "p": {
+     "r1": 11.0,
+     "r2": 14.0,
+     "pic": 18.0
+    }
+   }
+  ]
+ },
+ {
+  "dato": "2026-09-29",
+  "rader": [
+   {
+    "namn": "Hansa-lovers",
+    "p": {
+     "r1": 14.0,
+     "r2": 18.5,
+     "pic": 17.0
+    }
+   },
+   {
+    "namn": "forever henri",
+    "p": {
+     "r1": 13.0,
+     "r2": 20.0,
+     "pic": 10.0
+    }
+   },
+   {
+    "namn": "danish dynamite",
+    "p": {
+     "r1": 15.0,
+     "r2": 19.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "second place",
+    "p": {
+     "r1": 9.0,
+     "r2": 17.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "team joakim",
+    "p": {
+     "r1": 16.0,
+     "r2": 17.5,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "erasimus-witches",
+    "p": {
+     "r1": 13.0,
+     "r2": 7.0,
+     "pic": 7.0
+    }
+   },
+   {
+    "namn": "flat 5",
+    "p": {
+     "r1": 13.0,
+     "r2": 19.0,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "conquizdadores",
+    "p": {
+     "r1": 8.0,
+     "r2": 9.5,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "olsen banden",
+    "p": {
+     "r1": 13.0,
+     "r2": 15.0,
+     "pic": 9.0
+    }
+   },
+   {
+    "namn": "sjøstjerne",
+    "p": {
+     "r1": 12.0,
+     "r2": 16.0,
+     "pic": 10.0
+    }
+   },
+   {
+    "namn": "ekko",
+    "p": {
+     "r1": 13.0,
+     "r2": 12.0,
+     "pic": 16.0
+    }
+   },
+   {
+    "namn": "hæsjtag chloëIontop",
+    "p": {
+     "r1": 16.0,
+     "r2": 24.0,
+     "pic": 18.0
+    }
+   },
+   {
+    "namn": "potetvink",
+    "p": {
+     "r1": 14.0,
+     "r2": 21.0,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "les magnifiques",
+    "p": {
+     "r1": 17.0,
+     "r2": 21.5,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": ":)",
+    "p": {
+     "r1": 8.0,
+     "r2": 18.0,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "godt og blandet",
+    "p": {
+     "r1": 17.0,
+     "r2": 18.0,
+     "pic": 15.0
+    }
+   },
+   {
+    "namn": "Mr. P",
+    "p": {
+     "r1": 12.0,
+     "r2": 18.0,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "Sherlock Homies",
+    "p": {
+     "r1": 16.0,
+     "r2": 17.0,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "fjolls til fjells",
+    "p": {
+     "r1": 13.0,
+     "r2": 18.0,
+     "pic": 9.0
+    }
+   },
+   {
+    "namn": "con quitadorene",
+    "p": {
+     "r1": 12.0,
+     "r2": 15.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "divas",
+    "p": {
+     "r1": 16.0,
+     "r2": 22.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "dum og dommere",
+    "p": {
+     "r1": 11.0,
+     "r2": 12.0,
+     "pic": 13.0
+    }
+   },
+   {
+    "namn": "team chile",
+    "p": {
+     "r1": 14.0,
+     "r2": 18.0,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "sand og regn",
+    "p": {
+     "r1": 0.0,
+     "r2": 16.5,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "unicorn power",
+    "p": {
+     "r1": 10.0,
+     "r2": 0.0,
+     "pic": 0.0
+    }
+   },
+   {
+    "namn": "klitt eller klatt",
+    "p": {
+     "r1": 10.0,
+     "r2": 13.5,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "lethorene",
+    "p": {
+     "r1": 11.0,
+     "r2": 18.0,
+     "pic": 14.0
+    }
+   },
+   {
+    "namn": "a-team",
+    "p": {
+     "r1": 5.0,
+     "r2": 13.5,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "team tysk",
+    "p": {
+     "r1": 10.0,
+     "r2": 18.0,
+     "pic": 16.0
+    }
+   },
+   {
+    "namn": "blå torus",
+    "p": {
+     "r1": 16.0,
+     "r2": 22.0,
+     "pic": 16.0
+    }
+   },
+   {
+    "namn": "blåere torus",
+    "p": {
+     "r1": 10.0,
+     "r2": 14.0,
+     "pic": 12.0
+    }
+   },
+   {
+    "namn": "lebron james",
+    "p": {
+     "r1": 0.0,
+     "r2": 15.0,
+     "pic": 17.0
+    }
+   }
+  ]
+ }
+]

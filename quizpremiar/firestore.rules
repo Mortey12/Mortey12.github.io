@@ -94,6 +94,42 @@ service cloud.firestore {
       }
     }
 
+    // ---- Pubquiz-poeng (mstene.no/pubquiz) ----
+    // Alle kan sjå resultat, sesongtabell og lagsider. Berre e-postar i pubTilgang kan endre.
+    // Den første e-posten må leggjast inn frå Firebase-konsollen (dokument-id = e-post med små bokstavar).
+    function pubAdmin() { return innlogga() && exists(/databases/$(database)/documents/pubTilgang/$(epost())); }
+
+    match /pubTilgang/{e} {
+      allow read: if innlogga() && (e == epost() || pubAdmin());
+      allow write: if pubAdmin();
+    }
+    match /pubLag/{id} {
+      allow read: if true;
+      allow write: if pubAdmin();
+    }
+    match /pubVeke/{id} {
+      allow read: if true;
+      allow write: if pubAdmin();
+    }
+    match /pubConfig/{id} {
+      allow read: if true;
+      allow write: if pubAdmin();
+    }
+    // Påmelding frå QR-koden: kven som helst kan melde på eit lag, men berre når
+    // quizmasteren har opna påmeldinga for den kvelden. Berre admin kan lese og slette.
+    match /pubSignup/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['weekId', 'name', 'members', 'created'])
+        && request.resource.data.weekId is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60
+        && request.resource.data.members is int
+        && request.resource.data.members >= 1 && request.resource.data.members <= 30
+        && request.resource.data.created == request.time
+        && get(/databases/$(database)/documents/pubVeke/$(request.resource.data.weekId)).data.get('signupOpen', false) == true;
+      allow read, delete: if pubAdmin();
+      allow update: if false;
+    }
+
     // Alt anna er stengt
     match /{document=**} {
       allow read, write: if false;
