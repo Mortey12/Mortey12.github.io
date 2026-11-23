@@ -4,6 +4,7 @@
   import { weekResults, parseScore, fmt, penalty, matchTeams, norm } from "../lib/calc.js";
   import { go } from "../lib/router.svelte.js";
   import CategoryEditor from "./CategoryEditor.svelte";
+  import Marking from "./Marking.svelte";
 
   let { id } = $props();
   let week = $derived(S.weeks[id]);
@@ -13,6 +14,8 @@
   // Preferences kept per browser
   const pref = (k, d) => { try { return localStorage.getItem("pq-" + k) ?? d; } catch { return d; } };
   const setPref = (k, v) => { try { localStorage.setItem("pq-" + k, v); } catch {} };
+  let mode = $state(pref("mode", "grid"));        // "grid" = the full table, "mark" = search a team, it disappears when done
+  $effect(() => setPref("mode", mode));
   let dir = $state(pref("dir", "down"));          // Enter moves down a column or right along a row
   let only = $state("all");                         // show all columns or a single one (phones)
   let showAdjust = $state(false);
@@ -223,6 +226,12 @@
     <a class="btn primary" href={"#/week/" + id}>See results</a>
   </div>
 
+  <div class="modes row">
+    <button class:primary={mode === "mark"} onclick={() => (mode = "mark")}>Marking: one team at a time</button>
+    <button class:primary={mode === "grid"} onclick={() => (mode = "grid")}>Full table</button>
+  </div>
+
+  {#if mode === "grid"}
   <div class="tools row">
     <div class="jump">
       <input bind:this={jumpEl} bind:value={jumpQ} onkeydown={jumpKey} placeholder="Jump to team…  ( / )" aria-label="Jump to team" autocomplete="off" />
@@ -243,6 +252,7 @@
     <span class="spacer"></span>
     <button class="small" onclick={() => (showCats = !showCats)}>{showCats ? "Hide" : "Edit"} categories</button>
   </div>
+  {/if}
 
   <div class="signup panel" class:open={week.signupOpen}>
     <div class="row">
@@ -275,6 +285,9 @@
 
   {#if showCats}<CategoryEditor weekId={id} categories={cats} />{/if}
 
+  {#if mode === "mark"}
+    <Marking weekId={id} {rows} {cats} />
+  {:else}
   <div class="scroll panel gridwrap">
     <table class="grid">
       <thead>
@@ -323,6 +336,7 @@
       </tbody>
     </table>
   </div>
+  {/if}
 
   <div class="add">
     <input bind:this={addEl} bind:value={addQ} onkeydown={addKey} onpaste={addPaste}
@@ -352,6 +366,7 @@
 <style>
   .head { align-items: end; margin-bottom: 12px; }
   .tools { margin: 0 0 10px; }
+  .modes { margin: 0 0 10px; }
   .jump { position: relative; }
   .jump input { width: 230px; }
   .pop { position: absolute; z-index: 10; list-style: none; margin: 4px 0 0; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 100%; box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
