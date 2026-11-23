@@ -237,7 +237,7 @@
       if (e.key === "a" || e.key === "A") { e.preventDefault(); alleDelar(aktiv); return; }
       if (e.key === "n" || e.key === "N") { e.preventDefault(); aktiv = Math.min(marks.length - 1, aktiv + 1); return; }
     }
-    const kart = { 1: "full", 2: "annet", 3: "halv", 4: "kvart" };
+    const kart = { 1: "full", 2: "annet", 3: "halv" };
     if (!delar && kart[e.key]) { e.preventDefault(); marks[aktiv].m = kart[e.key]; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if (!delar && /^[5-9]$/.test(e.key) && ekstra[Number(e.key) - 5] !== undefined) { e.preventDefault(); marks[aktiv].m = "eigen"; marks[aktiv].c = String(ekstra[Number(e.key) - 5]).replace(".", ","); aktiv = Math.min(marks.length - 1, aktiv + 1); }
     else if ([" ", "0", "x", "X", "f", "F"].includes(e.key)) { e.preventDefault(); marks[aktiv].m = "feil"; marks[aktiv].c = ""; aktiv = Math.min(marks.length - 1, aktiv + 1); }
@@ -296,7 +296,7 @@
       {#if visPoeng}
         <div class="cfgboks">
           <h4>Delar per svar</h4>
-          <p class="dempa liten">Til dømes musikk: Artist 0,5 · Låt 0,5 · Film 0,5. Når du rettar, trykkjer du på delane laget hadde rett – to gonger gir halv del. Poenga kan vere kva tal som helst. Utan delar blir det Full / Annet / Halv / Kvart.</p>
+          <p class="dempa liten">Til dømes musikk: Artist 0,5 · Låt 0,5 · Film 0,5. Når du rettar, trykkjer du på delane laget hadde rett – to gonger gir halv del. Poenga kan vere kva tal som helst. Utan delar blir det Full / Annet / Halv.</p>
           {#each delar || [] as d, j}
             <div class="delrad">
               <span class="delnr">{j + 1}</span>
@@ -309,8 +309,8 @@
           <button class="btn liten" type="button" onclick={leggTilDel}>+ Legg til del</button>
 
           <h4>Faste summar</h4>
-          <p class="dempa liten">Knappar med akkurat dei poenga du vil, på kvart spørsmål. Skriv så mange du vil, skil med mellomrom, t.d. <i>0,25 0,75 1,5</i>.{#if !delar} Dei fem første får tastane 5–9.{/if} Andre tal skriv du rett i feltet «Anna» på spørsmålet.</p>
-          <input class="inp" inputmode="decimal" aria-label="Faste summar" value={ekstra.map(f2).join(" ")} onchange={e => skrivEkstra(e.target.value)} placeholder="0,25 0,75 1,5" style="max-width:260px;margin-bottom:6px">
+          <p class="dempa liten">Knappar med akkurat dei poenga du vil, på kvart spørsmål. Skriv så mange du vil, skil med mellomrom.{#if !delar} Dei fem første får tastane 5–9.{/if} Andre tal skriv du rett i feltet «Anna» på spørsmålet.</p>
+          <input class="inp" inputmode="decimal" aria-label="Faste summar" value={ekstra.map(f2).join(" ")} onchange={e => skrivEkstra(e.target.value)} placeholder="Skriv summane dine" style="max-width:260px;margin-bottom:6px">
 
           <h4>Bonus for runda</h4>
           <p class="dempa liten">Éin gong per lag, i tillegg til spørsmåla. Til dømes raud tråd.</p>
@@ -333,7 +333,7 @@
           {#if !delar}
             <details class="avansert">
               <summary>Avansert: poeng per spørsmål</summary>
-              <p class="dempa liten">Halv og kvart er alltid halvparten og fjerdeparten av full.</p>
+              <p class="dempa liten">Halv er alltid halvparten av full.</p>
               <div class="cfg">
                 <span></span><b>Full</b><b>Annet</b>
                 {#each spm as _, i}
@@ -364,7 +364,6 @@
                 <button type="button" class="o full" aria-pressed={marks[i]?.m === "full"} onclick={() => sett(i, "full")}><small>Full</small><b>{f2(cfg[i].full)}</b></button>
                 <button type="button" class="o annet" aria-pressed={marks[i]?.m === "annet"} onclick={() => sett(i, "annet")}><small>Annet</small><b>{f2(cfg[i].annet)}</b></button>
                 <button type="button" class="o halv" aria-pressed={marks[i]?.m === "halv"} onclick={() => sett(i, "halv")}><small>Halv</small><b>{f2(cfg[i].full / 2)}</b></button>
-                <button type="button" class="o kvart" aria-pressed={marks[i]?.m === "kvart"} onclick={() => sett(i, "kvart")}><small>Kvart</small><b>{f2(cfg[i].full / 4)}</b></button>
                 {#each ekstra as v}<button type="button" class="o sum" aria-pressed={erSum(i, v)} onclick={() => settSum(i, v)}><small>Sum</small><b>{f2(v)}</b></button>{/each}
                 <button type="button" class="o feil" aria-pressed={marks[i]?.m === "feil"} onclick={() => sett(i, "feil")}><small>Feil</small><b>✗</b></button>
               </div>
@@ -386,7 +385,7 @@
         {#if delar}
           <p class="dempa tastar">{#each delar as d, j}{j ? " · " : ""}<kbd>{j + 1}</kbd> {d.namn}{/each} · (to gonger = halv) · <kbd>A</kbd> alt rett · <kbd>Mellomrom</kbd> eller <kbd>0</kbd> feil · <kbd>N</kbd> eller <kbd>↓</kbd> neste spørsmål · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
         {:else}
-        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> annet · <kbd>3</kbd> halv · <kbd>4</kbd> kvart{#each ekstra as v, j}{" · "}<kbd>{j + 5}</kbd> {f2(v)}{/each} · <kbd>Mellomrom</kbd> eller <kbd>0</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
+        <p class="dempa tastar"><kbd>1</kbd> full · <kbd>2</kbd> annet · <kbd>3</kbd> halv{#each ekstra as v, j}{" · "}<kbd>{j + 5}</kbd> {f2(v)}{/each} · <kbd>Mellomrom</kbd> eller <kbd>0</kbd> feil · går vidare av seg sjølv · <kbd>Enter</kbd> lagre · <kbd>Esc</kbd> nytt lag</p>
         {/if}
       {:else}
         <p class="dempa" style="margin:6px 0 0">Vel eit lag for å rette.</p>
